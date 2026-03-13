@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="设备树下的 platform 驱动编写">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动学习日记(21) 设备树下的 platform 驱动编写">
+<meta property="og:url" content="https://hccc1203.github.io/2026/03/11/linux-driver-learn-21/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="设备树下的 platform 驱动编写">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/21/%E6%88%90%E5%8A%9F%E5%8C%B9%E9%85%8D.png">
+<meta property="article:published_time" content="2026-03-11T08:25:25.000Z">
+<meta property="article:modified_time" content="2026-03-12T08:04:50.936Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="驱动开发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/21/%E6%88%90%E5%8A%9F%E5%8C%B9%E9%85%8D.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/03/11/linux-driver-learn-21/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动学习日记(21) 设备树下的 platform 驱动编写 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/03/11/linux-driver-learn-21/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动学习日记(21) 设备树下的 platform 驱动编写
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-03-11 16:25:25" itemprop="dateCreated datePublished" datetime="2026-03-11T16:25:25+08:00">2026-03-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/Linux%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">Linux驱动</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>&emsp;&emsp;在第 17 篇学习日志中，我们学习了 Linux 下的驱动分离和分层，以及总线、设备和驱动这样的驱动框架。基于总线、设备、和驱动这样的驱动框架，Linux 内核 提出了 platform 这个虚拟总线，相应的也有 platform 设备和 platform 驱动。本次我们学习一下如何在设备树下编写 platform 驱动。</p>
+<h2 id="设备属下的-platform-驱动简介"><a href="#设备属下的-platform-驱动简介" class="headerlink" title="设备属下的 platform 驱动简介"></a>设备属下的 platform 驱动简介</h2><p>&emsp;&emsp;platform 驱动框架分为总线、设备和驱动，其中总线不需要我们管理，这个是 Linux 内核提供的，我们在编写驱动时只需要关注与设备和驱动的具体实现即可。在使用设备树的时候，设备的描述被放在了设备树中，因此 platform_device 就不需要我们去编写了，我们只需要实现 platform_driver 即可。在编写设备树的 platform 驱动的时候需要我们注意以下几点：</p>
+<p>&emsp;&emsp;<strong>1、在设备树中创建节点</strong><br>&emsp;&emsp;我们需要先在设备树中创建设备节点来描述设备信息，重点是要设置好 compatible 属性的值，因为 platform 总线需要通过设备节点的 compatible 属性值来匹配驱动。比如，我们可以编写如下所示的设备节点来描述我们即将使用到的 LED 这个设备：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">gpioled&#123;</span><br><span class="line">    #address-cells = &lt;1&gt;;</span><br><span class="line">    #size-cells = &lt;1&gt;;</span><br><span class="line">    compatible = &quot;hcw-gpioled&quot;;</span><br><span class="line">    pinctrl-names = &quot;default&quot;;</span><br><span class="line">    pinctrl-0 = &lt;&amp;pinctrl_led&gt;;</span><br><span class="line">    led-gpio = &lt;&amp;gpio1 3 GPIO_ACTIVE_LOW&gt;;</span><br><span class="line">    status = &quot;okay&quot;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这里我们将 compatible 属性值设置为 “hcw-gpioled”，因此一会儿在编写 platform 驱动的时候 of_match_table 属性表中要有 “hcw-gpioled”。</p>
+<p>&emsp;&emsp;<strong>2、编写 platform 驱动的时候要注意兼容属性</strong><br>&emsp;&emsp;在使用设备树的时候 platform 驱动会通过 of_match_table 来保存兼容性值，也就是表明此驱动兼容哪些设备。所以，of_match_table 会很重要。比如在本次学习中，platform 驱动里的 platform_driver 可以按照如下代码设置：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">of_device_id</span> <span class="title">leds_of_match</span>[] =</span> &#123;</span><br><span class="line">    &#123;.compatible = <span class="string">&quot;hcw-gpioled&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="comment">/* Sentinel */</span>&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">MODULE_DEVICE_TABLE(of,leds_of_match);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">platform_driver</span> <span class="title">leds_platform_driverj</span> =</span> &#123;</span><br><span class="line">    .driver = &#123;</span><br><span class="line">        .name = <span class="string">&quot;imx6ul-led&quot;</span>,</span><br><span class="line">        .of_match_table = leds_of_match,</span><br><span class="line">    &#125;</span><br><span class="line">    .probe = leds_probe,</span><br><span class="line">    .remove = leds_remove,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，of_device_id 表是驱动的兼容表，是一个数组，每个数组元素为 of_device_if 类型。每个数组元素都是一个兼容属性，表示兼容的设备，一个驱动可以跟多个设备进行匹配，这里我们仅仅匹配了一个设备，那就是上文创建的 gpioled 这个设备。**注意！在编写 of_device_id 的时候最后一个元素一定要为空！<br>&emsp;&emsp;然后我们需要通过 MODULE_DEVICE_TABLE 来声明 leds_of_match 这个设备匹配表。最后，我们设置 platform_driver 中的 of_match_table 匹配表为上面创建的 leds_of_match，至此我们就设置好 platform 驱动的匹配表了。</p>
+<h2 id="驱动程序编写"><a href="#驱动程序编写" class="headerlink" title="驱动程序编写"></a>驱动程序编写</h2><h3 id="修改设备树文件"><a href="#修改设备树文件" class="headerlink" title="修改设备树文件"></a>修改设备树文件</h3><p>&emsp;&emsp;首先修改设备树文件，加上我们需要的设备信息。本章我们只使用了一个 gpio 灯，因此可以直接使用之前写过的 gpioled 子节点。</p>
+<h3 id="platform-驱动程序编写"><a href="#platform-驱动程序编写" class="headerlink" title="platform 驱动程序编写"></a>platform 驱动程序编写</h3><p>&emsp;&emsp;新建文件夹，创建 C 文件，写入以下代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * @Author: 胡城玮</span></span><br><span class="line"><span class="comment"> * @FilePath: gpioled.c</span></span><br><span class="line"><span class="comment"> * @Date: 2026-03-11</span></span><br><span class="line"><span class="comment"> * @Description: </span></span><br><span class="line"><span class="comment"> * @Version: 0.1</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/delay.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/cdev.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/semaphore.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/timer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/irq.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/wait.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/poll.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/file.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/platform_device.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     LEDDEV_CNT      1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     LEDDEV_NAME     <span class="string">&quot;dtsplatled&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     LEDOFF          0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     LEDON           1</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">leddev_dev</span>&#123;</span></span><br><span class="line">    <span class="type">dev_t</span>           devid;      <span class="comment">/* 设备号 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span>     <span class="title">cdev</span>;</span>       <span class="comment">/* cdev */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="keyword">class</span>    *<span class="keyword">class</span>;</span>     <span class="comment">/* 类 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device</span>   *<span class="title">device</span>;</span>    <span class="comment">/* 设备信息 */</span></span><br><span class="line">    <span class="type">int</span>             major;      <span class="comment">/* 主设备号 */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device_node</span>  *<span class="title">node</span>;</span>  <span class="comment">/* LED 设备节点 */</span></span><br><span class="line">    <span class="type">int</span>             led0;       <span class="comment">/* LED 灯 GPIO 标号 */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">leddev_dev</span> <span class="title">leddev</span>;</span>       <span class="comment">/* LED 设备 */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description:  LED 切换状态</span></span><br><span class="line"><span class="comment"> * @param &#123;u8&#125; sta LED 状态</span></span><br><span class="line"><span class="comment"> * @return &#123;*&#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">led0_switch</span><span class="params">(u8 sta)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (sta == LEDON)</span><br><span class="line">        gpio_set_value(leddev.led0, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (sta == LEDOFF)</span><br><span class="line">        gpio_set_value(leddev.led0, <span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 打开设备</span></span><br><span class="line"><span class="comment"> * @param &#123;inode&#125; *inode 传递给设备的 inode</span></span><br><span class="line"><span class="comment"> * @param &#123;file&#125; *filp 设备文件</span></span><br><span class="line"><span class="comment"> * @return &#123;*&#125; 0 成功 其他失败</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">led_open</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span>&#123;</span><br><span class="line">    filp-&gt;private_data = &amp;leddev;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">led_write</span><span class="params">(<span class="keyword">struct</span> file *filp, <span class="type">const</span> <span class="type">char</span> __user *buf, <span class="type">size_t</span> cnt, <span class="type">loff_t</span> *offt)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> retvalue;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> databuf[<span class="number">2</span>];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> ledstat;</span><br><span class="line"></span><br><span class="line">    retvalue = copy_from_user(databuf,buf,cnt);</span><br><span class="line">    <span class="keyword">if</span>(retvalue &lt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        printk(<span class="string">&quot;kernel write failed!\r\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EFAULT;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ledstat = databuf[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">if</span> (ledstat == LEDON)</span><br><span class="line">    &#123;</span><br><span class="line">        led0_switch(LEDON);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (ledstat == LEDOFF)</span><br><span class="line">    &#123;</span><br><span class="line">        led0_switch(LEDOFF);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">led_fops</span> =</span> &#123;</span><br><span class="line">    .owner = THIS_MODULE,</span><br><span class="line">    .open = led_open,</span><br><span class="line">    .write = led_write,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">led_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    printk(<span class="string">&quot;led driver and device was matched!\r\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(leddev.major)&#123;</span><br><span class="line">        leddev.devid = MKDEV(leddev.major, <span class="number">0</span>);</span><br><span class="line">        register_chrdev_region(leddev.devid, LEDDEV_CNT, LEDDEV_NAME);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        alloc_chrdev_region(&amp;leddev.devid, <span class="number">0</span>,LEDDEV_CNT,LEDDEV_NAME);</span><br><span class="line">        leddev.major = MAJOR(leddev.devid);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    cdev_init(&amp;leddev.cdev, &amp;led_fops);</span><br><span class="line">    cdev_add(&amp;leddev.cdev,leddev.devid,LEDDEV_CNT);</span><br><span class="line"></span><br><span class="line">    leddev.class = class_create(THIS_MODULE,LEDDEV_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(leddev.class))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(leddev.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    leddev.device = device_create(leddev.class,<span class="literal">NULL</span>,leddev.devid,<span class="literal">NULL</span>,LEDDEV_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(leddev.device))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(leddev.device);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    leddev.node = of_find_node_by_path(<span class="string">&quot;/gpioled&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>(leddev.node == <span class="literal">NULL</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        printk(<span class="string">&quot;gpioled does not found\r\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    leddev.led0 = of_get_named_gpio(leddev.node,<span class="string">&quot;led-gpio&quot;</span>,<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span>(leddev.led0 &lt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        printk(<span class="string">&quot;cant get led-gpio\r\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    gpio_request(leddev.led0, <span class="string">&quot;led0&quot;</span>);</span><br><span class="line">    gpio_direction_output(leddev.led0,<span class="number">1</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">led_remove</span><span class="params">(<span class="keyword">struct</span> platform_device *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    gpio_set_value(leddev.led0, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    cdev_del(&amp;leddev.cdev);</span><br><span class="line"></span><br><span class="line">    unregister_chrdev_region(leddev.devid,LEDDEV_CNT);</span><br><span class="line">    device_destroy(leddev.class, leddev.devid);</span><br><span class="line">    class_destroy(leddev.class);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">of_device_id</span> <span class="title">led_of_match</span>[] =</span> </span><br><span class="line">&#123;</span><br><span class="line">    &#123;.compatible = <span class="string">&quot;hcw-gpioled&quot;</span>&#125;,</span><br><span class="line">    &#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">platform_driver</span> <span class="title">led_driver</span> =</span> </span><br><span class="line">&#123;</span><br><span class="line">    .driver = &#123;</span><br><span class="line">        .name = <span class="string">&quot;imx6u-led&quot;</span>,</span><br><span class="line">        .of_match_table = led_of_match</span><br><span class="line">    &#125;,</span><br><span class="line">    .probe = led_probe,</span><br><span class="line">    .remove = led_remove,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">leddrv_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> platform_driver_register(&amp;led_driver);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">leddrv_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    platform_driver_unregister(&amp;led_driver);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(leddrv_init);</span><br><span class="line">module_exit(leddrv_exit);</span><br><span class="line"></span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;hcw&quot;</span>);</span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="编译后装载"><a href="#编译后装载" class="headerlink" title="编译后装载"></a>编译后装载</h2><p>&emsp;&emsp;复制到根文件系统后，通过 insmod 命令装载，显示匹配成功。运行测试程序，可以正常点亮或熄灭。</p>
+<div align=center><img src="/img/linux驱动开发/21/成功匹配.png"  width=60%></div>
+<div style="text-align:center;">图 1 成功匹配</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" rel="tag"># 驱动开发</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/03/11/linux-driver-handson-5/" rel="prev" title="Linux驱动学习实战(5) 写出流水灯">
+      <i class="fa fa-chevron-left"></i> Linux驱动学习实战(5) 写出流水灯
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/12/linux-driver-learn-22/" rel="next" title="Linux驱动学习日记(22) Linux MISC 驱动实验">
+      Linux驱动学习日记(22) Linux MISC 驱动实验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E5%B1%9E%E4%B8%8B%E7%9A%84-platform-%E9%A9%B1%E5%8A%A8%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">设备属下的 platform 驱动简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A9%B1%E5%8A%A8%E7%A8%8B%E5%BA%8F%E7%BC%96%E5%86%99"><span class="nav-number">2.</span> <span class="nav-text">驱动程序编写</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E8%AE%BE%E5%A4%87%E6%A0%91%E6%96%87%E4%BB%B6"><span class="nav-number">2.1.</span> <span class="nav-text">修改设备树文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#platform-%E9%A9%B1%E5%8A%A8%E7%A8%8B%E5%BA%8F%E7%BC%96%E5%86%99"><span class="nav-number">2.2.</span> <span class="nav-text">platform 驱动程序编写</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E5%90%8E%E8%A3%85%E8%BD%BD"><span class="nav-number">3.</span> <span class="nav-text">编译后装载</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+    </div>
+</body>
+</html>

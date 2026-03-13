@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="从 0 写一个流水灯">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动学习实战(5) 写出流水灯">
+<meta property="og:url" content="https://hccc1203.github.io/2026/03/11/linux-driver-handson-5/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="从 0 写一个流水灯">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-5/IO%E8%A2%AB%E5%8D%A0%E7%94%A8.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-5/GPIO%E5%8E%9F%E7%90%86%E5%9B%BE.png">
+<meta property="article:published_time" content="2026-03-11T00:43:26.000Z">
+<meta property="article:modified_time" content="2026-03-13T06:05:05.841Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="驱动开发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-5/IO%E8%A2%AB%E5%8D%A0%E7%94%A8.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/03/11/linux-driver-handson-5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动学习实战(5) 写出流水灯 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/03/11/linux-driver-handson-5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动学习实战(5) 写出流水灯
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-03-11 08:43:26" itemprop="dateCreated datePublished" datetime="2026-03-11T08:43:26+08:00">2026-03-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AE%9E%E6%88%98%E7%AF%87/" itemprop="url" rel="index"><span itemprop="name">实战篇</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AE%9E%E6%88%98%E7%AF%87/Linux%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">Linux驱动</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="设计思路"><a href="#设计思路" class="headerlink" title="设计思路"></a>设计思路</h2><p>&emsp;&emsp;将流水灯的三个灯作为一组，写入设备树中。在驱动程序中开启一个每 0.5s 触发的中断，在中断里每次移动一位，让 GPIO 实现流水灯效果。</p>
+<h2 id="硬件分析"><a href="#硬件分析" class="headerlink" title="硬件分析"></a>硬件分析</h2><p>&emsp;&emsp;我们将二极管的正极接在 IO 口上，负极接在 GND，因此当 IO 口使用推挽输出模式输出高电平时，二极管将被点亮。正极分别接在板子上的 12、14、16。查阅原理图可以得知，其分别对应 GPIO01_IO04&#x2F;8&#x2F;6。</p>
+<h2 id="编写代码"><a href="#编写代码" class="headerlink" title="编写代码"></a>编写代码</h2><p>&emsp;&emsp;打开 imx6ull-hcw-emmc.dtsi 文件，在 iomuxc 节点下添加 pinctrl_flowingled，并写入如下内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">pinctrl_flowingled: flowingledgrp&#123;</span><br><span class="line">    fsl,pins = &lt;</span><br><span class="line">        MX6UL_PAD_GPIO1_IO04__GPIO1_IO04    0x10B0</span><br><span class="line">        MX6UL_PAD_GPIO1_IO08__GPIO1_IO08    0x10B0</span><br><span class="line">        MX6UL_PAD_GPIO1_IO06__GPIO1_IO06    0x10B0</span><br><span class="line">    &gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在根节点下添加 flowingled 设备，写入如下内容，写好后检查是否由 pin 被占用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">flowingled&#123;</span><br><span class="line">    #address-cells = &lt;1&gt;;</span><br><span class="line">    #size-cells = &lt;1&gt;;</span><br><span class="line">    compatible = &quot;hcw-flowingled&quot;;</span><br><span class="line">    pinctrl-names = &quot;default&quot;;</span><br><span class="line">    pinctrl-0 = &lt;&amp;pinctrl_flowingled&gt;;</span><br><span class="line">    flowingled-gpios = &lt;&amp;gpio1 4 GPIO_ACTIVE_HIGH&gt;,</span><br><span class="line">                        &lt;&amp;gpio1 8 GPIO_ACTIVE_HIGH&gt;,</span><br><span class="line">                        &lt;&amp;gpio1 6 GPIO_ACTIVE_HIGH&gt;;</span><br><span class="line">    </span><br><span class="line">    status = &quot;okay&quot;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;新建文件夹，新建 C 文件，接下来我们一步一步写出完整的驱动代码！</p>
+<p>&emsp;&emsp;我们先将大体框架搭建完毕，写入以下代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * @Author: 胡城玮</span></span><br><span class="line"><span class="comment"> * @FilePath: flowingled.c</span></span><br><span class="line"><span class="comment"> * @Date: 2026-03-11</span></span><br><span class="line"><span class="comment"> * @Description: </span></span><br><span class="line"><span class="comment"> * @Version: 0.1</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/delay.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/cdev.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/semaphore.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/timer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/irq.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/wait.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/poll.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/file.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/platform_device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/irq.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     FLOWINGLED_CNT      1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     FLOWINGLED_NAME     <span class="string">&quot;hcw-flowingled&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     FLOWINGLED_ON       1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     FLOWINGLED_OFF      0</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">flowingled_dev</span>&#123;</span></span><br><span class="line">    <span class="type">dev_t</span>           devid;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span>     <span class="title">cdev</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="keyword">class</span>    *<span class="keyword">class</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device</span>   *<span class="title">device</span>;</span></span><br><span class="line">    <span class="type">int</span>             major;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device_node</span>  *<span class="title">node</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>             gpio[<span class="number">3</span>];</span><br><span class="line">    <span class="type">int</span>             led_num;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timer_list</span>   <span class="title">timer</span>;</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>        period_ms;  <span class="comment">// 控制闪烁周期</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>        cur_led;    <span class="comment">// 当前灯号   </span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>        dir;        <span class="comment">// 闪烁方向</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>        running;    <span class="comment">// 是否运行</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">flowingled_dev</span> <span class="title">flowingled</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">flowingled_open</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span>&#123;</span><br><span class="line">    filp-&gt;private_data = &amp;flowingled;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">flowingled_write</span><span class="params">(<span class="keyword">struct</span> file *filp, <span class="type">const</span> <span class="type">char</span> __user *buf, <span class="type">size_t</span> cnt, <span class="type">loff_t</span> *offt)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> retvalue;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> databuf[<span class="number">2</span>];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> led_running_flag;</span><br><span class="line"></span><br><span class="line">    retvalue = copy_from_user(databuf,buf,cnt);</span><br><span class="line">    <span class="keyword">if</span>(retvalue &lt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        printk(<span class="string">&quot;kernel write failed\r\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EFAULT;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    led_running_flag = databuf[<span class="number">0</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">flowingled_fops</span> =</span> &#123;</span><br><span class="line">    .owner = THIS_MODULE,</span><br><span class="line">    .open = flowingled_open,</span><br><span class="line">    .write = flowingled_write</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">flowingled_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    printk(<span class="string">&quot;driver and device matched&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(flowingled.major)&#123;</span><br><span class="line">        flowingled.devid = MKDEV(flowingled.major, <span class="number">0</span>);</span><br><span class="line">        register_chrdev_region(flowingled.devid, FLOWINGLED_CNT, FLOWINGLED_NAME);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        alloc_chrdev_region(&amp;flowingled.devid, <span class="number">0</span>, FLOWINGLED_CNT, FLOWINGLED_NAME);</span><br><span class="line">        flowingled.major = MAJOR(flowingled.devid);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    cdev_init(&amp;flowingled.cdev, &amp;flowingled_fops);</span><br><span class="line">    cdev_add(&amp;flowingled.cdev, flowingled.devid,FLOWINGLED_CNT);</span><br><span class="line"></span><br><span class="line">    flowingled.class = class_create(THIS_MODULE, FLOWINGLED_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(flowingled.class))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(flowingled.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    flowingled.device = device_create(flowingled.class , <span class="literal">NULL</span>, flowingled.devid, <span class="literal">NULL</span>, FLOWINGLED_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(flowingled.device))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(flowingled.device);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    flowingled.node = of_find_node_by_path(<span class="string">&quot;/flowingled&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>(flowingled.node == <span class="literal">NULL</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        printk(<span class="string">&quot;flowingled does not found\r\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">char</span> buf[<span class="number">8</span>];</span><br><span class="line">        flowingled.gpio[i] = of_get_named_gpio(flowingled.node, <span class="string">&quot;flowingled-gpios&quot;</span>, i);</span><br><span class="line">        <span class="keyword">if</span> (flowingled.gpio[i] &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            printk(<span class="string">&quot;can&#x27;t get flowingled-gpios[%d]\n&quot;</span>, i);</span><br><span class="line">            <span class="keyword">return</span> flowingled.gpio[i];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">sprintf</span>(buf ,<span class="string">&quot;LED%d&quot;</span>, i);</span><br><span class="line">        gpio_request(flowingled.gpio[i],buf);</span><br><span class="line">        gpio_direction_output(flowingled.gpio[i],<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">flowingled_remove</span><span class="params">(<span class="keyword">struct</span> platform_device *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i &lt; FLOWINGLED_CNT; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        gpio_set_value(flowingled.gpio[i],<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    cdev_del(&amp;flowingled.cdev);</span><br><span class="line"></span><br><span class="line">    unregister_chrdev_region(flowingled.devid, FLOWINGLED_CNT);</span><br><span class="line">    device_destroy(flowingled.class, flowingled.devid);</span><br><span class="line">    class_destroy(flowingled.class);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">of_device_id</span> <span class="title">flowing_of_match</span>[] =</span> &#123;</span><br><span class="line">    &#123;.compatible = <span class="string">&quot;hcw-flowingled&quot;</span>&#125;,</span><br><span class="line">    &#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">platform_driver</span> <span class="title">flowingled_drv</span> =</span> &#123;</span><br><span class="line">    .driver = &#123;</span><br><span class="line">        .name = <span class="string">&quot;imx6u-flowingled&quot;</span>,</span><br><span class="line">        .of_match_table = flowing_of_match,</span><br><span class="line">    &#125;,</span><br><span class="line">    .probe = flowingled_probe,</span><br><span class="line">    .remove = flowingled_remove</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">flowingled_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> platform_driver_register(&amp;flowingled_drv);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">flowingled_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    platform_driver_unregister(&amp;flowingled_drv);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(flowingled_init);</span><br><span class="line">module_exit(flowingled_exit);</span><br><span class="line"></span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;hcw&quot;</span>);</span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;编译，并将 ko 文件装载到根文件系统中，试图装载，但出现以下报错：</p>
+<div align=center><img src="/img/linux驱动开发/hands-on-5/IO被占用.png"  width=60%></div>
+<div style="text-align:center;">图 1 IO被占用</div>
+
+<p>&emsp;&emsp;阅读报错信息，可以看到原本我们要用的 GPIO01_IO08 被占用。回到原理图，观察，也许我们可以临时关闭 USB_OTG1 来实现 3 个 IO 口的流水灯功能，修改设备树，重新编译、装载。没有报错了！（实际上博主在这一步消耗了大量时间，最终使用了1、2、4 三个 IO 口），终于无报错设备驱动匹配成功！</p>
+<div align=center><img src="/img/linux驱动开发/hands-on-5/GPIO原理图.png"  width=60%></div>
+<div style="text-align:center;">图 2 GPIO原理图</div>
+
+<p>&emsp;&emsp;接下来我们进一步写更详细的驱动代码，我想的是当用户输入 1 时，流水灯开启，当用户输入 0 时，流水灯关闭。主要就是开启一个固定时间的定时中断，在中断里调整 GPIO 的高低电平。首先写下回调函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">timer_callbacl</span><span class="params">(<span class="keyword">struct</span> timer_list *t)</span></span><br><span class="line">&#123;</span><br><span class="line">    mod_timer(&amp;flowingled.timer, jiffies + msecs_to_jiffies(<span class="number">500</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接着，在 probe 函数中写下初始化，并在 remove 函数中删除定时器。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">flowingled_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    ·····</span><br><span class="line"></span><br><span class="line">    timer_setup(&amp;flowingled.timer, timer_callbacl, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    mod_timer(&amp;flowingled.timer, jiffies + msecs_to_jiffies(<span class="number">500</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">flowingled_remove</span><span class="params">(<span class="keyword">struct</span> platform_device *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i &lt; FLOWINGLED_CNT; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        gpio_set_value(flowingled.gpio[i],<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    del_timer_sync(&amp;flowingled.timer);</span><br><span class="line"></span><br><span class="line">    ······</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来我们来完成流水灯的具体功能。最终代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * @Author: 胡城玮</span></span><br><span class="line"><span class="comment"> * @FilePath: flowingled.c</span></span><br><span class="line"><span class="comment"> * @Date: 2026-03-11</span></span><br><span class="line"><span class="comment"> * @Description: </span></span><br><span class="line"><span class="comment"> * @Version: 0.1</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/delay.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/cdev.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/semaphore.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/timer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/irq.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/wait.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/poll.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/file.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/platform_device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/irq.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     FLOWINGLED_CNT      1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     FLOWINGLED_NAME     <span class="string">&quot;hcw-flowingled&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     FLOWINGLED_ON       1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     FLOWINGLED_OFF      0</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">flowingled_dev</span>&#123;</span></span><br><span class="line">    <span class="type">dev_t</span>           devid;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span>     <span class="title">cdev</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="keyword">class</span>    *<span class="keyword">class</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device</span>   *<span class="title">device</span>;</span></span><br><span class="line">    <span class="type">int</span>             major;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device_node</span>  *<span class="title">node</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span>             gpio[<span class="number">3</span>];</span><br><span class="line">    <span class="type">int</span>             led_num;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timer_list</span>   <span class="title">timer</span>;</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>        period_ms;  <span class="comment">// 控制闪烁周期</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>        cur_led;    <span class="comment">// 当前灯号   </span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>        dir;        <span class="comment">// 闪烁方向</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span>        running;    <span class="comment">// 是否运行</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">flowingled_dev</span> <span class="title">flowingled</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">timer_callbacl</span><span class="params">(<span class="keyword">struct</span> timer_list *t)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span>(flowingled.running)</span><br><span class="line">    &#123;</span><br><span class="line">        flowingled.cur_led ++;</span><br><span class="line">        <span class="keyword">if</span>(flowingled.cur_led &gt; <span class="number">2</span>)</span><br><span class="line">            flowingled.cur_led = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(flowingled.cur_led &lt; <span class="number">0</span>)</span><br><span class="line">            flowingled.cur_led = <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i &lt; <span class="number">3</span>;i++)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span>(i == flowingled.cur_led)</span><br><span class="line">            &#123;</span><br><span class="line">                gpio_set_value(flowingled.gpio[i],<span class="number">1</span>);</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            gpio_set_value(flowingled.gpio[i],<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    mod_timer(&amp;flowingled.timer, jiffies + msecs_to_jiffies(<span class="number">500</span>));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">flowingled_open</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span>&#123;</span><br><span class="line">    filp-&gt;private_data = &amp;flowingled;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">flowingled_write</span><span class="params">(<span class="keyword">struct</span> file *filp, <span class="type">const</span> <span class="type">char</span> __user *buf, <span class="type">size_t</span> cnt, <span class="type">loff_t</span> *offt)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> retvalue;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> databuf[<span class="number">2</span>];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> led_running_flag;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">flowingled_dev</span> *<span class="title">dev</span> =</span> (<span class="keyword">struct</span> flowingled_dev *)filp-&gt;private_data;</span><br><span class="line"></span><br><span class="line">    retvalue = copy_from_user(databuf,buf,cnt);</span><br><span class="line">    <span class="keyword">if</span>(retvalue &lt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        printk(<span class="string">&quot;kernel write failed\r\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EFAULT;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    led_running_flag = databuf[<span class="number">0</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(led_running_flag == FLOWINGLED_ON)</span><br><span class="line">    &#123;</span><br><span class="line">        dev-&gt;running = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(led_running_flag == FLOWINGLED_OFF)</span><br><span class="line">    &#123;</span><br><span class="line">        dev-&gt;running = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">flowingled_fops</span> =</span> &#123;</span><br><span class="line">    .owner = THIS_MODULE,</span><br><span class="line">    .open = flowingled_open,</span><br><span class="line">    .write = flowingled_write</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">flowingled_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    printk(<span class="string">&quot;driver and device matched&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(flowingled.major)&#123;</span><br><span class="line">        flowingled.devid = MKDEV(flowingled.major, <span class="number">0</span>);</span><br><span class="line">        register_chrdev_region(flowingled.devid, FLOWINGLED_CNT, FLOWINGLED_NAME);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        alloc_chrdev_region(&amp;flowingled.devid, <span class="number">0</span>, FLOWINGLED_CNT, FLOWINGLED_NAME);</span><br><span class="line">        flowingled.major = MAJOR(flowingled.devid);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    cdev_init(&amp;flowingled.cdev, &amp;flowingled_fops);</span><br><span class="line">    cdev_add(&amp;flowingled.cdev, flowingled.devid,FLOWINGLED_CNT);</span><br><span class="line"></span><br><span class="line">    flowingled.class = class_create(THIS_MODULE, FLOWINGLED_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(flowingled.class))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(flowingled.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    flowingled.device = device_create(flowingled.class , <span class="literal">NULL</span>, flowingled.devid, <span class="literal">NULL</span>, FLOWINGLED_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(flowingled.device))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(flowingled.device);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    flowingled.node = of_find_node_by_path(<span class="string">&quot;/flowingled&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>(flowingled.node == <span class="literal">NULL</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        printk(<span class="string">&quot;flowingled does not found\r\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">3</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">char</span> buf[<span class="number">8</span>];</span><br><span class="line">        flowingled.gpio[i] = of_get_named_gpio(flowingled.node, <span class="string">&quot;flowingled-gpios&quot;</span>, i);</span><br><span class="line">        <span class="keyword">if</span> (flowingled.gpio[i] &lt; <span class="number">0</span>) &#123;</span><br><span class="line">            printk(<span class="string">&quot;can&#x27;t get flowingled-gpios[%d]\n&quot;</span>, i);</span><br><span class="line">            <span class="keyword">return</span> flowingled.gpio[i];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">sprintf</span>(buf ,<span class="string">&quot;LED%d&quot;</span>, i);</span><br><span class="line">        gpio_request(flowingled.gpio[i],buf);</span><br><span class="line">        gpio_direction_output(flowingled.gpio[i],<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    timer_setup(&amp;flowingled.timer, timer_callbacl, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    mod_timer(&amp;flowingled.timer, jiffies + msecs_to_jiffies(<span class="number">500</span>));</span><br><span class="line"></span><br><span class="line">    flowingled.running = <span class="number">0</span>;</span><br><span class="line">    flowingled.cur_led = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">flowingled_remove</span><span class="params">(<span class="keyword">struct</span> platform_device *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i &lt; <span class="number">3</span>; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        gpio_set_value(flowingled.gpio[i],<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    del_timer_sync(&amp;flowingled.timer);</span><br><span class="line"></span><br><span class="line">    cdev_del(&amp;flowingled.cdev);</span><br><span class="line"></span><br><span class="line">    unregister_chrdev_region(flowingled.devid, FLOWINGLED_CNT);</span><br><span class="line">    device_destroy(flowingled.class, flowingled.devid);</span><br><span class="line">    class_destroy(flowingled.class);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">of_device_id</span> <span class="title">flowing_of_match</span>[] =</span> &#123;</span><br><span class="line">    &#123;.compatible = <span class="string">&quot;hcw-flowingled&quot;</span>&#125;,</span><br><span class="line">    &#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">platform_driver</span> <span class="title">flowingled_drv</span> =</span> &#123;</span><br><span class="line">    .driver = &#123;</span><br><span class="line">        .name = <span class="string">&quot;imx6u-flowingled&quot;</span>,</span><br><span class="line">        .of_match_table = flowing_of_match,</span><br><span class="line">    &#125;,</span><br><span class="line">    .probe = flowingled_probe,</span><br><span class="line">    .remove = flowingled_remove</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">flowingled_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> platform_driver_register(&amp;flowingled_drv);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">flowingled_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    </span><br><span class="line">    platform_driver_unregister(&amp;flowingled_drv);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(flowingled_init);</span><br><span class="line">module_exit(flowingled_exit);</span><br><span class="line"></span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;hcw&quot;</span>);</span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;装载 ko 文件，运行测试程序向设备写入 1，成功点亮流水灯！</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" rel="tag"># 驱动开发</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/03/10/AAA-linux-driver-learn-QA/" rel="prev" title="Linux 学习 QA">
+      <i class="fa fa-chevron-left"></i> Linux 学习 QA
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/11/linux-driver-learn-21/" rel="next" title="Linux驱动学习日记(21) 设备树下的 platform 驱动编写">
+      Linux驱动学习日记(21) 设备树下的 platform 驱动编写 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF"><span class="nav-number">1.</span> <span class="nav-text">设计思路</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%88%86%E6%9E%90"><span class="nav-number">2.</span> <span class="nav-text">硬件分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E4%BB%A3%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">编写代码</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+    </div>
+</body>
+</html>

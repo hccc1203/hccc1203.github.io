@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="学习U-Boot文件结构、Makefile。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动学习日记(6) Uboot学习(一)">
+<meta property="og:url" content="https://hccc1203.github.io/2026/01/19/linux-driver-learn-6/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="学习U-Boot文件结构、Makefile。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/6/Uboot%E4%B8%B2%E5%8F%A3.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/6/Uboot%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/6/%E6%96%87%E4%BB%B6%E7%B1%BB%E5%9E%8B1.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/6/%E6%96%87%E4%BB%B6%E7%B1%BB%E5%9E%8B2.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/6/arm%E6%96%87%E4%BB%B6%E5%A4%B9.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/6/configs%E6%96%87%E4%BB%B6%E5%A4%B9.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/6/makeconfig%E8%BF%87%E7%A8%8B.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/6/make%E6%B5%81%E7%A8%8B.png">
+<meta property="article:published_time" content="2026-01-19T01:50:26.000Z">
+<meta property="article:modified_time" content="2026-01-21T01:28:22.087Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="驱动开发">
+<meta property="article:tag" content="U-Boot">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/6/Uboot%E4%B8%B2%E5%8F%A3.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/01/19/linux-driver-learn-6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动学习日记(6) Uboot学习(一) | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/01/19/linux-driver-learn-6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动学习日记(6) Uboot学习(一)
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-01-19 09:50:26" itemprop="dateCreated datePublished" datetime="2026-01-19T09:50:26+08:00">2026-01-19</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/Linux%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">Linux驱动</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="什么是Uboot"><a href="#什么是Uboot" class="headerlink" title="什么是Uboot"></a>什么是Uboot</h2><p>&emsp;&emsp;U-Boot 本质上是运行在裸机环境下的 Bootloader 程序，但它本身已经具备操作系统级别的模块化结构（命令系统、驱动模型等）。Uboot最主要的工作就是初始化DDR，因为Linux是运行在DDR里面的，一般Linux镜像、设备树存放在SD、EMMC、NAND、SPI FLASH等外置存储区域。<strong>Uboot的主要目的就是为系统的启动做准备。</strong><br>&emsp;&emsp;Uboot不仅仅能启动Linux，也可以启动其它系统，比如vsworks等等。Linux不仅仅能通过Uboot启动，也可以通过其他bootloader启动。Uboot是一个通用的Bootloader，支持多种架构。</p>
+<h2 id="编译烧录后效果"><a href="#编译烧录后效果" class="headerlink" title="编译烧录后效果"></a>编译烧录后效果</h2><p>&emsp;&emsp;根据正点原子教程编译烧录后，将sd卡插入开发板，连接串口，发现终端上出现如下信息：</p>
+<div align=center><img src="/img/linux驱动开发/6/Uboot串口.png"  width=60%></div>
+<div style="text-align:center;">图 1 Uboot串口输出</div>
+这些信息包含了uboot版本号、编译日期、CPU信息、复位原因、板子名称等等。
+
+<h2 id="文件结构分析"><a href="#文件结构分析" class="headerlink" title="文件结构分析"></a>文件结构分析</h2><div align=center><img src="/img/linux驱动开发/6/Uboot文件结构.png"  width=60%></div>
+<div style="text-align:center;">图 2 Uboot文件结构</div>
+
+<div align=center><img src="/img/linux驱动开发/6/文件类型1.png"  width=60%></div>
+<div align=center><img src="/img/linux驱动开发/6/文件类型2.png"  width=60%></div>
+<div style="text-align:center;">图 3 目录列表</div>
+
+<h3 id="arch文件夹"><a href="#arch文件夹" class="headerlink" title="arch文件夹"></a>arch文件夹</h3><p>&emsp;&emsp;arch文件夹存放着架构相关的文件，我们使用的是arm芯片，所以我们只关心其中的arm文件夹即可。打开arm文件夹，如下图所示</p>
+<div align=center><img src="/img/linux驱动开发/6/arm文件夹.png"  width=60%></div>
+<div style="text-align:center;">图 4 arm文件夹</div>
+其中包含了许多的设备，因为我们用的是i.mx,我们只需关心imx-common文件夹即可。同时arm文件夹下的cpu文件夹中存放了我们使用的lds链接脚本，还有ARM-V7内核有关的文件。
+
+<h3 id="board文件夹"><a href="#board文件夹" class="headerlink" title="board文件夹"></a>board文件夹</h3><p>&emsp;&emsp;此文件夹中包含了不同的开发板相关的文件，我们后面移植 uboot 到时候就是参考 NXP 官方的开发板，也就是要参考mx6ullevk 这个文件夹来定义我们的板子。</p>
+<h3 id="configs文件夹"><a href="#configs文件夹" class="headerlink" title="configs文件夹"></a>configs文件夹</h3><p>&emsp;&emsp;这个文件夹存放了uboot的配置文件，uboot 是可配置的，但是你要是自己从头开始一个一个项目的配置，那就太麻烦了，因此一般半导体或者开发板厂商都会制作好一个配置文件。我们可以在这个做好的配置文件基础上来添加自己想要的功能，这些半导体厂商或者开发板厂商制作好的配置文件统一命名为“xxx_defconfig”， xxx 表示开发板名字这些 defconfig 文件都存放在 configs 文件夹中。</p>
+<div align=center><img src="/img/linux驱动开发/6/configs文件夹.png"  width=60%></div>
+<div style="text-align:center;">图 5 configs文件夹</div>
+使用“make xxx_defconfig”命令即可配置 uboot，如
+
+<blockquote>
+<p>make mx6ull_14x14_ddr512_emmc_defconfig</p>
+</blockquote>
+<h3 id="uboot-xxx-cmd文件"><a href="#uboot-xxx-cmd文件" class="headerlink" title=".uboot.xxx.cmd文件"></a>.uboot.xxx.cmd文件</h3><p>&emsp;&emsp;这些文件是Makefile运行时生成的构建记录和依赖规则，下面有三个文件，它们分别是：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">u-boot                ELF可执行文件</span><br><span class="line">u-boot-nodtb.bin      纯二进制U-Boot（不含设备树）</span><br><span class="line">u-boot.bin            最终发布的uboot镜像</span><br></pre></td></tr></table></figure>
+
+<p>这三个文件通过.cmd转化。</p>
+<h3 id="uboot-xxx文件"><a href="#uboot-xxx文件" class="headerlink" title="uboot.xxx文件"></a>uboot.xxx文件</h3><table>
+<thead>
+<tr>
+<th>文件名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>u-boot</td>
+<td>编译出来的 ELF 格式的 uboot 镜像文件。</td>
+</tr>
+<tr>
+<td>u-boot.bin</td>
+<td>编译出来的二进制格式的 uboot 可执行镜像文件</td>
+</tr>
+<tr>
+<td>u-boot.cfg</td>
+<td>uboot 的另外一种配置文件。</td>
+</tr>
+<tr>
+<td>u-boot.imx</td>
+<td>u-boot.bin 添加头部信息以后的文件，NXP 的 CPU 专用文件。</td>
+</tr>
+<tr>
+<td>u-boot.lds</td>
+<td>链接脚本。</td>
+</tr>
+<tr>
+<td>u-boot.map</td>
+<td>uboot 映射文件，通过查看此文件可以知道某个函数被链接到了哪个地址上。</td>
+</tr>
+<tr>
+<td>u-boot.srec</td>
+<td>S-Record 格式的镜像文件。</td>
+</tr>
+<tr>
+<td>u-boot.sym</td>
+<td>uboot 符号文件。</td>
+</tr>
+<tr>
+<td>u-boot-nodtb.bin</td>
+<td>如果CONFIG_OF_SEPARATE&#x3D;y，由u-boot-nodtb.bin + dtb拼接，不然是简单复制关系</td>
+</tr>
+</tbody></table>
+<h2 id="UBoot顶层Makefile分析"><a href="#UBoot顶层Makefile分析" class="headerlink" title="UBoot顶层Makefile分析"></a>UBoot顶层Makefile分析</h2><table>
+<thead>
+<tr>
+<th>裸机 Makefile</th>
+<th>U-Boot 顶层 Makefile</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>直接编译 <code>.c/.S</code></td>
+<td>几乎不编译代码</td>
+</tr>
+<tr>
+<td>写 gcc&#x2F;ld 命令</td>
+<td>几乎不写 gcc</td>
+</tr>
+<tr>
+<td>控制 <code>.o → .elf</code></td>
+<td>控制 <strong>构建流程</strong></td>
+</tr>
+</tbody></table>
+<h3 id="版本号"><a href="#版本号" class="headerlink" title="版本号"></a>版本号</h3><p>&emsp;&emsp;VERSION 是主版本号， PATCHLEVEL 是补丁版本号， SUBLEVEL 是次版本号，这三个一起构成了 uboot 的版本号，比如当前的 uboot 版本号就是“2016.03”。 EXTRAVERSION 是附加版本信息， NAME 是和名字有关的，一般不使用这两个。</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">VERSION = 2016</span><br><span class="line">PATCHLEVEL = 03</span><br><span class="line">SUBLEVEL =</span><br><span class="line">EXTRAVERSION =</span><br><span class="line">NAME =</span><br></pre></td></tr></table></figure>
+
+<h3 id="MAKEFLAGS"><a href="#MAKEFLAGS" class="headerlink" title="MAKEFLAGS"></a>MAKEFLAGS</h3><p>&emsp;&emsp;make是支持递归调用的，在Makefile中运行</p>
+<blockquote>
+<p>$(MAKE) -C subdir</p>
+</blockquote>
+<p>则会自动运行subdir中的make。</p>
+ <figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MAKEFLAGS += -rR --include-dir=<span class="variable">$(CURDIR)</span></span><br></pre></td></tr></table></figure>
+
+<p>上述代码使用“+&#x3D;”来给变量 MAKEFLAGS 追加了一些值，“-rR”表示禁止使用内置的隐含规则和变量定义，“–include-dir”指明搜索路径， ”$(CURDIR)”表示当前目录。</p>
+<h3 id="命令输出"><a href="#命令输出" class="headerlink" title="命令输出"></a>命令输出</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ifeq</span> (<span class="string">&quot;$(origin V)&quot;</span>, <span class="string">&quot;command line&quot;</span>)</span><br><span class="line">  KBUILD_VERBOSE = <span class="variable">$(V)</span></span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"><span class="keyword">ifndef</span> KBUILD_VERBOSE</span><br><span class="line">  KBUILD_VERBOSE = 0</span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">ifeq</span> (<span class="variable">$(KBUILD_VERBOSE)</span>,1)</span><br><span class="line">  quiet =</span><br><span class="line">  Q =</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">  quiet=quiet_</span><br><span class="line">  Q = @</span><br><span class="line"><span class="keyword">endif</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;先判断V是否来自命令行，若是，则将其赋值给KBUILD_VERBOSE,在判断KBUILD_VERBOSE是不是1，控制是否输出详细命令。</p>
+<h3 id="指定编译结果输出路径"><a href="#指定编译结果输出路径" class="headerlink" title="指定编译结果输出路径"></a>指定编译结果输出路径</h3><blockquote>
+<p>make O&#x3D;…</p>
+</blockquote>
+<p>&emsp;&emsp;执行上述语句即可指定编译结果输出路径。</p>
+<h3 id="获取主机系统架构"><a href="#获取主机系统架构" class="headerlink" title="获取主机系统架构"></a>获取主机系统架构</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">HOSTARCH := <span class="variable">$(<span class="built_in">shell</span> uname -m | \</span></span><br><span class="line"><span class="variable"> sed -e s/i.86/x86/ \</span></span><br><span class="line"><span class="variable">     -e s/sun4u/sparc64/ \</span></span><br><span class="line"><span class="variable">     -e s/arm.*/arm/ \</span></span><br><span class="line"><span class="variable">     -e s/sa110/arm/ \</span></span><br><span class="line"><span class="variable">     -e s/ppc64/powerpc/ \</span></span><br><span class="line"><span class="variable">     -e s/ppc/powerpc/ \</span></span><br><span class="line"><span class="variable">     -e s/macppc/powerpc/\</span></span><br><span class="line"><span class="variable">     -e s/sh.*/sh/)</span></span><br><span class="line"></span><br><span class="line">HOSTOS := <span class="variable">$(<span class="built_in">shell</span> uname -s | tr &#x27;[:upper:]&#x27; &#x27;[:lower:]&#x27; | \</span></span><br><span class="line"><span class="variable">     sed -e &#x27;s/\(cygwin\)</span>.*/cygwin/&#x27;)</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> HOSTARCH HOSTOS</span><br></pre></td></tr></table></figure>
+
+<p>Makefile会获取主机架构和系统，并将信息存入变量中。“|”意为管道，将左边的输出作为右边的输入。</p>
+<h3 id="设置目标架构、交叉编译器和配置文件"><a href="#设置目标架构、交叉编译器和配置文件" class="headerlink" title="设置目标架构、交叉编译器和配置文件"></a>设置目标架构、交叉编译器和配置文件</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ifeq</span> (<span class="variable">$(HOSTARCH)</span>,<span class="variable">$(ARCH)</span>)</span><br><span class="line">CROSS_COMPILE ?=</span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line"></span><br><span class="line">KCONFIG_CONFIG ?= .config</span><br><span class="line"><span class="keyword">export</span> KCONFIG_CONFIG</span><br><span class="line"></span><br><span class="line"><span class="comment"># SHELL used by kbuild</span></span><br><span class="line">CONFIG_SHELL := <span class="variable">$(<span class="built_in">shell</span> <span class="built_in">if</span> [ -x <span class="string">&quot;$$BASH&quot;</span> ]; then echo $$BASH; \</span></span><br><span class="line"><span class="variable">   else <span class="built_in">if</span> [ -x /bin/bash ]; then echo /bin/bash; \</span></span><br><span class="line"><span class="variable">   else echo sh; fi ; fi)</span></span><br><span class="line"></span><br><span class="line">HOSTCC       = cc</span><br><span class="line">HOSTCXX      = c++</span><br><span class="line">HOSTCFLAGS   = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer</span><br><span class="line">HOSTCXXFLAGS = -O2</span><br><span class="line"></span><br><span class="line"><span class="keyword">ifeq</span> (<span class="variable">$(HOSTOS)</span>,cygwin)</span><br><span class="line">HOSTCFLAGS += -ansi</span><br><span class="line"><span class="keyword">endif</span></span><br></pre></td></tr></table></figure>
+
+<p>对于这个实验，我们应在第三行endif后添加如下语句</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ARCH ?= arm</span><br><span class="line">CROSS_COMPILE ?= arm-linux-gnueabihf-</span><br></pre></td></tr></table></figure>
+
+<p>这样就默认设置了目标架构和目标编译器，并生成了一个.config文件并用export命令将其导出使得子文件夹中的makefile也可以调用。</p>
+<h3 id="交叉编译工具变量设置"><a href="#交叉编译工具变量设置" class="headerlink" title="交叉编译工具变量设置"></a>交叉编译工具变量设置</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">AS  = <span class="variable">$(CROSS_COMPILE)</span>as</span><br><span class="line"><span class="comment"># Always use GNU ld</span></span><br><span class="line"><span class="keyword">ifneq</span> (<span class="variable">$(<span class="built_in">shell</span> <span class="variable">$(CROSS_COMPILE)</span>ld.bfd -v 2&gt; /dev/null)</span>,)</span><br><span class="line">LD  = <span class="variable">$(CROSS_COMPILE)</span>ld.bfd</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">LD  = <span class="variable">$(CROSS_COMPILE)</span>ld</span><br><span class="line"><span class="keyword">endif</span></span><br><span class="line">CC     = <span class="variable">$(CROSS_COMPILE)</span>gcc</span><br><span class="line">CPP  = <span class="variable">$(CC)</span> -E</span><br><span class="line">AR  = <span class="variable">$(CROSS_COMPILE)</span>ar</span><br><span class="line">NM  = <span class="variable">$(CROSS_COMPILE)</span>nm</span><br><span class="line">LDR  = <span class="variable">$(CROSS_COMPILE)</span>ldr</span><br><span class="line">STRIP  = <span class="variable">$(CROSS_COMPILE)</span>strip</span><br><span class="line">OBJCOPY  = <span class="variable">$(CROSS_COMPILE)</span>objcopy</span><br><span class="line">OBJDUMP  = <span class="variable">$(CROSS_COMPILE)</span>objdump</span><br><span class="line">AWK  = awk</span><br><span class="line">PERL  = perl</span><br><span class="line">PYTHON  = python</span><br><span class="line">DTC  = dtc</span><br><span class="line">CHECK  = sparse</span><br><span class="line"></span><br><span class="line">CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \</span><br><span class="line">    -Wbitwise -Wno-return-void -D__CHECK_ENDIAN__ <span class="variable">$(CF)</span></span><br><span class="line"></span><br><span class="line">KBUILD_CPPFLAGS := -D__KERNEL__ -D__UBOOT__</span><br><span class="line"></span><br><span class="line">KBUILD_CFLAGS   := -Wall -Wstrict-prototypes \</span><br><span class="line">     -Wno-format-security \</span><br><span class="line">     -fno-builtin -ffreestanding</span><br><span class="line">KBUILD_AFLAGS   := -D__ASSEMBLY__</span><br><span class="line"></span><br><span class="line"><span class="comment"># Read UBOOTRELEASE from include/config/uboot.release (if it exists)</span></span><br><span class="line">UBOOTRELEASE = <span class="variable">$(<span class="built_in">shell</span> cat include/config/uboot.release 2&gt; /dev/null)</span></span><br><span class="line">UBOOTVERSION = <span class="variable">$(VERSION)</span><span class="variable">$(<span class="built_in">if</span> <span class="variable">$(PATCHLEVEL)</span>,.<span class="variable">$(PATCHLEVEL)</span>$(<span class="built_in">if</span> <span class="variable">$(SUBLEVEL)</span>,.<span class="variable">$(SUBLEVEL)</span>)</span>)<span class="variable">$(EXTRAVERSION)</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> VERSION PATCHLEVEL SUBLEVEL UBOOTRELEASE UBOOTVERSION</span><br><span class="line"><span class="keyword">export</span> ARCH CPU BOARD VENDOR SOC CPUDIR BOARDDIR</span><br><span class="line"><span class="keyword">export</span> CONFIG_SHELL HOSTCC HOSTCFLAGS HOSTLDFLAGS CROSS_COMPILE AS LD CC</span><br><span class="line"><span class="keyword">export</span> CPP AR NM LDR STRIP OBJCOPY OBJDUMP</span><br><span class="line"><span class="keyword">export</span> MAKE AWK PERL PYTHON</span><br><span class="line"><span class="keyword">export</span> HOSTCXX HOSTCXXFLAGS DTC CHECK CHECKFLAGS</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> KBUILD_CPPFLAGS NOSTDINC_FLAGS UBOOTINCLUDE OBJCOPYFLAGS LDFLAGS</span><br><span class="line"><span class="keyword">export</span> KBUILD_CFLAGS KBUILD_AFLAGS</span><br></pre></td></tr></table></figure>
+
+<p>ARCH CPU BOARD VENDOR SOC CPUDIR BOARDDIR这几个变量在uboot根目录下的config.mk文件中定义。config.mk中又读取了以下文件。</p>
+<blockquote>
+<p>arch&#x2F;arm&#x2F;config.mk<br>arch&#x2F;arm&#x2F;cpu&#x2F;armv7&#x2F;config.mk<br>arch&#x2F;arm&#x2F;cpu&#x2F;armv7&#x2F;mx6&#x2F;config.mk (此文件不存在)<br>board&#x2F; freescale&#x2F;mx6ullevk&#x2F;config.mk (此文件不存在)</p>
+</blockquote>
+<h3 id="make-xxx-defconfig-过程"><a href="#make-xxx-defconfig-过程" class="headerlink" title="make xxx_defconfig 过程"></a>make xxx_defconfig 过程</h3><div align=center><img src="/img/linux驱动开发/6/makeconfig过程.png"  width=100%></div>
+<div style="text-align:center;">图 6 make xxx_defconfig 过程</div>
+
+<p>&emsp;&emsp;当敲下命令make xxx_defconfig后，顶层makefile识别出这是一个config类目标，先构建scripts&#x2F;basic（配置工具），调用kconfig系统，然后读取arch&#x2F;arm&#x2F;configs&#x2F;xxx_defconfig，最后生成.config + include&#x2F;config&#x2F;*</p>
+<h3 id="make-过程"><a href="#make-过程" class="headerlink" title="make 过程"></a>make 过程</h3><div align=center><img src="/img/linux驱动开发/6/make流程.png"  width=100%></div>
+<div style="text-align:center;">图 7 make 过程</div>
+
+<p>make默认目标是u-boot.srec、u-boot.bin、u-boot.sym、System.map、u-boot.cfg 和 binary_size_check这几个文件。<br>依赖关系如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">u-boot.bin</span><br><span class="line">  ↑</span><br><span class="line">u-boot-nodtb.bin</span><br><span class="line">  ↑</span><br><span class="line">u-boot</span><br><span class="line">  ↑</span><br><span class="line">start.o + 各个 built-in.o</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" rel="tag"># 驱动开发</a>
+              <a href="/tags/U-Boot/" rel="tag"># U-Boot</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/01/18/linux-driver-learn-5/" rel="prev" title="Linux驱动学习日记(5) GPIO输入">
+      <i class="fa fa-chevron-left"></i> Linux驱动学习日记(5) GPIO输入
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/01/20/linux-driver-learn-7/" rel="next" title="Linux驱动学习日记(7) Uboot学习(二)">
+      Linux驱动学习日记(7) Uboot学习(二) <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFUboot"><span class="nav-number">1.</span> <span class="nav-text">什么是Uboot</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E7%83%A7%E5%BD%95%E5%90%8E%E6%95%88%E6%9E%9C"><span class="nav-number">2.</span> <span class="nav-text">编译烧录后效果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84%E5%88%86%E6%9E%90"><span class="nav-number">3.</span> <span class="nav-text">文件结构分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#arch%E6%96%87%E4%BB%B6%E5%A4%B9"><span class="nav-number">3.1.</span> <span class="nav-text">arch文件夹</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#board%E6%96%87%E4%BB%B6%E5%A4%B9"><span class="nav-number">3.2.</span> <span class="nav-text">board文件夹</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#configs%E6%96%87%E4%BB%B6%E5%A4%B9"><span class="nav-number">3.3.</span> <span class="nav-text">configs文件夹</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#uboot-xxx-cmd%E6%96%87%E4%BB%B6"><span class="nav-number">3.4.</span> <span class="nav-text">.uboot.xxx.cmd文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#uboot-xxx%E6%96%87%E4%BB%B6"><span class="nav-number">3.5.</span> <span class="nav-text">uboot.xxx文件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UBoot%E9%A1%B6%E5%B1%82Makefile%E5%88%86%E6%9E%90"><span class="nav-number">4.</span> <span class="nav-text">UBoot顶层Makefile分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E5%8F%B7"><span class="nav-number">4.1.</span> <span class="nav-text">版本号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MAKEFLAGS"><span class="nav-number">4.2.</span> <span class="nav-text">MAKEFLAGS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E4%BB%A4%E8%BE%93%E5%87%BA"><span class="nav-number">4.3.</span> <span class="nav-text">命令输出</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%87%E5%AE%9A%E7%BC%96%E8%AF%91%E7%BB%93%E6%9E%9C%E8%BE%93%E5%87%BA%E8%B7%AF%E5%BE%84"><span class="nav-number">4.4.</span> <span class="nav-text">指定编译结果输出路径</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E4%B8%BB%E6%9C%BA%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84"><span class="nav-number">4.5.</span> <span class="nav-text">获取主机系统架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E7%9B%AE%E6%A0%87%E6%9E%B6%E6%9E%84%E3%80%81%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%99%A8%E5%92%8C%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">4.6.</span> <span class="nav-text">设置目标架构、交叉编译器和配置文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E5%8F%98%E9%87%8F%E8%AE%BE%E7%BD%AE"><span class="nav-number">4.7.</span> <span class="nav-text">交叉编译工具变量设置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#make-xxx-defconfig-%E8%BF%87%E7%A8%8B"><span class="nav-number">4.8.</span> <span class="nav-text">make xxx_defconfig 过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#make-%E8%BF%87%E7%A8%8B"><span class="nav-number">4.9.</span> <span class="nav-text">make 过程</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+    </div>
+</body>
+</html>

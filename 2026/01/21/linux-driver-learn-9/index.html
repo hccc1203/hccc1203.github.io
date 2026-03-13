@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="从2016年版本移植U-Boot">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动学习日记(9) Uboot学习(四)">
+<meta property="og:url" content="https://hccc1203.github.io/2026/01/21/linux-driver-learn-9/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="从2016年版本移植U-Boot">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/9/NXP%E5%AE%98%E6%96%B9%E7%BC%96%E8%AF%91.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/9/NXP%E5%AE%98%E6%96%B9%E5%90%AF%E5%8A%A8.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/9/NXP%E6%A3%80%E6%9F%A5%E5%AD%98%E5%82%A8.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/9/NXP-EMMC%E6%A3%80%E6%9F%A5.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/9/2%E7%BC%96%E8%AF%91.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/9/2%E7%83%A7%E5%BD%95.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/9/%E7%BD%91%E5%8D%A1%E5%8E%9F%E7%90%86%E5%9B%BE.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/9/%E7%BD%91%E5%8D%A1%E6%AD%A3%E5%B8%B8.png">
+<meta property="article:published_time" content="2026-01-21T02:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-22T05:13:07.149Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="驱动开发">
+<meta property="article:tag" content="U-Boot">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/9/NXP%E5%AE%98%E6%96%B9%E7%BC%96%E8%AF%91.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/01/21/linux-driver-learn-9/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动学习日记(9) Uboot学习(四) | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/01/21/linux-driver-learn-9/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动学习日记(9) Uboot学习(四)
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-01-21 10:00:00" itemprop="dateCreated datePublished" datetime="2026-01-21T10:00:00+08:00">2026-01-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/Linux%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">Linux驱动</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="NXP官方开发板-uboot-编译测试"><a href="#NXP官方开发板-uboot-编译测试" class="headerlink" title="NXP官方开发板 uboot 编译测试"></a>NXP官方开发板 uboot 编译测试</h2><h3 id="查找配置文件并编译"><a href="#查找配置文件并编译" class="headerlink" title="查找配置文件并编译"></a>查找配置文件并编译</h3><p>&emsp;&emsp;我们先在uboot中找到参考的开发平台，一般是原厂的开发板，参考原厂开发板的uboot移植到我们的开发板上。</p>
+<p>&emsp;&emsp;方便起见，我们编写如下图所示的make.sh文件</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- distclean</span><br><span class="line">make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- mx6ull_14x14_evk_emmc_defconfig</span><br><span class="line">make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j12</span><br></pre></td></tr></table></figure>
+
+<p>如下图所示，NXP官方编译成功，但是这些文件是 NXP 官方 I.MX6ULL EVK 开发板。能不能用到正点原子的 I.MX6ULL 开发板上呢？让我们做一下方案验证。</p>
+<div align=center><img src="/img/linux驱动开发/9/NXP官方编译.png"  width=60%></div>
+<div style="text-align:center;">图 1 编译成功</div>
+
+<h3 id="烧写验证和驱动测试"><a href="#烧写验证和驱动测试" class="headerlink" title="烧写验证和驱动测试"></a>烧写验证和驱动测试</h3><p>&emsp;&emsp;将NXP官方bin文件烧录至SD卡中并插入开发板启动。</p>
+<div align=center><img src="/img/linux驱动开发/9/NXP官方启动.png"  width=60%></div>
+<div style="text-align:center;">图 2 启动</div>
+
+<p>&emsp;&emsp;由图3可以看出，U-Boot虽然正常启动，但是有些设备会识别失败，移植就是为了让这些设备可以识别正确。我们现在依次检查各个设备是否正常。</p>
+<h4 id="检查存储设备"><a href="#检查存储设备" class="headerlink" title="检查存储设备"></a>检查存储设备</h4><div align=center><img src="/img/linux驱动开发/9/NXP检查存储.png"  width=60%></div>
+<div style="text-align:center;">图 3 检查存储设备</div>
+
+<p>&emsp;&emsp;通过输入mmc设备命令检查EMMC和SD卡都正常。</p>
+<div align=center><img src="/img/linux驱动开发/9/NXP-EMMC检查.png"  width=60%></div>
+<div style="text-align:center;">图 4 检查EMMC</div>
+
+<h4 id="网络驱动和LCD"><a href="#网络驱动和LCD" class="headerlink" title="网络驱动和LCD"></a>网络驱动和LCD</h4><p>&emsp;&emsp;从图 2 中可以看出：以太网驱动和LCD都初始化失败。那么接下来我们就分析原因并移植其到我们的开发板上。</p>
+<h2 id="在-U-Boot-中添加自己的开发板"><a href="#在-U-Boot-中添加自己的开发板" class="headerlink" title="在 U-Boot 中添加自己的开发板"></a>在 U-Boot 中添加自己的开发板</h2><h3 id="添加开发板默认配置文件"><a href="#添加开发板默认配置文件" class="headerlink" title="添加开发板默认配置文件"></a>添加开发板默认配置文件</h3><p>&emsp;&emsp;先在 configs 目录下创建默认配置文件，复制 mx6ull_14x14_evk_emmc_defconfig，然后重命名为 mx6ull_alientek_emmc_defconfig，并做以下改动</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">CONFIG_SYS_EXTRA_OPTIONS=<span class="string">&quot;IMX_CONFIG=board/freescale/mx6ull_alientek_emmc/imximage.cfg,MX6ULL_EVK_EMMC_REWORK&quot;</span></span><br><span class="line">CONFIG_ARM=y</span><br><span class="line">CONFIG_ARCH_MX6=y</span><br><span class="line">CONFIG_TARGET_MX6ULL_14X14_EVK=y</span><br><span class="line">CONFIG_CMD_GPIO=y</span><br></pre></td></tr></table></figure>
+
+<h3 id="添加开发板对应的头文件"><a href="#添加开发板对应的头文件" class="headerlink" title="添加开发板对应的头文件"></a>添加开发板对应的头文件</h3><p>&emsp;&emsp;在目录 include&#x2F;configs 下添加 I.MX6ULL-MINI 开发板对应的头文件，复制 include&#x2F;configs&#x2F;mx6ulevk.h，并重命名为 mx6ull_alientek_emmc.h。完成后改头文件定义。mx6ull_alientek_emmc.h 里面有很多宏定义，这些宏定义基本用于配置 uboot，也有一些 I.MX6ULL 的配置项目。如果我们自己要想使能或者禁止 uboot 的某些功能，那就在 mx6ull_alientek_emmc.h 里面做修改即可。 mx6ull_alientek_emmc.h 里面的内容比较多。</p>
+<figure class="highlight h"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifndef</span> __MX6ULL_ALIENTEK_EMMC_H</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __MX6ULL_ALIENTEK_EMMC_H</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>宏</th>
+<th>作用</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>#include &lt;configs/mx6_common.h&gt;</code></td>
+<td>引入 i.MX6 系列公共配置</td>
+<td>很多“你没写但生效”的宏就在这里</td>
+</tr>
+<tr>
+<td><code>PHYS_SDRAM_SIZE</code></td>
+<td>DRAM 总大小</td>
+<td>必须和板子实际 DDR 容量一致</td>
+</tr>
+<tr>
+<td><code>CONFIG_DISPLAY_CPUINFO</code></td>
+<td>启动时打印 CPU 信息</td>
+<td><code>CPU: Freescale i.MX6ULL ...</code></td>
+</tr>
+<tr>
+<td><code>CONFIG_DISPLAY_BOARDINFO</code></td>
+<td>启动时打印板子信息</td>
+<td><code>Board: MX6ULL ...</code></td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_MALLOC_LEN</code></td>
+<td>malloc 内存池大小</td>
+<td>U-Boot 动态内存，常见 8–16MB</td>
+</tr>
+<tr>
+<td><code>CONFIG_NR_DRAM_BANKS</code></td>
+<td>DRAM bank 数量</td>
+<td>i.MX6ULL 只有 1 个</td>
+</tr>
+<tr>
+<td><code>PHYS_SDRAM</code></td>
+<td>DRAM 物理起始地址</td>
+<td>固定 <code>0x80000000</code></td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_SDRAM_BASE</code></td>
+<td>DRAM 起始地址</td>
+<td>通常等于 <code>PHYS_SDRAM</code></td>
+</tr>
+<tr>
+<td><code>CONFIG_BOARD_EARLY_INIT_F</code></td>
+<td>使能 <code>board_early_init_f()</code></td>
+<td>串口 &#x2F; pinmux 早期初始化</td>
+</tr>
+<tr>
+<td><code>CONFIG_BOARD_LATE_INIT</code></td>
+<td>使能 <code>board_late_init()</code></td>
+<td>环境变量 &#x2F; 外设后期处理</td>
+</tr>
+<tr>
+<td><code>CONFIG_MXC_UART</code></td>
+<td>使能 i.MX 串口驱动</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_MXC_UART_BASE</code></td>
+<td>串口寄存器基地址</td>
+<td>UART1 &#x3D; <code>0x02020000</code></td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_FSL_ESDHC_ADDR</code></td>
+<td>ESDHC 寄存器基地址</td>
+<td>eMMC &#x2F; SD 控制器</td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_FSL_USDHC_NUM</code></td>
+<td>USDHC 控制器数量</td>
+<td>无 NAND 时通常为 2</td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_MMC_ENV_DEV</code></td>
+<td>默认 MMC 设备</td>
+<td>eMMC 常为 USDHC2</td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_MMC_ENV_PART</code></td>
+<td>环境变量分区</td>
+<td>默认 0</td>
+</tr>
+<tr>
+<td><code>CONFIG_CMD_I2C</code></td>
+<td>使能 i2c 命令</td>
+<td><code>i2c probe</code></td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_I2C_SPEED</code></td>
+<td>I2C 总线速度</td>
+<td>常用 100k &#x2F; 400k</td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_I2C_SLAVE</code></td>
+<td>默认从地址</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_NAND_MXS</code></td>
+<td>使能 GPMI NAND</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_MTD_PARTITIONS</code></td>
+<td>NAND 分区机制</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_MTDIDS_DEFAULT</code></td>
+<td>MTD 设备名</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_MTDPARTS_DEFAULT</code></td>
+<td>NAND 分区布局</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_ENV_SIZE</code></td>
+<td>env 大小</td>
+<td>eMMC 常 8KB</td>
+</tr>
+<tr>
+<td><code>CONFIG_ENV_OFFSET</code></td>
+<td>env 偏移地址</td>
+<td>相对存储器起始</td>
+</tr>
+<tr>
+<td><code>CONFIG_EXTRA_ENV_SETTINGS</code></td>
+<td>默认环境变量</td>
+<td>bootargs &#x2F; bootcmd</td>
+</tr>
+<tr>
+<td><code>CONFIG_MFG_ENV_SETTINGS</code></td>
+<td>量产工具环境变量</td>
+<td>MfgTool 使用</td>
+</tr>
+<tr>
+<td><code>CONFIG_BOOTCOMMAND</code></td>
+<td>默认 bootcmd</td>
+<td>自动启动 Linux</td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_LOAD_ADDR</code></td>
+<td>kernel 加载地址</td>
+<td>常用 <code>0x80800000</code></td>
+</tr>
+<tr>
+<td><code>CONFIG_LOADADDR</code></td>
+<td>同上</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_INIT_RAM_ADDR</code></td>
+<td>OCRAM 起始地址</td>
+<td><code>0x00900000</code></td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_INIT_RAM_SIZE</code></td>
+<td>OCRAM 大小</td>
+<td>128KB</td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_INIT_SP_OFFSET</code></td>
+<td>初始 SP 偏移</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_INIT_SP_ADDR</code></td>
+<td>初始 SP 地址</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_SYS_HZ</code></td>
+<td>系统 tick</td>
+<td>1000Hz</td>
+</tr>
+<tr>
+<td><code>CONFIG_STACKSIZE</code></td>
+<td>栈大小</td>
+<td>128KB</td>
+</tr>
+<tr>
+<td><code>CONFIG_FEC_MXC</code></td>
+<td>使能 FEC 网卡</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_FEC_ENET_DEV</code></td>
+<td>使用哪个 ENET</td>
+<td>0&#x3D;ENET1</td>
+</tr>
+<tr>
+<td><code>IMX_FEC_BASE</code></td>
+<td>ENET 寄存器基地址</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_FEC_MXC_PHYADDR</code></td>
+<td>PHY 地址</td>
+<td>必须匹配硬件</td>
+</tr>
+<tr>
+<td><code>CONFIG_FEC_XCV_TYPE</code></td>
+<td>PHY 接口类型</td>
+<td>RMII &#x2F; RGMII</td>
+</tr>
+<tr>
+<td><code>CONFIG_CMD_DHCP</code></td>
+<td>dhcp 命令</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_CMD_PING</code></td>
+<td>ping 命令</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_VIDEO</code></td>
+<td>使能 LCD</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_VIDEO_LOGO</code></td>
+<td>显示 logo</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CONFIG_CMD_BMP</code></td>
+<td>bmp 显示命令</td>
+<td></td>
+</tr>
+</tbody></table>
+<p><strong>mx6ull_alientek_emmc.h ≠ 配置全集</strong>，真正的实现分散在mx6_common.h、arch&#x2F;arm&#x2F;mach-imx&#x2F;、drivers&#x2F;*</p>
+<h3 id="添加开发板对应的板级文件"><a href="#添加开发板对应的板级文件" class="headerlink" title="添加开发板对应的板级文件"></a>添加开发板对应的板级文件</h3><h4 id="创建并修改Makefile文件"><a href="#创建并修改Makefile文件" class="headerlink" title="创建并修改Makefile文件"></a>创建并修改Makefile文件</h4><p>&emsp;&emsp;uboot 中每个板子都有一个对应的文件夹来存放板级文件，比如开发板上外设驱动文件等等。 NXP 的 I.MX 系列芯片的所有板级文件夹都存放在 board&#x2F;freescale 目录下，在这个目录下有个名为 mx6ullevk 的文件夹，这个文件夹就是 NXP 官方 I.MX6ULL EVK 开发板的板级文件夹。复制 mx6ullevk，将其重命名为 mx6ull_alientek_emmc。进入 mx6ull_alientek_emmc 目录中，将其中的 mx6ullevk.c 文件重命名为 mx6ull_alientek_emmc.c。并在Makefile中做出如下修改</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">obj-y  := mx6ull_alientek_emmc.o</span><br><span class="line"></span><br><span class="line">extra-<span class="variable">$(CONFIG_USE_PLUGIN)</span> :=  plugin.bin</span><br><span class="line"><span class="variable">$(obj)</span>/plugin.bin: <span class="variable">$(obj)</span>/plugin.o</span><br><span class="line">    <span class="variable">$(OBJCOPY)</span> -O binary --gap-fill 0xff <span class="variable">$&lt;</span> <span class="variable">$@</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="修改此目录下的imximage-cfg文件"><a href="#修改此目录下的imximage-cfg文件" class="headerlink" title="修改此目录下的imximage.cfg文件"></a>修改此目录下的imximage.cfg文件</h4><p>将 imximage.cfg 中的下面一句：</p>
+<pre><code>PLUGIN board/freescale/mx6ullevk/plugin.bin 0x00907000
+</code></pre>
+<p>改为：</p>
+<pre><code>PLUGIN board/freescale/mx6ull_alientek_emmc/plugin.bin 0x00907000
+</code></pre>
+<h4 id="修改此目录下的-Kconfig-文件"><a href="#修改此目录下的-Kconfig-文件" class="headerlink" title="修改此目录下的 Kconfig 文件"></a>修改此目录下的 Kconfig 文件</h4><p>将原文件中的原目录名改成现目录名</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">if TARGET_MX6UL_14X14_EVK || TARGET_MX6UL_9X9_EVK</span><br><span class="line"></span><br><span class="line">config SYS_BOARD</span><br><span class="line">    default &quot;mx6ull_alientek_emmc&quot;</span><br><span class="line"></span><br><span class="line">config SYS_VENDOR</span><br><span class="line">    default &quot;freescale&quot;</span><br><span class="line"></span><br><span class="line">config SYS_CONFIG_NAME</span><br><span class="line">    default &quot;mx6ull_alientek_emmc&quot;</span><br><span class="line"></span><br><span class="line">endif</span><br></pre></td></tr></table></figure>
+
+<h4 id="修改此目录下的-MAINTAINERS-文件"><a href="#修改此目录下的-MAINTAINERS-文件" class="headerlink" title="修改此目录下的 MAINTAINERS 文件"></a>修改此目录下的 MAINTAINERS 文件</h4><p>&emsp;&emsp;同上述几步，也就是改成自己的文件目录</p>
+<h3 id="修改U-Boot图形界面配置文件"><a href="#修改U-Boot图形界面配置文件" class="headerlink" title="修改U-Boot图形界面配置文件"></a>修改U-Boot图形界面配置文件</h3><p>uboot 是支持图形界面配置，关于 uboot 的图形界面配置下一章会详细的讲解。修改文件 arch&#x2F;arm&#x2F;cpu&#x2F;armv7&#x2F;mx6&#x2F;Kconfig(如果用的 I.MX6UL 的话，应该修改 arch&#x2F;arm&#x2F;Kconfig 这个文件)，在 207 行加入如下内容：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">config TARGET_MX6ULL_ALIENTEK_EMMC</span><br><span class="line">    <span class="type">bool</span> <span class="string">&quot;Support mx6ull_alientek_emmc&quot;</span></span><br><span class="line">    select MX6ULL</span><br><span class="line">    select DM</span><br><span class="line">    select DM_THERMAL</span><br></pre></td></tr></table></figure>
+
+<p>并在最后一行的endif前加入以下内容</p>
+<pre><code>source &quot;board/freescale/mx6ull_alientek_emmc/Kconfig&quot;
+</code></pre>
+<p>到此为止， I.MX6U-MINI 开发板就已经添加到 uboot 中了，接下来就是编译这个新添加<br>的开发板。</p>
+<h3 id="使用新添加的板子配置编译uboot"><a href="#使用新添加的板子配置编译uboot" class="headerlink" title="使用新添加的板子配置编译uboot"></a>使用新添加的板子配置编译uboot</h3><p>&emsp;&emsp;编写如下脚本，运行</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- distclean</span><br><span class="line">make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- mx6ull_alientek_emmc_defconfig</span><br><span class="line">make V=1 ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j16</span><br></pre></td></tr></table></figure>
+
+<div align=center><img src="/img/linux驱动开发/9/2编译.png"  width=60%></div>
+<div style="text-align:center;">图 5 编译结果</div>
+
+<div align=center><img src="/img/linux驱动开发/9/2烧录.png"  width=60%></div>
+<div style="text-align:center;">图 6 烧录结果</div>
+
+<p>&emsp;&emsp;由图可见，此时的 Board 还是“MX6ULL 14x14 EVK”，因为我们参考的 NXP 官方的 I.MX6ULL 开发板来添加自己的开发板。前面已经说了，默认 uboot 中的 LCD 驱动和网络驱动在正点原子的 I.MX6U-MINI 开发板上是有问题的，需要修改。</p>
+<h2 id="网口驱动修改"><a href="#网口驱动修改" class="headerlink" title="网口驱动修改"></a>网口驱动修改</h2><p>&emsp;&emsp;正点原子的 I.MX6U-MINI 开发板ENET 网口使用 SR8201F 作为 PHY 芯片。NXP 官方的 I.MX6ULL EVK 开发板使用 KSZ8081 这颗 PHY 芯片， SR8201F 相比 KSZ8081 具有体积小、外围器件少、价格便宜等优点。直接使用 KSZ8081 固然可以，但是我们在实际的产品中不一定会使用 KSZ8081，有时候为了降低成本会选择其他的 PHY 芯片，这个时候就有个问题：换了 PHY 芯片以后网络驱动怎么办？为此，正点原子的 I.MX6U-ALPHA 开发板将 ENET1 和 ENET2的 PHY 换成了 SR8201F，这样就可以给大家讲解更换 PHY 芯片以后如何调整网络驱动，使网络工作正常。</p>
+<div align=center><img src="/img/linux驱动开发/9/网卡原理图.png"  width=60%></div>
+<div style="text-align:center;">图 7 网卡原理图</div>
+
+<p>&emsp;&emsp;ENET1 的网络 PHY 芯片为 SR8201F，通过 RMII 接口与 I.MX6ULL 相连，正点原子 I.MX6U-ALPHA 开发板的 ENET1 引脚与 NXP 官方的 I.MX6ULL EVK 开发板基本一样，唯独复位引脚不同。从图 33.2.8.1 可以看出，正点原子 I.MX6U-ALPHA 开发板的 ENET1 复位引脚 ENET1_RST 接到了 I.M6ULL 的 SNVS_TAMPER7 这个引脚上。<br>&emsp;&emsp;SR8201F 内部是有寄存器的， I.MX6ULL 会读取 SR8201F 内部寄存器来判断当前的物理链接状态、连接速度(10M 还是 100M)和双工状态(半双工还是全双工)。 I.MX6ULL 通过 MDIO 接口来读取 PHY 芯片的内部寄存器， MDIO 接口有两个引脚， ENET_MDC 和 ENET_MDIO， ENET_MDC 提供时钟， ENET_MDIO 进行数据传输。一个 MDIO 接口可以管理 32 个 PHY 芯片，同一个 MDIO 接口下的这些 PHY 使用不同的器件地址来做区分， MIDO 接口通过不同的器件地址即可访问到相应的 PHY 芯片。 I.MX6U-ALPHA 开发板 ENET1 上连接的 SR8201F 器件地址为 0X2，所示我们要修改 ENET1 网络驱动的话重点就三点：<br>①、 ENET1 复位引脚初始化。<br>①、 ENET1 复位引脚初始化。<br>③、 SR8201F 驱动</p>
+<h3 id="网络-PHY-地址修改"><a href="#网络-PHY-地址修改" class="headerlink" title="网络 PHY 地址修改"></a>网络 PHY 地址修改</h3><p>&emsp;&emsp;首先修改 uboot 中的 ENET1 和 ENET2 的 PHY 地址和驱动，打开 mx6ull_alientek_emmc.h这个文件，找到如下代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_CMD_NET</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_MXC</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_MII</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_ENET_DEV 1</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> (CONFIG_FEC_ENET_DEV == 0)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> IMX_FEC_BASE        ENET_BASE_ADDR</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_MXC_PHYADDR          0x2</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_XCV_TYPE             RMII</span></span><br><span class="line"><span class="meta">#<span class="keyword">elif</span> (CONFIG_FEC_ENET_DEV == 1)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> IMX_FEC_BASE        ENET2_BASE_ADDR</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_MXC_PHYADDR  0x1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_XCV_TYPE RMII</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_ETHPRIME <span class="string">&quot;FEC&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_PHYLIB</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_PHY_MICREL</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+
+<p>①、修改 ENET1 网络 PHY 的地址。<br>②、修改 ENET2 网络 PHY 的地址。<br>③、使能 REALTEK 公司的 PHY 驱动。</p>
+<figure class="highlight h"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_CMD_NET</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_MXC</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_MII</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_ENET_DEV 1</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> (CONFIG_FEC_ENET_DEV == 0)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> IMX_FEC_BASE    ENET_BASE_ADDR</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_MXC_PHYADDR          0x2</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_XCV_TYPE             RMII</span></span><br><span class="line"><span class="meta">#<span class="keyword">elif</span> (CONFIG_FEC_ENET_DEV == 1)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> IMX_FEC_BASE    ENET2_BASE_ADDR</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_MXC_PHYADDR  0x1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_FEC_XCV_TYPE RMII</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_ETHPRIME <span class="string">&quot;FEC&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_PHYLIB</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CONFIG_PHY_REALTEK</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+
+<h3 id="删除74LV595的驱动代码"><a href="#删除74LV595的驱动代码" class="headerlink" title="删除74LV595的驱动代码"></a>删除74LV595的驱动代码</h3><p>&emsp;&emsp;打开mx6ull_alientek_emmc.c，将以下代码替换：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//替换前</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> IOX_SDI IMX_GPIO_NR(5, 10)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> IOX_STCP IMX_GPIO_NR(5, 7)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> IOX_SHCP IMX_GPIO_NR(5, 11)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> IOX_OE IMX_GPIO_NR(5, 8)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//替换后</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ENET1_RESET IMX_GPIO_NR(5, 7)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ENET2_RESET IMX_GPIO_NR(5, 8)</span></span><br></pre></td></tr></table></figure>
+
+<p>删掉static iomux_v3_cfg_t const iox_pads[]配置，删除iox74lv_init、iox74lv_set函数，并在board_init函数中将他们的调用删除。</p>
+<h3 id="添加-I-MX6U-ALPHA-开发板网络复位引脚驱动"><a href="#添加-I-MX6U-ALPHA-开发板网络复位引脚驱动" class="headerlink" title="添加 I.MX6U-ALPHA 开发板网络复位引脚驱动"></a>添加 I.MX6U-ALPHA 开发板网络复位引脚驱动</h3><p>结构体数组 fec1_pads 和 fec2_pads 是 ENET1 和 ENET2 这两个网口的 IO 配置参数，在这两个数组中添加两个网口的复位 IO 配置参数，完成以后如下所示</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">iomux_v3_cfg_t</span> <span class="type">const</span> fec1_pads[] = &#123;</span><br><span class="line">    MX6_PAD_GPIO1_IO06__ENET1_MDIO | MUX_PAD_CTRL(MDIO_PAD_CTRL),</span><br><span class="line">    MX6_PAD_GPIO1_IO07__ENET1_MDC | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET1_TX_DATA0__ENET1_TDATA00 | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET1_TX_DATA1__ENET1_TDATA01 | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET1_TX_EN__ENET1_TX_EN | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET1_TX_CLK__ENET1_REF_CLK1 | MUX_PAD_CTRL (ENET_CLK_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET1_RX_DATA0__ENET1_RDATA00 | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET1_RX_DATA1__ENET1_RDATA01 | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET1_RX_ER__ENET1_RX_ER | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET1_RX_EN__ENET1_RX_EN | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_SNVS_TAMPER7__GPIO5_IO07 | MUX_PAD_CTRL(NO_PAD_CTRL),</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">iomux_v3_cfg_t</span> <span class="type">const</span> fec2_pads[] = &#123;</span><br><span class="line">    MX6_PAD_GPIO1_IO06__ENET2_MDIO | MUX_PAD_CTRL(MDIO_PAD_CTRL),</span><br><span class="line">    MX6_PAD_GPIO1_IO07__ENET2_MDC | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line"></span><br><span class="line">    MX6_PAD_ENET2_TX_DATA0__ENET2_TDATA00 | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET2_TX_DATA1__ENET2_TDATA01 | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET2_TX_CLK__ENET2_REF_CLK2 | MUX_PAD_CTRL (ENET_CLK_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET2_TX_EN__ENET2_TX_EN | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line"></span><br><span class="line">    MX6_PAD_ENET2_RX_DATA0__ENET2_RDATA00 | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET2_RX_DATA1__ENET2_RDATA01 | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET2_RX_EN__ENET2_RX_EN | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_ENET2_RX_ER__ENET2_RX_ER | MUX_PAD_CTRL(ENET_PAD_CTRL),</span><br><span class="line">    MX6_PAD_SNVS_TAMPER8__GPIO5_IO08 | MUX_PAD_CTRL(NO_PAD_CTRL),</span><br><span class="line">&#125;   </span><br></pre></td></tr></table></figure>
+
+<p>函数 setup_iomux_fec 就是根据 fec1_pads 和 fec2_pads 这两个网络 IO 配置数组来初始化 I.MX6ULL 的网络 IO。我们需要在其中添加网络复位 IO 的初始化代码，并且复位一下 PHY 芯片，修改后的 setup_iomux_fec 函数如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">setup_iomux_fec</span><span class="params">(<span class="type">int</span> fec_id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (fec_id == <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        imx_iomux_v3_setup_multiple_pads(fec1_pads,</span><br><span class="line">                                        ARRAY_SIZE(fec1_pads));</span><br><span class="line">        </span><br><span class="line">        gpio_direction_output(ENET1_RESET, <span class="number">1</span>);</span><br><span class="line">        gpio_set_value(ENET1_RESET, <span class="number">0</span>);</span><br><span class="line">        mdelay(<span class="number">20</span>);</span><br><span class="line">        gpio_set_value(ENET1_RESET, <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;        </span><br><span class="line">        imx_iomux_v3_setup_multiple_pads(fec2_pads,</span><br><span class="line">                                        ARRAY_SIZE(fec2_pads));</span><br><span class="line">        gpio_direction_output(ENET2_RESET, <span class="number">1</span>);</span><br><span class="line">        gpio_set_value(ENET2_RESET, <span class="number">0</span>);</span><br><span class="line">        mdelay(<span class="number">20</span>);</span><br><span class="line">        gpio_set_value(ENET2_RESET, <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    mdelay(<span class="number">150</span>);        </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>fec1_pads 就是“ENET1 要用到的每个脚，该怎么复用、该用什么电气参数”的清单.imx_iomux_v3_setup_multiple_pads函数的作用是把一组 pad（引脚）的 IOMUX + PAD 控制配置<strong>批量写进 IOMUXC 寄存器</strong>。</p>
+<p>编译后烧录：</p>
+<div align=center><img src="/img/linux驱动开发/9/网卡正常.png"  width=60%></div>
+<div style="text-align:center;">图 8 网卡原理图</div>
+
+<p>在uboot使用网络之前先要设置几个环境变量</p>
+<pre><code>setenv ipaddr 192.168.1.55 //开发板 IP 地址
+setenv ethaddr b8:ae:1d:01:00:00 //开发板网卡 MAC 地址
+setenv gatewayip 192.168.1.1 //开发板默认网关
+setenv netmask 255.255.255.0 //开发板子网掩码
+setenv serverip 192.168.1.250 //服务器地址，也就是 Ubuntu 地址 saveenv //保存环境变量
+</code></pre>
+<h2 id="LCD"><a href="#LCD" class="headerlink" title="LCD"></a>LCD</h2><p>主播手上没有LCD屏幕，因此这一部分暂时不做。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>至此，I.MX6ULL 平台下 U-Boot 板级移植的完整流程已经走通。从最初复制 NXP 官方 EVK 的板级代码，到创建新的 defconfig、Kconfig、board 目录，再到逐步调试 LCD 和以太网驱动，整个过程并非简单的“改文件名 + 改宏定义”，而是一次对 U-Boot 架构理解的系统性实践。后续还会做RK3588平台的驱动实战。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" rel="tag"># 驱动开发</a>
+              <a href="/tags/U-Boot/" rel="tag"># U-Boot</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/01/21/linux-driver-learn-8/" rel="prev" title="Linux驱动学习日记(8) Uboot学习(三)">
+      <i class="fa fa-chevron-left"></i> Linux驱动学习日记(8) Uboot学习(三)
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/01/22/learn-driver-handson-1/" rel="next" title="Linux驱动学习实战(1) 移植UBoot到SD卡启动">
+      Linux驱动学习实战(1) 移植UBoot到SD卡启动 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#NXP%E5%AE%98%E6%96%B9%E5%BC%80%E5%8F%91%E6%9D%BF-uboot-%E7%BC%96%E8%AF%91%E6%B5%8B%E8%AF%95"><span class="nav-number">1.</span> <span class="nav-text">NXP官方开发板 uboot 编译测试</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%B9%B6%E7%BC%96%E8%AF%91"><span class="nav-number">1.1.</span> <span class="nav-text">查找配置文件并编译</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%83%A7%E5%86%99%E9%AA%8C%E8%AF%81%E5%92%8C%E9%A9%B1%E5%8A%A8%E6%B5%8B%E8%AF%95"><span class="nav-number">1.2.</span> <span class="nav-text">烧写验证和驱动测试</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E5%AD%98%E5%82%A8%E8%AE%BE%E5%A4%87"><span class="nav-number">1.2.1.</span> <span class="nav-text">检查存储设备</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E9%A9%B1%E5%8A%A8%E5%92%8CLCD"><span class="nav-number">1.2.2.</span> <span class="nav-text">网络驱动和LCD</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8-U-Boot-%E4%B8%AD%E6%B7%BB%E5%8A%A0%E8%87%AA%E5%B7%B1%E7%9A%84%E5%BC%80%E5%8F%91%E6%9D%BF"><span class="nav-number">2.</span> <span class="nav-text">在 U-Boot 中添加自己的开发板</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%BC%80%E5%8F%91%E6%9D%BF%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">2.1.</span> <span class="nav-text">添加开发板默认配置文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%BC%80%E5%8F%91%E6%9D%BF%E5%AF%B9%E5%BA%94%E7%9A%84%E5%A4%B4%E6%96%87%E4%BB%B6"><span class="nav-number">2.2.</span> <span class="nav-text">添加开发板对应的头文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%BC%80%E5%8F%91%E6%9D%BF%E5%AF%B9%E5%BA%94%E7%9A%84%E6%9D%BF%E7%BA%A7%E6%96%87%E4%BB%B6"><span class="nav-number">2.3.</span> <span class="nav-text">添加开发板对应的板级文件</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E5%B9%B6%E4%BF%AE%E6%94%B9Makefile%E6%96%87%E4%BB%B6"><span class="nav-number">2.3.1.</span> <span class="nav-text">创建并修改Makefile文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E6%AD%A4%E7%9B%AE%E5%BD%95%E4%B8%8B%E7%9A%84imximage-cfg%E6%96%87%E4%BB%B6"><span class="nav-number">2.3.2.</span> <span class="nav-text">修改此目录下的imximage.cfg文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E6%AD%A4%E7%9B%AE%E5%BD%95%E4%B8%8B%E7%9A%84-Kconfig-%E6%96%87%E4%BB%B6"><span class="nav-number">2.3.3.</span> <span class="nav-text">修改此目录下的 Kconfig 文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E6%AD%A4%E7%9B%AE%E5%BD%95%E4%B8%8B%E7%9A%84-MAINTAINERS-%E6%96%87%E4%BB%B6"><span class="nav-number">2.3.4.</span> <span class="nav-text">修改此目录下的 MAINTAINERS 文件</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9U-Boot%E5%9B%BE%E5%BD%A2%E7%95%8C%E9%9D%A2%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">2.4.</span> <span class="nav-text">修改U-Boot图形界面配置文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%96%B0%E6%B7%BB%E5%8A%A0%E7%9A%84%E6%9D%BF%E5%AD%90%E9%85%8D%E7%BD%AE%E7%BC%96%E8%AF%91uboot"><span class="nav-number">2.5.</span> <span class="nav-text">使用新添加的板子配置编译uboot</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BD%91%E5%8F%A3%E9%A9%B1%E5%8A%A8%E4%BF%AE%E6%94%B9"><span class="nav-number">3.</span> <span class="nav-text">网口驱动修改</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C-PHY-%E5%9C%B0%E5%9D%80%E4%BF%AE%E6%94%B9"><span class="nav-number">3.1.</span> <span class="nav-text">网络 PHY 地址修改</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A474LV595%E7%9A%84%E9%A9%B1%E5%8A%A8%E4%BB%A3%E7%A0%81"><span class="nav-number">3.2.</span> <span class="nav-text">删除74LV595的驱动代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0-I-MX6U-ALPHA-%E5%BC%80%E5%8F%91%E6%9D%BF%E7%BD%91%E7%BB%9C%E5%A4%8D%E4%BD%8D%E5%BC%95%E8%84%9A%E9%A9%B1%E5%8A%A8"><span class="nav-number">3.3.</span> <span class="nav-text">添加 I.MX6U-ALPHA 开发板网络复位引脚驱动</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LCD"><span class="nav-number">4.</span> <span class="nav-text">LCD</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">5.</span> <span class="nav-text">结语</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+    </div>
+</body>
+</html>

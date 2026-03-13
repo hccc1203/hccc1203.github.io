@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="教学大家如何读懂开源">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何读懂我的智能车开源">
+<meta property="og:url" content="https://hccc1203.github.io/2026/01/10/%E5%A6%82%E4%BD%95%E8%AF%BB%E6%87%82%E6%88%91%E7%9A%84%E6%99%BA%E8%83%BD%E8%BD%A6%E5%BC%80%E6%BA%90/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="教学大家如何读懂开源">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/%E8%AF%BB%E6%87%82%E5%BC%80%E6%BA%90%E6%95%99%E5%AD%A6/%E4%B8%8B%E8%BD%BD%E5%BC%80%E6%BA%90.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/%E8%AF%BB%E6%87%82%E5%BC%80%E6%BA%90%E6%95%99%E5%AD%A6/%E4%B8%8B%E8%BD%BD%E5%B9%B6%E8%A7%A3%E5%8E%8B.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/%E8%AF%BB%E6%87%82%E5%BC%80%E6%BA%90%E6%95%99%E5%AD%A6/Vscode.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/%E8%AF%BB%E6%87%82%E5%BC%80%E6%BA%90%E6%95%99%E5%AD%A6/%E5%9F%BA%E7%A1%80%E5%B7%A1%E7%BA%BF.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/%E8%AF%BB%E6%87%82%E5%BC%80%E6%BA%90%E6%95%99%E5%AD%A6/Scene.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/%E8%AF%BB%E6%87%82%E5%BC%80%E6%BA%90%E6%95%99%E5%AD%A6/Crossstate.png">
+<meta property="article:published_time" content="2026-01-10T12:20:10.000Z">
+<meta property="article:modified_time" content="2026-03-10T09:11:34.471Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="技术分享">
+<meta property="article:tag" content="C&#x2F;C++">
+<meta property="article:tag" content="开源">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/%E8%AF%BB%E6%87%82%E5%BC%80%E6%BA%90%E6%95%99%E5%AD%A6/%E4%B8%8B%E8%BD%BD%E5%BC%80%E6%BA%90.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/01/10/%E5%A6%82%E4%BD%95%E8%AF%BB%E6%87%82%E6%88%91%E7%9A%84%E6%99%BA%E8%83%BD%E8%BD%A6%E5%BC%80%E6%BA%90/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>如何读懂我的智能车开源 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/01/10/%E5%A6%82%E4%BD%95%E8%AF%BB%E6%87%82%E6%88%91%E7%9A%84%E6%99%BA%E8%83%BD%E8%BD%A6%E5%BC%80%E6%BA%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          如何读懂我的智能车开源
+        </h1>
+
+        <div class="post-meta">
+        
+          <span class="post-meta-item-icon">
+              <i class="fa fa-thumb-tack"></i>
+          </span>
+          <font color="red">置顶</font>
+          <span class="post-meta-divider">|</span>
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-01-10 20:20:10" itemprop="dateCreated datePublished" datetime="2026-01-10T20:20:10+08:00">2026-01-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%99%BA%E8%83%BD%E8%BD%A6%E7%AB%9E%E8%B5%9B/" itemprop="url" rel="index"><span itemprop="name">智能车竞赛</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%99%BA%E8%83%BD%E8%BD%A6%E7%AB%9E%E8%B5%9B/%E5%BC%80%E6%BA%90/" itemprop="url" rel="index"><span itemprop="name">开源</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="一些C-类与对象的基础"><a href="#一些C-类与对象的基础" class="headerlink" title="一些C++类与对象的基础"></a>一些C++类与对象的基础</h1><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这一部分需要读者自学，不用太过于深入，只需要知道在C++中类如何建立、如何在类中定义函数并且如何在类外调用即可。</p>
+<h1 id="下载开源"><a href="#下载开源" class="headerlink" title="下载开源"></a>下载开源</h1><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;访问链接<a target="_blank" rel="noopener" href="https://github.com/hccc1203/RunACCM2025">https://github.com/hccc1203/RunACCM2025</a> 按照下图所示操作。</p>
+<div align=center><img src="/img/读懂开源教学/下载开源.png"  alt="下载开源" width=60%></div>
+<div style="text-align:center;">图 1 下载开源</div>
+
+
+<div align=center><img src="/img/读懂开源教学/下载并解压.png"  alt="下载并解压" width=60%></div>
+<div style="text-align:center;">图 2 解压</div>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;在vscode中打开RunACCM2025-main文件夹。</p>
+<div align=center><img src="/img/读懂开源教学/Vscode.png"  alt="打开" width=60%></div>
+<div style="text-align:center;">图 3 在vscode打开</div>
+
+<h1 id="代码结构"><a href="#代码结构" class="headerlink" title="代码结构"></a>代码结构</h1><p>主要文件作用说明</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">main.cpp        线程启动</span><br><span class="line">standard.cpp    主要程序运行</span><br><span class="line">general.h       常用函数封装</span><br><span class="line">cross.cpp       十字类实现代码</span><br><span class="line">cross.h         十字类定义</span><br><span class="line">ring            圆环</span><br></pre></td></tr></table></figure>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;本程序主要使用的是生产者-消费者多线程模型，在main.cpp中有如下代码</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">std::vector&lt;PredictResult&gt; predict_result;</span><br><span class="line"></span><br><span class="line"><span class="function">std::thread <span class="title">task_producer</span><span class="params">(&amp;producer, std::ref(task_factory), std::ref(AI_task_factory), std::ref(config))</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function">std::thread <span class="title">AI_producer</span><span class="params">(&amp;AIConsumer, std::ref(AI_task_factory), std::ref(predict_result), std::ref(config))</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function">std::thread <span class="title">task_consumer</span><span class="params">(&amp;consumer, std::ref(task_factory), std::ref(debug_factory), std::ref(predict_result), std::ref(config), std::ref(uart))</span></span>;</span><br><span class="line"><span class="keyword">if</span> (config.en_show) &#123;</span><br><span class="line">    <span class="function">std::thread <span class="title">debug_data_consumer</span><span class="params">(&amp;debugDataConsumer, std::ref(debug_factory))</span></span>;</span><br><span class="line">    debug_data_consumer.<span class="built_in">join</span>();</span><br><span class="line">&#125;</span><br><span class="line">task_producer.<span class="built_in">join</span>();</span><br><span class="line">AI_producer.<span class="built_in">join</span>();</span><br><span class="line">task_consumer.<span class="built_in">join</span>();</span><br></pre></td></tr></table></figure>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;由上述代码可以知道，在不开启显示的情况下我们一共启动了三个线程，分别是task_producer，AI_producer，task_consumer。这三个线程分别有什么用呢，我们可以通过vscode跳转至其执行函数</p>
+<h3 id="task-producer"><a href="#task-producer" class="headerlink" title="task_producer"></a>task_producer</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">bool</span> <span class="title">producer</span><span class="params">(Factory&lt;TaskData&gt; &amp; task_data, Factory&lt;TaskData&gt; &amp; AI_task_data, Config &amp; config)</span> </span>&#123;</span><br><span class="line">    <span class="function">Capture <span class="title">capture</span><span class="params">(config)</span></span>;</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">        TaskData src;</span><br><span class="line">        <span class="keyword">if</span> (!capture.<span class="built_in">getImage</span>(src.img)) </span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;noimage&quot;</span>);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">auto</span> time_now = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">        src.timestamp = time_now;</span><br><span class="line">        AI_task_data.<span class="built_in">produce</span>(src);</span><br><span class="line">        task_data.<span class="built_in">produce</span>(src);</span><br><span class="line">        <span class="keyword">if</span>(flag)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;不难看出，这个线程主要的任务就是采集图像并生成类型为TaskData的结构体，并将其放入AI_task_data和task_data的队列中去，以便于AI_producer和task_consumer两个线程调用。</p>
+<h3 id="AI-producer"><a href="#AI-producer" class="headerlink" title="AI_producer"></a>AI_producer</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">bool</span> <span class="title">AIConsumer</span><span class="params">(Factory&lt;TaskData&gt; &amp; AI_task_data, std::vector&lt;PredictResult&gt; &amp; predict_result, Config &amp; config)</span> </span>&#123;</span><br><span class="line">    shared_ptr&lt;Detection&gt; detection = <span class="built_in">make_shared</span>&lt;Detection&gt;(config.model);</span><br><span class="line">    detection-&gt;score = config.score;</span><br><span class="line">    std::mutex lock;</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">        TaskData dst;</span><br><span class="line">        AI_task_data.<span class="built_in">consume</span>(dst);</span><br><span class="line">        detection-&gt;<span class="built_in">inference</span>(dst.img);</span><br><span class="line">        lock.<span class="built_in">lock</span>();</span><br><span class="line">        predict_result = detection-&gt;results;</span><br><span class="line">        Mat img = dst.img.<span class="built_in">clone</span>();</span><br><span class="line">        <span class="comment">// 此代码为开源代码</span></span><br><span class="line">        <span class="keyword">if</span>(flag)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Detected\n&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span>(config.en_AI_show)</span><br><span class="line">        lock.<span class="built_in">unlock</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个线程主要功能就是从AI_task_data拿出一个TaskData类型的结构并用于AI推理，并将推理结果放入predict_result这个全局变量中（本质上是PredictResult结构的有向数组）</p>
+<h3 id="task-consumer"><a href="#task-consumer" class="headerlink" title="task_consumer"></a>task_consumer</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">bool</span> <span class="title">consumer</span><span class="params">(Factory&lt;TaskData&gt; &amp; task_data, Factory&lt;DebugData&gt; &amp; debug_data, std::vector&lt;PredictResult&gt; &amp; predict_result, Config &amp; config, shared_ptr&lt;Uart&gt; &amp; uart)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 此代码为开源代码</span></span><br><span class="line">    <span class="function">Standard <span class="title">standard</span><span class="params">(config)</span></span>;</span><br><span class="line">    <span class="type">bool</span> stop2_flag = <span class="literal">false</span>;</span><br><span class="line">    <span class="type">int</span> stop_counter = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">        <span class="keyword">auto</span> time_start = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">        TaskData src;</span><br><span class="line">        DebugData debug;</span><br><span class="line">        <span class="keyword">auto</span> result = predict_result;</span><br><span class="line">        task_data.<span class="built_in">consume</span>(src);</span><br><span class="line">        <span class="keyword">if</span> (src.img.<span class="built_in">empty</span>()) <span class="keyword">continue</span>;</span><br><span class="line">        <span class="comment">// 执行巡线代码</span></span><br><span class="line">        TaskData dst = standard.<span class="built_in">run</span>(src.img, predict_result,pitch_angle);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;run_finish!\n&quot;</span>);</span><br><span class="line">        </span><br><span class="line">        uart-&gt;<span class="built_in">carControl</span>(dst.speed, dst.pwm,dst.buzzer_enable); <span class="comment">// 串口通信控制车辆</span></span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;run_finish2!\n&quot;</span>);</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span>(standard.Stop_flag)</span><br><span class="line">        &#123;</span><br><span class="line">            uart-&gt;<span class="built_in">carControl</span>(<span class="number">0</span>,dst.pwm,<span class="number">2</span>);</span><br><span class="line">            stop_counter ++;</span><br><span class="line">            <span class="comment">// standard.videoWriter.release();</span></span><br><span class="line">            <span class="keyword">if</span>(stop_counter &gt; <span class="number">100</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                flag = <span class="literal">true</span>;</span><br><span class="line">                stop2_flag = <span class="literal">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span>(flag)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">		<span class="comment">// debug</span></span><br><span class="line">        debug.img = dst.img;</span><br><span class="line">		debug.results = result;</span><br><span class="line">        debug.pwm = dst.pwm;</span><br><span class="line">        debug.speed = dst.speed;</span><br><span class="line">		debug_data.<span class="built_in">produce</span>(debug);</span><br><span class="line">		<span class="keyword">auto</span> time_end = std::chrono::steady_clock::<span class="built_in">now</span>();</span><br><span class="line">		<span class="keyword">auto</span> t = std::chrono::<span class="built_in">duration</span>&lt;<span class="type">double</span>, std::milli&gt;(time_end - time_start).<span class="built_in">count</span>();</span><br><span class="line">		<span class="comment">// std::cout &lt;&lt; (int)t &lt;&lt; &quot;ms&quot; &lt;&lt; std::endl;</span></span><br><span class="line">        <span class="built_in">signal</span>(SIGINT, callbackSignal);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这个线程就是我们智能车的主要线程了，从代码中可以看到这个线程主要从task_data队列中获得一个包含图片、时间等数据的结构体，并将图片和AI推理结果传入Standard大类中的run函数，这个函数也返回一个结构体，其中包含了车辆目标速度、车辆目标打角等信息，再使用串口将这些信息发送至下位机TC264中进行处理。<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;那么接下来我们着重介绍一下Standard这个大类。</p>
+<h1 id="Standard类run函数解析"><a href="#Standard类run函数解析" class="headerlink" title="Standard类run函数解析"></a>Standard类run函数解析</h1><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Standard.run函数分为以下几个部分：基础巡线、元素检测、元素处理、中线选择、偏差计算、速度判定、运行控制。接下来我将逐个讲解。</p>
+<h3 id="基础巡线部分"><a href="#基础巡线部分" class="headerlink" title="基础巡线部分"></a>基础巡线部分</h3><div align=center><img src="/img/读懂开源教学/基础巡线.png"  alt="基础巡线" width=60%></div>
+<div style="text-align:center;">图 4 基础巡线部分</div>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;trackRecognition函数主要是对基础赛道进行处理，包括左右手巡线、透视变换、角点检测、直道判断等，fitting函数则是对透视变换后的边线进行向量法平移得到拟合后的中线，这部分暂时由读者自行学习，后续我会出更详细的教程。
+
+<h3 id="元素检测及处理"><a href="#元素检测及处理" class="headerlink" title="元素检测及处理"></a>元素检测及处理</h3><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;此处以十字识别及处理为示例</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">    <span class="comment">/* ***************************************************************** */</span></span><br><span class="line">    <span class="comment">/* **************************** 元素检测 **************************** */</span></span><br><span class="line">    <span class="comment">/* ***************************************************************** */</span></span><br><span class="line"><span class="keyword">if</span> (scene == Scene::NormalScene  &amp;&amp; burger_end_counter &gt; <span class="number">100</span>  &amp;&amp; _elem_order[order_index] == <span class="number">6</span>)</span><br><span class="line">&#123;</span><br><span class="line">    cross.<span class="built_in">Cross_Check</span>(is_t_L_pointLeft_find, is_t_L_pointRight_find, imgBinary,t_L_pointLeft,t_L_pointRight,t_L_pointLeft_id,t_L_pointRight_id,t_pointsEdgeLeft_size,t_pointsEdgeRight_size);</span><br><span class="line">    <span class="keyword">if</span> (cross.flag_cross != Cross::Cross_None)</span><br><span class="line">    &#123;</span><br><span class="line">        scene = Scene::CrossScene;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ........................</span></span><br><span class="line"><span class="comment">// 此处省略了一些代码</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* ***************************************************************** */</span></span><br><span class="line">    <span class="comment">/* **************************** 元素处理 **************************** */</span></span><br><span class="line">    <span class="comment">/* ***************************************************************** */</span></span><br><span class="line"><span class="keyword">if</span> (scene == Scene::CrossScene)</span><br><span class="line">&#123;</span><br><span class="line">    cross.<span class="built_in">Cross_Run</span>(t_pointsEdgeLeft, t_pointsEdgeRight, imgGray,is_t_L_pointLeft_find, is_t_L_pointRight_find,t_L_pointLeft_id, t_L_pointRight_id,t_pointsEdgeLeft_size,t_pointsEdgeRight_size);</span><br><span class="line">    t_pointsEdgeLeft_size = t_pointsEdgeLeft.<span class="built_in">size</span>();</span><br><span class="line">    t_pointsEdgeRight_size = t_pointsEdgeRight.<span class="built_in">size</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ((t_pointsEdgeRight_size - t_pointsEdgeLeft_size) &gt; <span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        trackState = TrackState::TRACK_RIGHT;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> ((t_pointsEdgeLeft_size - t_pointsEdgeRight_size) &gt; <span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        trackState = TrackState::TRACK_LEFT;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">centerCompute</span>(t_pointsEdgeLeft, t_pointsEdgeLeft_size, <span class="number">0</span>);</span><br><span class="line">    t_left_CenterEdge_size = t_left_CenterEdge.<span class="built_in">size</span>();</span><br><span class="line"></span><br><span class="line">    <span class="built_in">centerCompute</span>(t_pointsEdgeRight, t_pointsEdgeRight_size, <span class="number">1</span>);</span><br><span class="line">    t_right_CenterEdge_size = t_right_CenterEdge.<span class="built_in">size</span>();</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (cross.flag_cross == Cross::Cross_None)</span><br><span class="line">    &#123;</span><br><span class="line">        scene = Scene::NormalScene;</span><br><span class="line">        order_index++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;我们在程序开始时定义了一个名为scene的枚举体，并将其初始化为NormalScene。在Cross.h文件对Cross类的定义中，我们又根据车辆经过十字路口时的过程和状态将其分类，如图六所示</p>
+<div align=center><img src="/img/读懂开源教学/Scene.png"  alt="scene" width=30%></div>
+<div style="text-align:center;">图 5 scene</div>
+<div align=center><img src="/img/读懂开源教学/Crossstate.png"  alt="scene" width=30%></div>
+<div style="text-align:center;">图 6 CrossState</div>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;我们在处理元素的过程中，主要做以下几件事：先检测scene是否为NormalScene，确保是正常状态下再检测十字；接着跑cross.Cross_Check函数，当检测到十字后，十字类内部的flag_cross将发生变化，不再是Cross::Cross_None，此时判定为进入十字；接着运行cross.Cross_Run函数，对十字进行处理，其中可能要对边线做出改变（如补线操作），所以在十字结束后再运行一次centerCompute函数，拟合最新的中线。
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;有细心的读者应该观察到，我们此处还有一个判断_elem_order[order_index] &#x3D;&#x3D; 6的操作，这是我们团队的小巧思。我们在程序开始时定义了一个_elem_order数组并将order_index初始化为0，这个数组中存放的是整个赛道所有元素的顺序,我们检测完一个元素，order_index就加一，可以做到按顺序检测元素，从而降低算力消耗和误判概率。<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;此外，基于这套系统，我们还可以做出针对赛道的分段速度或分段预瞄点。在杭电国赛第一天，我们就是降低了第一个元素前赛道的速度才得以完赛。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;elem_order&quot;</span>:[<span class="number">5</span>,<span class="number">6</span>,<span class="number">6</span>,<span class="number">6</span>,<span class="number">6</span>,<span class="number">5</span>,<span class="number">2</span>,<span class="number">0</span>,<span class="number">6</span>,<span class="number">6</span>,<span class="number">5</span>,<span class="number">5</span>],</span><br><span class="line"><span class="string">&quot;speed_order&quot;</span>:[<span class="number">90</span>,<span class="number">90</span>,<span class="number">90</span>,<span class="number">90</span>,<span class="number">90</span>,<span class="number">80</span>,<span class="number">90</span>,<span class="number">90</span>,<span class="number">90</span>,<span class="number">90</span>,<span class="number">90</span>,<span class="number">90</span>,<span class="number">90</span>,<span class="number">90</span>],</span><br><span class="line"><span class="string">&quot;aim_dis_n_order&quot;</span>:[<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>,<span class="number">0.4</span>],</span><br><span class="line"><span class="string">&quot;aim_angle_p_order&quot;</span>:[<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>,<span class="number">0.9</span>],</span><br><span class="line"><span class="string">&quot;aim_angle_d_order&quot;</span>:[<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>,<span class="number">0.8</span>],</span><br><span class="line"><span class="string">&quot;obstacle_order_index&quot;</span>:[<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>],</span><br><span class="line"><span class="string">&quot;record&quot;</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;#order&quot;</span>: <span class="string">&quot; 顺序定义 1.汉堡 2.虚线停车 4.障碍 5.圆环 6.十字 7.桥 0.终止位 8.左1充电 9.左2充电 10.右1充电 11.右2充电&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<h3 id="中线选择"><a href="#中线选择" class="headerlink" title="中线选择"></a>中线选择</h3><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这一部分并没有什么特别的，只是根据前面所选择的trackState来将不同的中线存放到t_CenterEdge这个有向数组中，防止混乱。</p>
+<h3 id="偏差计算"><a href="#偏差计算" class="headerlink" title="偏差计算"></a>偏差计算</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 找最近点(起始点中线归一化)</span></span><br><span class="line">   <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; t_CenterEdge_size; i++)</span><br><span class="line">   &#123;</span><br><span class="line">       <span class="type">float</span> dx = t_CenterEdge[i].x - cx;</span><br><span class="line">       <span class="type">float</span> dy = t_CenterEdge[i].y - cy;</span><br><span class="line">       <span class="type">float</span> dist = <span class="built_in">sqrt</span>(dx * dx + dy * dy);</span><br><span class="line">       <span class="keyword">if</span> (dist &lt; min_dist)</span><br><span class="line">       &#123;</span><br><span class="line">           min_dist = dist;</span><br><span class="line">           begin_id = i;</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   begin_id = general.<span class="built_in">clip</span>(begin_id, <span class="number">0</span>, t_CenterEdge_size - <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">   std::vector&lt;POINT&gt; temp_center;</span><br><span class="line"></span><br><span class="line">   <span class="type">int</span> temp_center_size;</span><br><span class="line">   <span class="built_in">printf</span>(<span class="string">&quot;begin id%d size %d\n&quot;</span>, begin_id, t_CenterEdge_size);</span><br><span class="line">   <span class="keyword">if</span> ((begin_id &gt;= <span class="number">0</span> &amp;&amp; t_CenterEdge_size - begin_id &gt;= <span class="number">3</span>))</span><br><span class="line">   &#123;</span><br><span class="line">       center_effective_flag = <span class="literal">true</span>;</span><br><span class="line">       <span class="keyword">if</span> (begin_id &gt; <span class="number">0</span>)</span><br><span class="line">       &#123;</span><br><span class="line">           cx = t_CenterEdge[begin_id].x;</span><br><span class="line">           cy = t_CenterEdge[begin_id].y;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">for</span> (<span class="type">int</span> i = begin_id; i &lt; t_CenterEdge_size; i++)</span><br><span class="line">       &#123;</span><br><span class="line">           temp_center.<span class="built_in">emplace_back</span>(t_CenterEdge[i].x, t_CenterEdge[i].y);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       temp_center_size = temp_center.<span class="built_in">size</span>();</span><br><span class="line">       t_CenterEdge.<span class="built_in">clear</span>();</span><br><span class="line">       t_CenterEdge_size = <span class="number">0</span>;</span><br><span class="line">       <span class="comment">// logger(&quot;temp:size&quot;, temp_center_size);</span></span><br><span class="line">       <span class="built_in">resample_points</span>(temp_center, temp_center_size, t_CenterEdge,</span><br><span class="line">                       t_CenterEdge_size, SAMPLE_DIST * pixel_per_meter);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">       <span class="type">double</span> min_dis = <span class="number">1000000</span>;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">1</span>;i &lt; t_CenterEdge_size;i++)</span><br><span class="line">       &#123;</span><br><span class="line">           <span class="type">double</span> dx = t_CenterEdge[i].x - cx;</span><br><span class="line">           <span class="type">double</span> dy = cy - t_CenterEdge[i].y;</span><br><span class="line">           <span class="type">double</span> dn = <span class="built_in">sqrt</span>(dx*dx + dy*dy);</span><br><span class="line"></span><br><span class="line">           <span class="type">double</span> dis = aim_distance_f * pixel_per_meter - dn;</span><br><span class="line">           <span class="keyword">if</span>(dis &lt; <span class="number">0</span>)</span><br><span class="line">           &#123;</span><br><span class="line">               dis *= <span class="number">-1</span>;</span><br><span class="line">           &#125;</span><br><span class="line">           <span class="keyword">if</span>(dis  &lt; min_dis)</span><br><span class="line">           &#123;</span><br><span class="line">               aim_index_far = i;</span><br><span class="line">               min_dis = dis;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       min_dis = <span class="number">1000000</span>;</span><br><span class="line">       <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">1</span>;i &lt; t_CenterEdge_size;i++)</span><br><span class="line">       &#123;</span><br><span class="line">           <span class="type">double</span> dx = t_CenterEdge[i].x - cx;</span><br><span class="line">           <span class="type">double</span> dy = cy - t_CenterEdge[i].y;</span><br><span class="line">           <span class="type">double</span> dn = <span class="built_in">sqrt</span>(dx*dx + dy*dy);</span><br><span class="line"></span><br><span class="line">           <span class="type">double</span> dis = aim_distance_n * pixel_per_meter - dn;</span><br><span class="line">           <span class="keyword">if</span>(dis &lt; <span class="number">0</span>)</span><br><span class="line">           &#123;</span><br><span class="line">               dis *= <span class="number">-1</span>;</span><br><span class="line">           &#125;</span><br><span class="line">           <span class="keyword">if</span>(dis  &lt; min_dis)</span><br><span class="line">           &#123;</span><br><span class="line">               aim_index_near = i;</span><br><span class="line">               min_dis = dis;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="type">float</span> dx =</span><br><span class="line">           t_CenterEdge[aim_index_far].x - cx; <span class="comment">// rptsn[aim_idx__far][0] - cx;</span></span><br><span class="line">       <span class="type">float</span> dy = cy - t_CenterEdge[aim_index_far].y +</span><br><span class="line">                  car_length * pixel_per_meter; <span class="comment">// cy - rptsn[aim_idx__far][1];</span></span><br><span class="line">       <span class="type">float</span> dn = <span class="built_in">sqrt</span>(dx * dx + dy * dy);</span><br><span class="line">       <span class="type">float</span> error_far =</span><br><span class="line">           (-<span class="built_in">atanf</span>(pixel_per_meter * <span class="number">2</span> * car_length * dx / dn / dn) * <span class="number">180</span> /</span><br><span class="line">            PI);</span><br><span class="line">       <span class="built_in">assert</span>(!<span class="built_in">isnan</span>(error_far));</span><br><span class="line">       <span class="built_in">printf</span>(<span class="string">&quot;far_dx:%f,far_dy %f\n&quot;</span>,dx,dy);</span><br><span class="line">       <span class="built_in">printf</span>(<span class="string">&quot;cx %f cy %f\n&quot;</span>,cx,cy);</span><br><span class="line">       <span class="comment">// 计算近锚点偏差值</span></span><br><span class="line">       <span class="type">float</span> dx_near =</span><br><span class="line">           t_CenterEdge[aim_index_near].x - cx; <span class="comment">// rptsn[aim_idx_near][0] - cx;</span></span><br><span class="line">       <span class="type">float</span> dy_near =</span><br><span class="line">           cy - t_CenterEdge[aim_index_near].y +</span><br><span class="line">           car_length * pixel_per_meter; <span class="comment">// cy - rptsn[aim_idx_near][1];</span></span><br><span class="line">       <span class="type">float</span> dn_near = <span class="built_in">sqrt</span>(dx_near * dx_near + dy_near * dy_near);</span><br><span class="line">       <span class="type">float</span> error_near = (-<span class="built_in">atanf</span>(pixel_per_meter * <span class="number">2</span> * car_length * dx_near /</span><br><span class="line">                                  dn_near / dn_near) *</span><br><span class="line">                           <span class="number">180</span> / PI);</span><br><span class="line">       <span class="built_in">assert</span>(!<span class="built_in">isnan</span>(error_near));</span><br><span class="line">       <span class="comment">// ...此处省略一些代码</span></span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;这段代码的主要思想即为纯跟踪，B站上有许多讲解纯跟踪原理的视频，大家可以自行观看。省略的代码是在每一种场景下远预瞄点和近预瞄点不同的权重。</p>
+<h3 id="剩余部分"><a href="#剩余部分" class="headerlink" title="剩余部分"></a>剩余部分</h3><p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;剩余部分主要是不同场景下的速度控制以及PD计算出舵机打角值，对于走马观碑和燕过留痕组用处不大，各位读者可以选择性观看。</p>
+<h1 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h1>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/" rel="tag"># 技术分享</a>
+              <a href="/tags/C-C/" rel="tag"># C/C++</a>
+              <a href="/tags/%E5%BC%80%E6%BA%90/" rel="tag"># 开源</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2026/01/11/linux-driver-learn-1/" rel="next" title="Linux驱动学习日记(1) 汇编点亮一颗LED">
+      Linux驱动学习日记(1) 汇编点亮一颗LED <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E4%BA%9BC-%E7%B1%BB%E4%B8%8E%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%9F%BA%E7%A1%80"><span class="nav-number">1.</span> <span class="nav-text">一些C++类与对象的基础</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8B%E8%BD%BD%E5%BC%80%E6%BA%90"><span class="nav-number">2.</span> <span class="nav-text">下载开源</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%BB%93%E6%9E%84"><span class="nav-number">3.</span> <span class="nav-text">代码结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#task-producer"><span class="nav-number">3.0.1.</span> <span class="nav-text">task_producer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AI-producer"><span class="nav-number">3.0.2.</span> <span class="nav-text">AI_producer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#task-consumer"><span class="nav-number">3.0.3.</span> <span class="nav-text">task_consumer</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Standard%E7%B1%BBrun%E5%87%BD%E6%95%B0%E8%A7%A3%E6%9E%90"><span class="nav-number">4.</span> <span class="nav-text">Standard类run函数解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E5%B7%A1%E7%BA%BF%E9%83%A8%E5%88%86"><span class="nav-number">4.0.1.</span> <span class="nav-text">基础巡线部分</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%83%E7%B4%A0%E6%A3%80%E6%B5%8B%E5%8F%8A%E5%A4%84%E7%90%86"><span class="nav-number">4.0.2.</span> <span class="nav-text">元素检测及处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E7%BA%BF%E9%80%89%E6%8B%A9"><span class="nav-number">4.0.3.</span> <span class="nav-text">中线选择</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%81%8F%E5%B7%AE%E8%AE%A1%E7%AE%97"><span class="nav-number">4.0.4.</span> <span class="nav-text">偏差计算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%A9%E4%BD%99%E9%83%A8%E5%88%86"><span class="nav-number">4.0.5.</span> <span class="nav-text">剩余部分</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">5.</span> <span class="nav-text">结语</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+    </div>
+</body>
+</html>

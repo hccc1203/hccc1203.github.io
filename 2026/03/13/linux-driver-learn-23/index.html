@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="input 和 pinctrl、gpio 子系统一样，都是 Linux 内核针对某一类设备而创建的框架。比如按键输入、键盘、鼠标等。用户只需要负责上报输入事件，比如按键值、坐标等信息，input 核心层负责处理这些事件。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动学习日记(23) Linux INPUT 子系统">
+<meta property="og:url" content="https://hccc1203.github.io/2026/03/13/linux-driver-learn-23/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="input 和 pinctrl、gpio 子系统一样，都是 Linux 内核针对某一类设备而创建的框架。比如按键输入、键盘、鼠标等。用户只需要负责上报输入事件，比如按键值、坐标等信息，input 核心层负责处理这些事件。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/23/input%E5%AD%90%E7%B3%BB%E7%BB%9F.png">
+<meta property="article:published_time" content="2026-03-13T03:33:46.000Z">
+<meta property="article:modified_time" content="2026-03-13T08:36:08.291Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="驱动开发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/23/input%E5%AD%90%E7%B3%BB%E7%BB%9F.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/03/13/linux-driver-learn-23/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动学习日记(23) Linux INPUT 子系统 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/03/13/linux-driver-learn-23/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动学习日记(23) Linux INPUT 子系统
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-03-13 11:33:46" itemprop="dateCreated datePublished" datetime="2026-03-13T11:33:46+08:00">2026-03-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/Linux%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">Linux驱动</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="input-子系统"><a href="#input-子系统" class="headerlink" title="input 子系统"></a>input 子系统</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>&emsp;&emsp;input 就是输入的意思，因此 input 子系统就是管理输入的子系统。像按键、键盘、鼠标、触摸屏等等就是输入设备。按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理不同，对于驱动编写者而言不需要去关心应用层的事情，我们只需要按照要求上报这些输入事件即可。input 子系统分为 <strong>驱动层、核心层、事件处理层</strong>，最终再给用户空间提供可访问的设备节点，input 子系统框架如下图所示：</p>
+<div align=center><img src="/img/linux驱动开发/23/input子系统.png"  width=60%></div>
+<div style="text-align:center;">图 1 input子系统</div>
+
+<p>&emsp;&emsp;图中，左边是最底层的具体设备，比如按键、USB键盘&#x2F;鼠标等等，中间部分属于 Linux 内核空间，分为驱动层、核心层和事件层，最右边就是用户空间，所有的输入设备以文件形式提供给用户程序使用。可以看出 input 子系统用到了我们前面讲解的驱动分层模型，我们在写驱动的时候只需要关注中间的驱动层、核心层和事件层。这三个层的分工如下：</p>
+<p>&emsp;&emsp;驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容。<br>&emsp;&emsp;核心层：承上启下，为驱动层提供输入设备注册和操作接口，通知事件层对输入事件进行处理。<br>&emsp;&emsp;事件层：主要和用户空间进行交互。</p>
+<h3 id="input-驱动编写流程"><a href="#input-驱动编写流程" class="headerlink" title="input 驱动编写流程"></a>input 驱动编写流程</h3><p>&emsp;&emsp;input 核心层会向 Linux 内核注册一个字符设备，我们找到 drivers&#x2F;input&#x2F;input.c 这个文件，它就是 input 输入子系统的核心层，这个文件中有如下代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="keyword">class</span> <span class="title">input_class</span> =</span> &#123;</span><br><span class="line">    .name        = <span class="string">&quot;input&quot;</span>,</span><br><span class="line">    .devnode    = input_devnode,</span><br><span class="line">&#125;;</span><br><span class="line">EXPORT_SYMBOL_GPL(input_class);</span><br><span class="line"></span><br><span class="line">·····</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">input_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> err;</span><br><span class="line"></span><br><span class="line">    err = class_register(&amp;input_class);</span><br><span class="line">    <span class="keyword">if</span> (err) &#123;</span><br><span class="line">        pr_err(<span class="string">&quot;unable to register input_dev class\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> err;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    err = input_proc_init();</span><br><span class="line">    <span class="keyword">if</span> (err)</span><br><span class="line">        <span class="keyword">goto</span> fail1;</span><br><span class="line"></span><br><span class="line">    err = register_chrdev_region(MKDEV(INPUT_MAJOR, <span class="number">0</span>),</span><br><span class="line">                     INPUT_MAX_CHAR_DEVICES, <span class="string">&quot;input&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span> (err) &#123;</span><br><span class="line">        pr_err(<span class="string">&quot;unable to register char major %d&quot;</span>, INPUT_MAJOR);</span><br><span class="line">        <span class="keyword">goto</span> fail2;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"> fail2:    input_proc_exit();</span><br><span class="line"> fail1:    class_unregister(&amp;input_class);</span><br><span class="line">    <span class="keyword">return</span> err;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;err &#x3D; class_register(&amp;input_class);这一句注册了一个 input 类，这样系统启动以后就会在 &#x2F;sys&#x2F;class 目录下有一个 input 子目录，register_chrdev_region(MKDEV(INPUT_MAJOR, 0),INPUT_MAX_CHAR_DEVICES, “input”);这一句注册了一个字符设备，主设备号为 INPUT_MAJOR，其定义在 include&#x2F;uapi&#x2F;linux&#x2F;major.h 文件中，具体值为 13。因此，input 所有设备的主设备号都为 13，我们在使用 input 子系统时就不需要注册字符设备了，我们只需要向系统注册一个 input_device 即可。</p>
+<p>&emsp;&emsp;<strong>1、注册 input_dev</strong><br>&emsp;&emsp;在使用 input 子系统的时候我们只需要注册一个 input 设备即可，input_dev 结构体表示 input 设备，此结构体定义在 include&#x2F;linux&#x2F;input.h 文件中，定义如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">input_dev</span> &#123;</span></span><br><span class="line">    <span class="type">const</span> <span class="type">char</span> *name;</span><br><span class="line">    <span class="type">const</span> <span class="type">char</span> *phys;</span><br><span class="line">    <span class="type">const</span> <span class="type">char</span> *uniq;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">input_id</span> <span class="title">id</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> propbit[BITS_TO_LONGS(INPUT_PROP_CNT)];</span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> evbit[BITS_TO_LONGS(EV_CNT)];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> keybit[BITS_TO_LONGS(KEY_CNT)];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> relbit[BITS_TO_LONGS(REL_CNT)];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> absbit[BITS_TO_LONGS(ABS_CNT)];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> mscbit[BITS_TO_LONGS(MSC_CNT)];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> ledbit[BITS_TO_LONGS(LED_CNT)];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> sndbit[BITS_TO_LONGS(SND_CNT)];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> ffbit[BITS_TO_LONGS(FF_CNT)];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> swbit[BITS_TO_LONGS(SW_CNT)];</span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> hint_events_per_packet;</span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> keycodemax;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> keycodesize;</span><br><span class="line">    <span class="type">void</span> *keycode;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> (*setkeycode)(<span class="keyword">struct</span> input_dev *dev,</span><br><span class="line">              <span class="type">const</span> <span class="keyword">struct</span> input_keymap_entry *ke,</span><br><span class="line">              <span class="type">unsigned</span> <span class="type">int</span> *old_keycode);</span><br><span class="line">    <span class="type">int</span> (*getkeycode)(<span class="keyword">struct</span> input_dev *dev,</span><br><span class="line">              <span class="keyword">struct</span> input_keymap_entry *ke);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">ff_device</span> *<span class="title">ff</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">input_dev_poller</span> *<span class="title">poller</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> repeat_key;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timer_list</span> <span class="title">timer</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> rep[REP_CNT];</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">input_mt</span> *<span class="title">mt</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">input_absinfo</span> *<span class="title">absinfo</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> key[BITS_TO_LONGS(KEY_CNT)];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> led[BITS_TO_LONGS(LED_CNT)];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> snd[BITS_TO_LONGS(SND_CNT)];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> sw[BITS_TO_LONGS(SW_CNT)];</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> (*open)(<span class="keyword">struct</span> input_dev *dev);</span><br><span class="line">    <span class="type">void</span> (*close)(<span class="keyword">struct</span> input_dev *dev);</span><br><span class="line">    <span class="type">int</span> (*flush)(<span class="keyword">struct</span> input_dev *dev, <span class="keyword">struct</span> file *file);</span><br><span class="line">    <span class="type">int</span> (*event)(<span class="keyword">struct</span> input_dev *dev, <span class="type">unsigned</span> <span class="type">int</span> type, <span class="type">unsigned</span> <span class="type">int</span> code, <span class="type">int</span> value);</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">input_handle</span> __<span class="title">rcu</span> *<span class="title">grab</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">spinlock_t</span> event_lock;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mutex</span> <span class="title">mutex</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> users;</span><br><span class="line">    <span class="type">bool</span> going_away;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device</span> <span class="title">dev</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>    <span class="title">h_list</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>    <span class="title">node</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> num_vals;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> max_vals;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">input_value</span> *<span class="title">vals</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="type">bool</span> devres_managed;</span><br><span class="line"></span><br><span class="line">    <span class="type">ktime_t</span> timestamp[INPUT_CLK_MAX];</span><br><span class="line"></span><br><span class="line">    <span class="type">bool</span> inhibited;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，evbit 表示输入事件类型，可选的事件类型定义在 include&#x2F;dt-bindings&#x2F;input&#x2F;linux-event-codes.h，如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> EV_SYN          0x00    <span class="comment">// 同步事件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_KEY          0x01    <span class="comment">// 按键事件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_REL          0x02    <span class="comment">// 相对坐标事件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_ABS          0x03    <span class="comment">// 绝对坐标事件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_MSC          0x04    <span class="comment">// 杂项事件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_SW           0x05    <span class="comment">// 开关事件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_LED          0x11    <span class="comment">// LED </span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_SND          0x12    <span class="comment">// 声音</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_REP          0x14    <span class="comment">// 重复时间</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_FF           0x15    <span class="comment">// 压力事件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_PWR          0x16    <span class="comment">// 电源事件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_FF_STATUS    0x17    <span class="comment">// 压力状态事件</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_MAX          0x1f</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> EV_CNT          (EV_MAX+1)</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;比如本次我们要使用按键，就要注册 EC_KEY 事件，如果要使用连按功能的话还需要注册 EV_REP 事件。</p>
+<p>&emsp;&emsp;继续回到结构体的定义中，evbit、keybit、relbit 等等都是存放不同事件对应的值。比如我们本章要使用按键事件，因此要用到 keybit，keybit 就是按键事件使用的位图，Linux 内核中定义了许多按键值，这些按键值定义在 include&#x2F;dt-bindings&#x2F;input&#x2F;linux-event-codes.h 中，如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_RESERVED        0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_ESC        1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_1        2</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_2        3</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_3        4</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_4        5</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_5        6</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_6        7</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_7        8</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_8        9</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_9        10</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> KEY_0        11</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;我们可以将开发板上的按键值设置为上述的任意一个，比如我们本次就把KEY按键设置为 KEY_0。<br>&emsp;&emsp;在编写 input 设备驱动的时候我们需要先申请一个 input_dev 结构体变量，使用 input_allocate_device 函数来申请一个 input_dev，此函数原型如下所示：</p>
+<pre><code>struct inputdev *input_allocate_device(void)
+</code></pre>
+<p>&emsp;&emsp;其中，返回值表示申请到的 input_dev。<br>&emsp;&emsp;如果要注销掉 input 设备的话需要使用 input_free_device 函数来释放掉前面申请到的 input_dev，input_free_device 函数原型如下：  </p>
+<pre><code>void  input_free_device(struct input_dev *dev)
+</code></pre>
+<p>&emsp;&emsp;其中参数 dev 表示需要释放的 input_dev。<br>&emsp;&emsp;申请好一个 input_dev 以后就需要初始化这个 input_dev，需要初始化的内容主要为事件类型和事件值这两种。input_dev 初始化完成以后就需要向 Linux 内核注册 input_dev 了，需要用到 input_register_device 函数，此函数原型如下：</p>
+<pre><code>int input_register_device(struct input_dev *dev)
+</code></pre>
+<p>&emsp;&emsp;其中，dev 表示要注册的 input_dev，返回值为0则注册成功，负值注册失败。<br>&emsp;&emsp;同样的，注销 input 驱动的时候也需要使用 input_unregister_device 函数来注销，其原型如下：</p>
+<pre><code>void input_unregister_device(struct input_dev *dev)
+</code></pre>
+<p>&emsp;&emsp;其中，dev就是要注销的 input_dev。<br>&emsp;&emsp;综上所述，input_dev 注册过程如下：<br>&emsp;&emsp;①、使用 input_allocate_device 函数申请一个 input_dev。<br>&emsp;&emsp;②、初始化 input_dev 的事件类型以及事件值。<br>&emsp;&emsp;③、使用 input_register_device 函数向 Linux 系统注册前面初始化好的 input_dev。<br>&emsp;&emsp;④、卸载 input 驱动的时候需要先使用 input_unregister_device 函数注销掉 input_dev，然后使用 input_free_device 函数释放掉前面申请的 input_dev。<br>&emsp;&emsp;input_dev 注册过程示例代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">input_dev</span> *<span class="title">inputdev</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">xxx_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    ······</span><br><span class="line">    inputdev = input_allocate_device();</span><br><span class="line">    inputdev-&gt;name = <span class="string">&quot;test_inputdev&quot;</span></span><br><span class="line"></span><br><span class="line">    __set_bit(EV_KEY, inputdev-&gt;evbit);</span><br><span class="line">    __set_bit(EV_KEY, inputdev-&gt;evbit);</span><br><span class="line">    __set_bit(KEY_0, inputdev-&gt;keybit);</span><br><span class="line"></span><br><span class="line">    input_register_device(inputdev);</span><br><span class="line">    ······</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">xxx_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    input_register_device(inputdev);</span><br><span class="line">    input_free_device(inputdev);    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<strong>2、上报输入事件</strong><br>&emsp;&emsp;当我们向 Linux 内核注册号 input_dev 以后还不能直接使用 input 设备，input 设备都具有输入功能，但是具体是什么样的输入值 Linux 内核是不知道的，我们需要先获取输入事件，然后再将事件上报给 Linux 内核。比如按键，我们需要在按键中断处理函数，或者消抖定时器中断函数中把按键值上报给 Linux 内核，这样 Linux 内核才能获取到正确的输入值。不同的事件，上报的 API 函数也不一样。接下来我们依次看一下常用的事件 API 上报函数。<br>&emsp;&emsp;首先是 input_event 函数，此函数用于上报指定的事件以及对应的值，函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* </span></span><br><span class="line"><span class="comment"> * @description: 此函数用于上报指定的事件以及对应的值</span></span><br><span class="line"><span class="comment"> * @param &#123;input_dev&#125; *dev 需要上报的 input_dev</span></span><br><span class="line"><span class="comment"> * @param &#123;unsigned int&#125; type 事件码，也就是我们注册的按键值，比如 KEY_0，KEY_1 等等。</span></span><br><span class="line"><span class="comment"> * @param &#123;unsigned int&#125; code 事件值，1表示按下，0表示按键松开。</span></span><br><span class="line"><span class="comment"> * @param &#123;int&#125; value</span></span><br><span class="line"><span class="comment"> * @return &#123;*&#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">input_event</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">unsigned</span> <span class="type">int</span> type, <span class="type">unsigned</span> <span class="type">int</span> code, <span class="type">int</span> value)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;input_event 函数可以上报所有的事件类型和事件值，Linux 内核也提供了其他的针对具体时间的上报函数，这些函数都用到了 input_event 函数。比如上报按键所使用的 input_report_key 函数，此函数内容如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">input_report_key</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">unsigned</span> <span class="type">int</span> code, <span class="type">int</span> value)</span></span><br><span class="line">&#123;</span><br><span class="line">   input_event(dev, EV_KEY, code, !!value);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;可以看处，input_report_key 的函数本质就是 input_event 函数，不过如果要上报按键事件的话还是推荐使用 input_report_key 函数。<br>&emsp;&emsp;同样的还有一些其他的事件上报函数，如下所示:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">input_report_rel</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">unsigned</span> <span class="type">int</span> code, <span class="type">int</span> value)</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">input_report_abs</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">unsigned</span> <span class="type">int</span> code, <span class="type">int</span> value)</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">input_report_ff_status</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">unsigned</span> <span class="type">int</span> code, <span class="type">int</span> value)</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">input_report_switch</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">unsigned</span> <span class="type">int</span> code, <span class="type">int</span> value)</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">input_mt_sync</span><span class="params">(<span class="keyword">struct</span> input_dev *dev)</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;我们上报事件以后还需要使用 input_sync 函数来告诉 Linux 内核 input 子系统上报结束，input_sync 函数本质上是上报一个同步事件，其函数原型如下:</p>
+<pre><code>void input_sync(struct input_dev *dev)
+</code></pre>
+<p>&emsp;&emsp;dev 表示需要上报同步事件的 input_dev。<br>&emsp;&emsp;综上所述，按键的上报事件的参考代码如下所示：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">timer_function</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> arg)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> value;</span><br><span class="line"></span><br><span class="line">    value = gpio_get_value(keydesc-&gt;gpio);</span><br><span class="line">    <span class="keyword">if</span>(value == <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        input_report_key(inputdev, KEY_0, <span class="number">1</span>);</span><br><span class="line">        input_sync(inputdev);</span><br><span class="line">    &#125;</span><br><span class="line">    ······</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="input-event-结构体"><a href="#input-event-结构体" class="headerlink" title="input_event 结构体"></a>input_event 结构体</h3><p>&emsp;&emsp;Linux 内核使用 input_event 这个结构体来表示所有的输入事件，input_event 结构体定义在 include&#x2F;uapi&#x2F;linux&#x2F;input.h 中，结构体内容如下：‘</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">input_event</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> (__BITS_PER_LONG != 32 || !defined(__USE_TIME_BITS64)) &amp;&amp; !defined(__KERNEL__)</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timeval</span> <span class="title">time</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> input_event_sec time.tv_sec</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> input_event_usec time.tv_usec</span></span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">    <span class="type">__kernel_ulong_t</span> __sec;</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> defined(__sparc__) &amp;&amp; defined(__arch64__)</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> __usec;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> __pad;</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">    <span class="type">__kernel_ulong_t</span> __usec;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> input_event_sec  __sec</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> input_event_usec __usec</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">    __u16 type;</span><br><span class="line">    __u16 code;</span><br><span class="line">    __s32 value;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，time就是此事件发生的事件，为 timeval 结构体类型，timeval 定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">timeval</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="type">__time_t</span> tv_sec;     <span class="comment">/* Seconds.  */</span></span><br><span class="line">  <span class="type">__suseconds_t</span> tv_usec;  <span class="comment">/* Microseconds.  */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;可以看出，tv_sec 和 tv_usec 这两个成员的变量都为 long 类型，也就是 32 位。<br>&emsp;&emsp;回到 input_event，type 表示事件类型，比如 EV_KEY，表示此次事件位按键事件，此成员变量为 16 位。code 表示事件码，比如在 EV_KEY 事件中 code 就表示具体的按键事件，如 KEY_0、KEY_1 等，此成员变量为 16 位。value 在 EV_KEY 事件中表示按键值，如果为 1 的话表示按键按下，如果为 0 的话就表示没有按下。<br>&emsp;&emsp;input_event 这个结构体非常重要，因为所有的输入设备最终都是按照 input_event 结构体呈现给用户的，用户应用程序可以通过 input_event 来获取到具体的输入事件或者相关的值，比如按键值等等。</p>
+<h2 id="编写代码"><a href="#编写代码" class="headerlink" title="编写代码"></a>编写代码</h2><p>&emsp;&emsp;设备树在之前的学习过程中已经修改过，直接使用即可。新建文件夹，创建 vscode 工程，创建新的 C 文件，写入以下内容。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * @Author: 胡城玮</span></span><br><span class="line"><span class="comment"> * @FilePath: inputkey.c</span></span><br><span class="line"><span class="comment"> * @Date: 2026-03-13</span></span><br><span class="line"><span class="comment"> * @Description: </span></span><br><span class="line"><span class="comment"> * @Version: 0.1</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/delay.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/cdev.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/semaphore.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/timer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/irq.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/wait.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/poll.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/file.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/input.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/irqnr.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/platform_device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_address.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/miscdevice.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/interrupt.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_irq.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     KEYINPUT_CNT    1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     KEYINPUT_NAME   <span class="string">&quot;keyinput&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     KEY0VALUE       0x01</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     INVAKEY         0xFF</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     KEY_NUM        1</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">irq_keydesc</span>&#123;</span></span><br><span class="line">    <span class="type">int</span> gpio;</span><br><span class="line">    <span class="type">int</span> irqnum;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> value;</span><br><span class="line">    <span class="type">char</span> name[<span class="number">10</span>];</span><br><span class="line">    <span class="type">irqreturn_t</span> (*handler)(<span class="type">int</span>,<span class="type">void</span> *);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">keyinput_dev</span>&#123;</span></span><br><span class="line">    <span class="type">dev_t</span> devid;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span> <span class="title">cdev</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="keyword">class</span> *<span class="keyword">class</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">device</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device_node</span> *<span class="title">nd</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timer_list</span>   <span class="title">timer</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">irq_keydesc</span>  <span class="title">irqkeydesc</span>[<span class="title">KEY_NUM</span>];</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> curkeyname;       <span class="comment">// 当前按键号</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">input_dev</span> *<span class="title">inputdev</span>;</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">keyinput_dev</span> <span class="title">keyinputdev</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">timer_function</span><span class="params">(<span class="keyword">struct</span> timer_list *t)</span>&#123;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> value;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> num;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">irq_keydesc</span> *<span class="title">keydesc</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">keyinput_dev</span> *<span class="title">dev</span> =</span> from_timer(dev, t, timer);</span><br><span class="line"></span><br><span class="line">    num = dev-&gt;curkeyname;</span><br><span class="line">    keydesc = &amp;dev-&gt;irqkeydesc[num];</span><br><span class="line">    value = gpio_get_value(keydesc-&gt;gpio);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(value == <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        input_report_key(dev-&gt;inputdev,keydesc-&gt;value, <span class="number">1</span>);</span><br><span class="line">        input_sync(dev-&gt;inputdev);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        input_report_key(dev-&gt;inputdev,keydesc-&gt;value, <span class="number">0</span>);</span><br><span class="line">        input_sync(dev-&gt;inputdev);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">key0_handler</span><span class="params">(<span class="type">int</span> irq, <span class="type">void</span> *dev_id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">keyinput_dev</span> *<span class="title">dev</span> =</span> (<span class="keyword">struct</span> keyinput_dev *)dev_id;</span><br><span class="line"></span><br><span class="line">    dev-&gt;curkeyname = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    mod_timer(&amp;dev-&gt;timer, jiffies + msecs_to_jiffies(<span class="number">500</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> IRQ_RETVAL(IRQ_HANDLED);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">keyio_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="type">char</span> name[<span class="number">10</span>];</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    keyinputdev.nd = of_find_node_by_path(<span class="string">&quot;/key&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>(keyinputdev.nd == <span class="literal">NULL</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        printk(<span class="string">&quot;key node not found&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EFAULT;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>;i &lt; KEY_NUM;i ++)</span><br><span class="line">    &#123;</span><br><span class="line">        keyinputdev.irqkeydesc[i].gpio = of_get_named_gpio(keyinputdev.nd, <span class="string">&quot;key-gpio&quot;</span>, i);</span><br><span class="line">        <span class="keyword">if</span>(keyinputdev.irqkeydesc[i].gpio &lt; <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            printk(<span class="string">&quot;cant get key%d\r\n&quot;</span>,i);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; KEY_NUM ; i ++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">memset</span>(keyinputdev.irqkeydesc[i].name , <span class="number">0</span>, <span class="keyword">sizeof</span>(name));</span><br><span class="line">        <span class="built_in">sprintf</span>(keyinputdev.irqkeydesc[i].name, <span class="string">&quot;KEY%d&quot;</span>,i);</span><br><span class="line">        gpio_request(keyinputdev.irqkeydesc[i].gpio,</span><br><span class="line">                        keyinputdev.irqkeydesc[i].name);</span><br><span class="line">        gpio_direction_input(keyinputdev.irqkeydesc[i].gpio);</span><br><span class="line">        keyinputdev.irqkeydesc[i].irqnum = irq_of_parse_and_map(keyinputdev.nd, i);</span><br><span class="line">    &#125;</span><br><span class="line">    keyinputdev.irqkeydesc[<span class="number">0</span>].handler = key0_handler;</span><br><span class="line">    keyinputdev.irqkeydesc[<span class="number">0</span>].value = KEY_0;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i &lt; KEY_NUM;i++)</span><br><span class="line">    &#123;</span><br><span class="line">        ret = request_irq(keyinputdev.irqkeydesc[i].irqnum,</span><br><span class="line">                            keyinputdev.irqkeydesc[i].handler,</span><br><span class="line">                            IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,</span><br><span class="line">                            keyinputdev.irqkeydesc[i].name,</span><br><span class="line">                            &amp;keyinputdev);</span><br><span class="line">        <span class="keyword">if</span>(ret &lt; <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            printk(<span class="string">&quot;irq %d request failed\r\n&quot;</span>,keyinputdev.irqkeydesc[i].irqnum);</span><br><span class="line">            <span class="keyword">return</span> -EFAULT;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    timer_setup(&amp;keyinputdev.timer, timer_function, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 申请 input 设备 */</span></span><br><span class="line">    keyinputdev.inputdev = input_allocate_device();</span><br><span class="line">    keyinputdev.inputdev-&gt;name = KEYINPUT_NAME;</span><br><span class="line"></span><br><span class="line">    __set_bit(EV_KEY, keyinputdev.inputdev-&gt;evbit);</span><br><span class="line">    __set_bit(EV_REP, keyinputdev.inputdev-&gt;evbit);</span><br><span class="line">    __set_bit(KEY_0, keyinputdev.inputdev-&gt;keybit);</span><br><span class="line"></span><br><span class="line">    ret = input_register_device(keyinputdev.inputdev);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ret)</span><br><span class="line">    &#123;</span><br><span class="line">        printk(<span class="string">&quot;register input device failed\r\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">keyinput_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    keyio_init();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">keyinput_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> i = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    del_timer_sync(&amp;keyinputdev.timer);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; KEY_NUM; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        free_irq(keyinputdev.irqkeydesc[i].irqnum, &amp;keyinputdev);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>;i &lt; KEY_NUM; i ++)</span><br><span class="line">    &#123;</span><br><span class="line">        gpio_free(keyinputdev.irqkeydesc[i].gpio);</span><br><span class="line">    &#125;</span><br><span class="line">    input_unregister_device(keyinputdev.inputdev);</span><br><span class="line">    input_free_device(keyinputdev.inputdev);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(keyinput_init);</span><br><span class="line">module_exit(keyinput_exit);</span><br><span class="line"></span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;hcw&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;编译，装载模块，运行测试程序，完美。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" rel="tag"># 驱动开发</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/03/12/linux-driver-learn-22/" rel="prev" title="Linux驱动学习日记(22) Linux MISC 驱动实验">
+      <i class="fa fa-chevron-left"></i> Linux驱动学习日记(22) Linux MISC 驱动实验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/13/linux-driver-handson-6/" rel="next" title="Linux驱动学习实战(6) 逐飞LS2K0300设备树修改">
+      Linux驱动学习实战(6) 逐飞LS2K0300设备树修改 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#input-%E5%AD%90%E7%B3%BB%E7%BB%9F"><span class="nav-number">1.</span> <span class="nav-text">input 子系统</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#input-%E9%A9%B1%E5%8A%A8%E7%BC%96%E5%86%99%E6%B5%81%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">input 驱动编写流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#input-event-%E7%BB%93%E6%9E%84%E4%BD%93"><span class="nav-number">1.3.</span> <span class="nav-text">input_event 结构体</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E4%BB%A3%E7%A0%81"><span class="nav-number">2.</span> <span class="nav-text">编写代码</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+    </div>
+</body>
+</html>

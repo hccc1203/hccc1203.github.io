@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="学习 Linux 中的中断机制、如何创建中断。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动学习日记(19) Linux 的中断">
+<meta property="og:url" content="https://hccc1203.github.io/2026/03/10/linux-driver-learn-19/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="学习 Linux 中的中断机制、如何创建中断。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/19/GIC%E6%A1%86%E5%9B%BE.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/19/key%E5%88%9B%E5%BB%BA%E6%88%90%E5%8A%9F.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/19/%E6%88%90%E5%8A%9F.png">
+<meta property="article:published_time" content="2026-03-10T02:31:45.000Z">
+<meta property="article:modified_time" content="2026-03-10T08:24:15.433Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="驱动开发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/19/GIC%E6%A1%86%E5%9B%BE.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/03/10/linux-driver-learn-19/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动学习日记(19) Linux 的中断 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/03/10/linux-driver-learn-19/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动学习日记(19) Linux 的中断
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-03-10 10:31:45" itemprop="dateCreated datePublished" datetime="2026-03-10T10:31:45+08:00">2026-03-10</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/Linux%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">Linux驱动</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Linux-中断简介"><a href="#Linux-中断简介" class="headerlink" title="Linux 中断简介"></a>Linux 中断简介</h2><h3 id="I-MX-中断机制"><a href="#I-MX-中断机制" class="headerlink" title="I.MX 中断机制"></a>I.MX 中断机制</h3><p>&emsp;&emsp;<strong>1、中断向量表</strong><br>&emsp;&emsp;中断向量表中存放着中断向量。中断服务程序的入口地址或存放中断服务程序（函数）在中断向量表中的位置是由半导体厂商定好的，当某个终端被触发以后就会自动跳转到中断向量表中对应的中断服务程序（函数）入口地址处。中断向量表在整个程序的最前面。Cortex-A7 内核有 8 个异常中断，这8个异常中断向量如下所示：</p>
+<table>
+<thead>
+<tr>
+<th>向量地址</th>
+<th>中断类型</th>
+<th>中断模式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x00</td>
+<td>复位中断 (Reset)</td>
+<td>特权模式 (SVC)</td>
+</tr>
+<tr>
+<td>0x04</td>
+<td>未定义指令中断 (Undefined Instruction)</td>
+<td>未定义指令中断模式 (Undef)</td>
+</tr>
+<tr>
+<td>0x08</td>
+<td>软件中断 (Software Interrupt, SWI)</td>
+<td>特权模式 (SVC)</td>
+</tr>
+<tr>
+<td>0x0C</td>
+<td>指令预取中止中断 (Prefetch Abort)</td>
+<td>中止模式</td>
+</tr>
+<tr>
+<td>0x10</td>
+<td>数据访问中止中断 (Data Abort)</td>
+<td>中止模式</td>
+</tr>
+<tr>
+<td>0x14</td>
+<td>未使用 (Not Used)</td>
+<td>未使用</td>
+</tr>
+<tr>
+<td>0x18</td>
+<td>IRQ 中断 (IRQ Interrupt)</td>
+<td>外部中断模式 (IRQ)</td>
+</tr>
+<tr>
+<td>0x1C</td>
+<td>FIQ 中断 (FIQ Interrupt)</td>
+<td>快速中断模式 (FIQ)</td>
+</tr>
+</tbody></table>
+<p>&emsp;&emsp;中断向量表里面都是终端服务函数的入口地址，因此一款芯片中有什么中断都是可以从中断向量表中看出来的。在上面七个中断中，我们最常用的就是复位中断和 IRQ 中断。</p>
+<p>&emsp;&emsp;<strong>2、GIC 控制器</strong></p>
+<p>&emsp;&emsp;当 GPIC 接收到外部中断信号以后就会报给 ARM 内核，但是 ARM 内核只提供了四个信号给 GIC 来汇报，这四个信号的含义如下：</p>
+<pre><code>VFIQ:虚拟快速 FIQ。
+VIRQ:虚拟外部 IRQ。
+FIQ:快速中断 IRQ。
+IRQ:外部中断 IRQ。
+</code></pre>
+<p>&emsp;&emsp;VFIQ 和 VIRQ 都是针对虚拟化的，我们不学习虚拟化，剩下的就是 FIQ 和 IRQ。GICV2 的总体框图如下</p>
+<div align=center><img src="/img/linux驱动开发/19/GIC框图.png"  width=60%></div>
+<div style="text-align:center;">图 1 GIC 框架</div>
+
+<p>&emsp;&emsp;如图所示，左侧部分就是中断源，中该那部分是 GIC 控制器，最右侧就是中断控制器向处理器内核发送中断信息。在中间部分，GIC 将众多的中断源分为三类：<br>&emsp;&emsp;①、SPI，共享中断，顾名思义，所有 Core 共享的中断，这个是最常见的，外部中断都属于 SPI 中断（并非 SPI 通讯协议）。比如按键中断、串口中断等等非，这些中断所有的 Core 都可以处理，不限定特定的 Core。<br>&emsp;&emsp;②、PPI，私有中断，GIC 是支持多核的，每个核肯定有自己独有的中断，这些独有的终端肯定是要指定的核心处理，因此这些中断就叫做私有中断。<br>&emsp;&emsp;③、SGI，软件中断，由软件触发引起的中断，通过向寄存器 GICD_SGIR 写入数据来触发，系统会使用 SGI 中断来完成多核之间的通讯。</p>
+<p>&emsp;&emsp;中断源有很多，为了区分这些不同的中断源肯定要给他们分配一个唯一 ID，这些 ID 就是中断 ID。每一个 CPU 最多支持 1020 个中断 ID，中断 ID 号为 ID0-ID1019。这 1020 个 ID 包含了 PPI、SPI和 SGI。ID0-15，这16个 ID 分配给 SGI，ID16-31 分配给 PPI，ID32-1019 分配给 SPI。</p>
+<p>&emsp;&emsp;GIC 的架构分为了两个逻辑块：Distributor 和 CPU Interface，也就是分发器端和 CPU 接口端。这两个逻辑块的含义如下：<br>&emsp;&emsp;<strong>Distributor（分发器端）</strong>：从上图可以看出，此逻辑块负责处理各个中断事件的分发问题，也就是中断事件应该发送到哪个 CPU Interface 上。分发器收集所有的中断源，可以控制每个中断的优先级。分发器端主要做的工作如下：</p>
+<pre><code>1、全局中断使能控制
+2、控制每一个中断的使能或关闭
+3、设置每一个中断的优先级
+4、设置每个中断的目标处理器列表
+5、设置每个外部中断的触发模式：电平触发或边沿触发
+6、设置每个中断属于组 0 还是组 1
+</code></pre>
+<p>&emsp;&emsp;**CPU Interface(CPU 接口端)**：CPU 接口端是与 CPU Core 相连接的，因此在图中每个 CPU Core都可以在 GIC 中找到一个与之对应的 CPU Interface。CPU 接口端就是分发器和 CPU Core 之间的桥梁，其主要工作如下：</p>
+<pre><code>1、使能或关闭发送的 CPU Core 的中断请求信号
+2、应答中断
+3、通知中断处理完成
+4、设置优先级掩码
+5、定义抢占策略
+6、当多个中断来时，选择优先级最高的中断通知给 CPU Core
+</code></pre>
+<p>&emsp;&emsp;<strong>3、中断使能</strong></p>
+<p>&emsp;&emsp;中断使能包括两部分，一个是 IRQ 或 FIQ 总中断使能，另一个就是 ID0-1019 这 1020 个中断源的使能。<br>&emsp;&emsp;<strong>IRQ 和 FIQ 总中断使能</strong>：寄存器 CPSR 的 I&#x3D;1 禁止 IRQ，当 I&#x3D;0 使能 IRQ；F&#x3D;1 禁止 FIQ，F&#x3D;0 使能 FIQ。<br>&emsp;&emsp;<strong>ID0-1019 中断使能和禁止</strong>：GIC 寄存器 GICD_ISENABLERn】 和 GICD_ICENABLERn 用来完成外部终端的使能和禁止，对于 Cortex-A7 内核来说中断 ID 只使用了 512 个。一个 bit 控制一个中断的使能，那么就需要 512&#x2F;32&#x3D;16 个 GICD_ISENABLER 寄存器来完成中断的使能。同理，也需要 16 个 GICD_ICENABLER 寄存器来完成中断的禁止。其中 GICD_ISENABLER0 的 bit[15:0]对应 ID15<del>0 的 SGI 中断，GICD_ISENABLER0 的 bit[31:16]对应 ID31</del>16 的 PPI 中断。剩下的 GICD_ISENABLER1~GICD_ISENABLER15 就是控制 SPI 中断的。</p>
+<p>&emsp;&emsp;<strong>4、中断优先级</strong><br>&emsp;&emsp;Cortex-A7 的中断优先级分为抢占优先级和子优先级。抢占优先级决定的是是否允许打断正在运行的中断处理程序，如果一个新的中断到来，它的抢占优先级比当前正在执行的中断更高，那么 CPU 会立刻暂停当前中断处理，转去处理新的中断。处理完再回来继续。子优先级则完全不同，它<strong>不能</strong>打断正在执行的中断，只用于解决多个中断同时 pending 时谁先处理。</p>
+<p>&emsp;&emsp;GIC 控制器最多可以支持 256 个优先级，数字越小，优先级越高。Cortex-A7 选择了 32 个优先级，在使用终端的时候需要初始化 GICC_PMR 寄存器，此寄存器来决定使用几级优先级，其寄存器只有低八位有效，表格如下，I.MX6U 是 Cortex-A7 内核，所以支持 32 个优先级，因此 GICC_PMR 要设置为 0b11111000。</p>
+<table>
+<thead>
+<tr>
+<th>bit7:0</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>11111111</td>
+<td>256 个优先级</td>
+</tr>
+<tr>
+<td>11111110</td>
+<td>128 个优先级</td>
+</tr>
+<tr>
+<td>11111100</td>
+<td>64 个优先级</td>
+</tr>
+<tr>
+<td>11111000</td>
+<td>32 个优先级</td>
+</tr>
+<tr>
+<td>11110000</td>
+<td>16 个优先级</td>
+</tr>
+</tbody></table>
+<p>&emsp;&emsp;抢占优先级和子优先级各占多少位是由寄存器 GICC_BPR 来决定的，GICC_BPR 寄存器只有低三位有效，其值不同，抢占优先级和子优先级占用的位数也不同，配置如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th>Binary Point</th>
+<th>抢占优先级域</th>
+<th>子优先级域</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>[7:1]</td>
+<td>[0]</td>
+<td>7级抢占优先级，1级子优先级</td>
+</tr>
+<tr>
+<td>1</td>
+<td>[7:2]</td>
+<td>[1:0]</td>
+<td>6级抢占优先级，2级子优先级</td>
+</tr>
+<tr>
+<td>2</td>
+<td>[7:3]</td>
+<td>[2:0]</td>
+<td>5级抢占优先级，3级子优先级</td>
+</tr>
+<tr>
+<td>3</td>
+<td>[7:4]</td>
+<td>[3:0]</td>
+<td>4级抢占优先级，4级子优先级</td>
+</tr>
+<tr>
+<td>4</td>
+<td>[7:5]</td>
+<td>[4:0]</td>
+<td>3级抢占优先级，5级子优先级</td>
+</tr>
+<tr>
+<td>5</td>
+<td>[7:6]</td>
+<td>[5:0]</td>
+<td>2级抢占优先级，6级子优先级</td>
+</tr>
+<tr>
+<td>6</td>
+<td>[7:7]</td>
+<td>[6:0]</td>
+<td>1级抢占优先级，7级子优先级</td>
+</tr>
+<tr>
+<td>7</td>
+<td>无</td>
+<td>[7:0]</td>
+<td>0级抢占优先级，8级子优先级</td>
+</tr>
+</tbody></table>
+<p>&emsp;&emsp;前面已经说过了 I.MX6U 一共有 32 个抢占优先级，数字越小优先级越高。具体要用某个中断的时候就可以设置其优先级为 0 - 31。某个中断 ID 的中断优先级设置由寄存器 D_IPRIORITYR 来完成，前面说了 Cortex-A7 用了 512 个中断 ID ，每个中断 ID 配有一个优先级寄存器所以一共有 512 个 D_IPRIORITYR 寄存器。如果优先级个数为 32 的话，使用寄存器 D_IPRIORITYR 的 bit7:4 来设置优先级，也就是说实际的优先级要左移 3 位。比如要设置 ID40 中断的优先级为 5，示例代码如下：</p>
+<pre><code>GICD_IPRIORITYR[40] = 5 &lt;&lt; 3;
+</code></pre>
+<h3 id="Linux-中断-API-函数"><a href="#Linux-中断-API-函数" class="headerlink" title="Linux 中断 API 函数"></a>Linux 中断 API 函数</h3><p>&emsp;&emsp;我们先回顾一下裸机中中断的处理方法：<br>&emsp;&emsp;①、使能中断，初始化相应的寄存器。<br>&emsp;&emsp;②、注册中断服务函数，也就是向 irqTable 数组的指定标号处写入中断服务函数<br>&emsp;&emsp;③、中断发生以后进入 IRQ 中断服务函数，在 IRQ 终端服务函数在数组 irqTable 里面查找具体的中断处理函数，找到以后执行相应的中断处理函数。<br>&emsp;&emsp;在 Linux 内核中提供了大量的中断相关的 API 函数，如下：</p>
+<p>&emsp;&emsp;<strong>1、request_irq 函数</strong><br>&emsp;&emsp;在 Linux 内核中想要使用某个中断是需要申请的，这个函数用于申请中断。值得注意的是，request_irq 函数<strong>可能会导致睡眠，因此不能在中断上下文或其他禁止睡眠的代码段中使用此函数。</strong>request_irq 会使能中断，不需要再次手动激活，此函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">request_irq(<span class="type">unsigned</span> <span class="type">int</span> irq, </span><br><span class="line">        <span class="type">irq_handler_t</span> handler, </span><br><span class="line">        <span class="type">unsigned</span> <span class="type">long</span> flags,</span><br><span class="line">        <span class="type">const</span> <span class="type">char</span> *name, </span><br><span class="line">        <span class="type">void</span> *dev)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;函数的参数和返回值含义如下：<br>&emsp;&emsp;<strong>irq：</strong>表示要申请中断的中断号。<br>&emsp;&emsp;<strong>handler：</strong>中断处理函数，当中断发生以后就会执行此中断处理函数。<br>&emsp;&emsp;<strong>flags：</strong>中断标志，可以在文件 include&#x2F;linux&#x2F;interrupt.h 里查看所有的中断标志，这里我们说几个常用的，如下表所示：</p>
+<table>
+<thead>
+<tr>
+<th>标志</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>IRQF_SHARED</td>
+<td>多个设备共享一个中断线，共享的所有中断都必须指定此标志。如果使用共享中断的话，<code>request_irq</code> 函数的 <code>dev</code> 参数就是唯一标识分配的标志。</td>
+</tr>
+<tr>
+<td>IRQF_ONESHOT</td>
+<td>单次中断，中断执行一次就结束。</td>
+</tr>
+<tr>
+<td>IRQF_TRIGGER_NONE</td>
+<td>无触发。</td>
+</tr>
+<tr>
+<td>IRQF_TRIGGER_RISING</td>
+<td>上升沿触发。</td>
+</tr>
+<tr>
+<td>IRQF_TRIGGER_FALLING</td>
+<td>下降沿触发。</td>
+</tr>
+<tr>
+<td>IRQF_TRIGGER_HIGH</td>
+<td>高电平触发。</td>
+</tr>
+<tr>
+<td>IRQF_TRIGGER_LOW</td>
+<td>低电平触发。</td>
+</tr>
+</tbody></table>
+<p>&emsp;&emsp;比如我们的开发板上的 KEY0 使用的是 GPIO1_IO18，按下 KEY0 以后为低电平，因此我们可以设置为下降沿触发，也就是将 flags 设置为 IRQF_TRIGGER_FALLING。多种标志可以通过 “|” 实现组合。<br>&emsp;&emsp;<strong>name：</strong>中断名，设置以后可以在 &#x2F;proc&#x2F;interrupts 文件中看到对应的中断名。<br>&emsp;&emsp;<strong>dev：</strong>如果将 flags 设置为 IRQF_SHARED 的话，dev 用来区分不同的中断，一般情况下将 dev 设置为设备结构体，dev 会传递给中断处理函数 irq_handlr_t 的第二个参数。<br>&emsp;&emsp;<strong>返回值：</strong>0中断申请成功，其他负值申请失败，如果返回 -EBUSY 表示中断已被申请。</p>
+<p>&emsp;&emsp;<strong>2、free_irq 函数</strong><br>&emsp;&emsp;使用中断的时候使用 request_irq 函数进行申请，使用完成后就需要通过 free_irq 函数释放相应的中断。如果中断不是共享的，那么 free_irq 会删除中断处理函数并禁止中断。free_irq 函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> *<span class="title function_">free_irq</span><span class="params">(<span class="type">unsigned</span> <span class="type">int</span>, <span class="type">void</span> *)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;函数的参数和返回值含义如下<br>&emsp;&emsp;<strong>irq：</strong>要释放的中断。<br>&emsp;&emsp;<strong>dev：</strong>如果中断设置为共享的话，此函数用来区分具体的中断。共享中断只有在释放掉最后的中断处理函数后才会被禁止。</p>
+<p>&emsp;&emsp;<strong>3、中断处理函数</strong><br>&emsp;&emsp;使用 request_irq 函数申请中断时需要设置中断处理函数，其格式如下：</p>
+<pre><code>irqreturn_t (*irq_handler_t) (int, void *)
+</code></pre>
+<p>&emsp;&emsp;第一个参数是要中断处理函数要相应的中断号，第二杆参数是一个指向 void 的指针，也就是一个通用指针，需要与 request_irq 函数的 dev 参数保持一致，用于区分共享中断的不同设备，dev 也可以指向设备数据结构。中断处理函数的返回值为 irqreturn_t 类型，其定义如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">irqreturn</span> &#123;</span></span><br><span class="line">    IRQ_NONE    = (<span class="number">0</span> &lt;&lt; <span class="number">0</span>),</span><br><span class="line">    IRQ_HANDLED    = (<span class="number">1</span> &lt;&lt; <span class="number">0</span>),</span><br><span class="line">    IRQ_WAKE_THREAD    = (<span class="number">1</span> &lt;&lt; <span class="number">1</span>),</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span> <span class="title">irqreturn</span> <span class="title">irqreturn_t</span>;</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看出 irqreturn_t 是个枚举类型，一共有三种返回值。一般中断服务函数返回值使用如下形式：</p>
+<pre><code>return IRQ_RETVAL(IRQ_HANDLED)
+</code></pre>
+<p>&emsp;&emsp;<strong>4、中断使能与禁止函数</strong><br>&emsp;&emsp;常用的中断使用和禁止函数如下所示：</p>
+<pre><code>void enable_irq(unsigned int irq)
+void disable_irq(unsigned int irq)
+</code></pre>
+<p>&emsp;&emsp;enable_irq 和 disable_irq 用于使能和禁止指定的中断，irq 就是要禁止的中断号。disable_irq 函数要等到当前执行的中断处理函数执行完才返回，因此使用者需要<strong>保证不会产生新的中断</strong>，并且确保所有已经开始执行的中断处理函数程序已经全部退出，在这种情况下可以使用另一个中断禁止函数：</p>
+<pre><code>void disable_irq_nosync(unsigned int irq)
+</code></pre>
+<p>&emsp;&emsp;disable_irq_nosync 函数调用以后立即返回，不会等待当前中断处理程序执行完毕。这三个函数都是使能或禁止某一个中断，当我们需要开启或关闭整个中断系统的时候可以使用下面这两个函数</p>
+<pre><code>local_irq_enable()
+local_irq_disable()
+</code></pre>
+<p>&emsp;&emsp;local_irq_enable 用于使能当前处理器中断系统，local_irq_disable 用于禁止当前处理器中断系统。还有两个函数，可以在关闭中断使保存中断状态，开启中断后恢复中断状态，这样就要用到下面两个函数：</p>
+<pre><code>local_irq_save(flags)
+local_irq_restor(flags)
+</code></pre>
+<p>&emsp;&emsp;这两个函数是一对，local_irq_save用于禁止中断，并将中断状态保存在 flags 中，local_irq_restore 用于恢复中断，将中断恢复到 flags 状态。</p>
+<h3 id="上半部与下半部"><a href="#上半部与下半部" class="headerlink" title="上半部与下半部"></a>上半部与下半部</h3><p>&emsp;&emsp;我们在使用 request_irq 申请中断时注册的中断服务函数属于中断处理的上半部，只要中断触发，那么中断处理函数就会执行。我们都知道中断处理函数一定要快点执行完毕，越短越好，但是现实往往不能做到，有些中断处理过程费时间，我们必须要对其进行处理，缩小中断处理函数的执行时间。比如电容触摸屏通过中断通知 SOC 有触摸事件发生，SOC 响应中断后通过 IIC 读取数据。但是 IIC 通讯协议较慢，此时我们可以将通过 IIC 读取数据的操作暂后执行，中断处理函数仅仅响应中断然后清除标志位即可。这时中断处理过程分为两部分：<br>&emsp;&emsp;<strong>上半部：</strong>上半部是中断处理函数，那些处理过程比较快，不会占用很长时间的处理就可以在上半部完成。<br>&emsp;&emsp;<strong>下半部：</strong>如果中断处理比较耗时，那么就将比较耗时间的代码提取出来，交给下半部执行，这样中断处理函数就会快进快出。<br>&emsp;&emsp;因此，Linux 内核将中断分为上半部和下半部的主要目的就是实现中断处理函数的快进快出，比如在上半部中将数据宝贝到内存中，关于数据的解算就可以放到下半部执行。以下有一些可以借鉴的参考点：<br>&emsp;&emsp;①、如果要处理的内容不希望被其他终端打断，就可以放到上半部。<br>&emsp;&emsp;②、如果要处理的任务对时间敏感，可以放到上半部。<br>&emsp;&emsp;③、如果要处理的任务和硬件有关，可以放到上半部。<br>&emsp;&emsp;④、除了上述三点以外的任务，有限考虑放到下半部。<br>&emsp;&emsp;上半部处理很简单，下半部该怎么做呢？Linux 内核提供了多种下半部机制。一开始 Linux 内核提供了 “bottom half” 机制来实现下半部，简称”BH”，后面引入了软中断和 tasklet 来代替 BH ，从2.5版本后的 Linux 内核中 BH 已经被抛弃了。</p>
+<p>&emsp;&emsp;<strong>1、软中断</strong><br>&emsp;&emsp;Linux 内核使用结构体 softirq_action 表示软中断，其定义在文件 include&#x2F;linux&#x2F;interrupt.h 中，内容如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">softirq_action</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">void</span> (*action)(<span class="keyword">struct</span> softirq_action *);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在 kernel&#x2F;softirq.c 文件中一共定义了 10 个软中断，如下所示  </p>
+<pre><code>static struct softirq_action softirq_vec[NR_SOFTIRQS];
+</code></pre>
+<p>&emsp;&emsp;NR_SOFTIRQS 是枚举类型，定义在文件 include&#x2F;linux&#x2F;interrupt.h 中，定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">enum</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    HI_SOFTIRQ=<span class="number">0</span>, <span class="comment">// 高优先级软中断</span></span><br><span class="line">    TIMER_SOFTIRQ, <span class="comment">// 定时器软中断</span></span><br><span class="line">    NET_TX_SOFTIRQ, <span class="comment">// 网络数据发送软中断</span></span><br><span class="line">    NET_RX_SOFTIRQ,</span><br><span class="line">    BLOCK_SOFTIRQ,</span><br><span class="line">    IRQ_POLL_SOFTIRQ,</span><br><span class="line">    TASKLET_SOFTIRQ, <span class="comment">// tasklet 软中断</span></span><br><span class="line">    SCHED_SOFTIRQ, <span class="comment">// 调度软中断</span></span><br><span class="line">    HRTIMER_SOFTIRQ, <span class="comment">// 高精度定时器软中断</span></span><br><span class="line">    RCU_SOFTIRQ,    <span class="comment">/* RCU 软中断 */</span></span><br><span class="line">    NR_SOFTIRQS</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;可以看出一共有 10 个软中断，因此 NR_SOFTIRQS 为 10，因此数组 softirq_vec 有 10 个元素。softirq_vec 结构体中的 action 成员变量就是软中断的服务函数，数组 softirq_vec 是个全局数组，因此所有的 CPU 都可以访问到，每个 CPU 都有自己的触发和控制机制，并且只执行自己所触发的软中断，但是各个 CPU 所执行的软中断服务函数是相同的，都是数组 softirq_vec 中定义的 action 函数。要使用软中断，必须先使用 open_softirq 函数注册对应的软中断处理函数，其原型如下：</p>
+<pre><code>void open_softirq(int nr,  void (*action)(struct softirq_action *))
+</code></pre>
+<p>&emsp;&emsp;函数参数和返回值含义如下：<br>&emsp;&emsp;**nr:**要开启的软中断，在 softirq_vec 中选择一个。<br>&emsp;&emsp;**action:**软中断对应的处理函数。<br>&emsp;&emsp;注册好软中断后需要使用 raise_softirq 函数触发，raise_softirq 函数原型如下:</p>
+<pre><code>void raise_softirq(unsigned int nr)
+</code></pre>
+<p>&emsp;&emsp;nr 表示要触发的软中断，可以在 softirq_vec 中选择一个。软中断必须在编译的时候静态注册！Linux 内核使用 softirq_init 函数初始化软中断，softirq_init 函数定义在 kernel&#x2F;softirq.c 文件中，内容如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> __init <span class="title function_">softirq_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> cpu;</span><br><span class="line"></span><br><span class="line">    for_each_possible_cpu(cpu) &#123;</span><br><span class="line">        per_cpu(tasklet_vec, cpu).tail =</span><br><span class="line">            &amp;per_cpu(tasklet_vec, cpu).head;</span><br><span class="line">        per_cpu(tasklet_hi_vec, cpu).tail =</span><br><span class="line">            &amp;per_cpu(tasklet_hi_vec, cpu).head;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    open_softirq(TASKLET_SOFTIRQ, tasklet_action);</span><br><span class="line">    open_softirq(HI_SOFTIRQ, tasklet_hi_action);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;从代码中可以看出，softirq_init 会默认打开 TASKLET_SOFTIRQ 和 HI_SOFTIRQ</p>
+<p>&emsp;&emsp;<strong>2、tasklet</strong><br>&emsp;&emsp;tasklet 是利用软中断来实现的另外一种下半部机制，在软中断和 tasklet 之间，建议使用 tasklet。Linux 内核使用 tasklet_struct 结构体来表示  tasklet</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">tasklet_struct</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">tasklet_struct</span> *<span class="title">next</span>;</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> state;</span><br><span class="line">    <span class="type">atomic_t</span> count;</span><br><span class="line">    <span class="type">bool</span> use_callback;</span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">        <span class="type">void</span> (*func)(<span class="type">unsigned</span> <span class="type">long</span> data);</span><br><span class="line">        <span class="type">void</span> (*callback)(<span class="keyword">struct</span> tasklet_struct *t);</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> data;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，func 函数就是 tasklet 要执行的处理函数，用户自定义函数内容，相当于中断处理函数。如果要使用 tasklet，必须先定义，然后使用 tasklet_init 函数初始化，这个函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">tasklet_init</span><span class="params">(<span class="keyword">struct</span> tasklet_struct *t,</span></span><br><span class="line"><span class="params">                <span class="type">void</span> (*func)(<span class="type">unsigned</span> <span class="type">long</span>), </span></span><br><span class="line"><span class="params">                <span class="type">unsigned</span> <span class="type">long</span> data)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;函数参数含义如下：<br>&emsp;&emsp;<strong>t：</strong>要初始化的 tasklet<br>&emsp;&emsp;<strong>func：</strong>tasklet 的处理函数<br>&emsp;&emsp;<strong>data：</strong>要传递给 func 函数的参数。<br>&emsp;&emsp;也可以使用宏 DECLARE_TASKLET 来一次性完成 tasklet 的定义和初始化，这个宏定义在 include&#x2F;linux&#x2F;interrupt.h 文件中，定义如下</p>
+<pre><code>DECLARE_TASKLET(name, func, data)
+</code></pre>
+<p>&emsp;&emsp;其中 name 为要定义的那个 tasklet 名字，这个名字就是一个 tasklet_struct 类型的变量，func 就是 tasklet 的处理函数 data 是传递给 func 函数的参数。</p>
+<p>&emsp;&emsp;在上半部，也就是中断处理函数中调用 tasklet_schedule 函数就可以让 tasklet 在合适的时间运行，此函数原型如下：</p>
+<pre><code>void tasklet_schedule(struct tasklet_struct *t)
+</code></pre>
+<p>&emsp;&emsp;t 表示要调度的 tasklet，也就是 DECLARE_TASKLET 宏里面的 name。</p>
+<p>&emsp;&emsp;<strong>3、工作队列</strong><br>&emsp;&emsp;工作队列是另一种下半部执行方式，工作队列在进程上下文执行，工作队列将要推后的工作交给另一个内核线程去执行，因为工作队列工作都在进程上下文，因此工作队列允许睡眠或重新调度。因此如果要推后的工作可以睡眠就可以选择工作队列，否则就只能选择软中断或 tasklet。</p>
+<p>&emsp;&emsp;Linux 内核使用 work_struct 结构体表示一个工作，内容如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">work_struct</span> &#123;</span></span><br><span class="line">    <span class="type">atomic_long_t</span> data;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">entry</span>;</span></span><br><span class="line">    <span class="type">work_func_t</span> func;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LOCKDEP</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">lockdep_map</span> <span class="title">lockdep_map</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在实际的驱动开发中，我们只需要定义工作(work_struct)即可，关于工作队列和工作者线程我们基本不用去管。简单创建工作很简单，直接定义一个 work_struct 结构体变量即可，然后使用 INIT_WORK 宏来初始化工作，这个宏定义如下：</p>
+<pre><code>#define INIT_WORK(_work, _func)
+</code></pre>
+<p>&emsp;&emsp;_work 表示要初始化的工作，_func 是工作对应的处理函数。也可以使用 DECLARE_WORK 宏一次性完成工作的创建和初始化，其定义如下：</p>
+<pre><code>#define DECLARE_WORK(n,f)
+</code></pre>
+<p>&emsp;&emsp;n 表示定义的工作，f表示工作对应的处理函数。和 tasklet 一样，工作也需要调度才能运行，其调度函数为 schedule_work，函数原型如下所示</p>
+<pre><code>bool schedule_work(struct work_struct *work)
+</code></pre>
+<p>&emsp;&emsp;函数参数和返回值含义如下：<br>&emsp;&emsp;<strong>work：</strong>要调度的工作。<br>&emsp;&emsp;<strong>返回值：</strong>0 成功，其他值失败。</p>
+<h3 id="设备树中断信息节点"><a href="#设备树中断信息节点" class="headerlink" title="设备树中断信息节点"></a>设备树中断信息节点</h3><p>&emsp;&emsp;如果我们使用设备树的话就需要在设备书中设置好属性信息，Linux 内核通过读取设备树中的中断属性信息来配置中断，对于终端控制器而言，设备树绑定信息参考文档为 Documentation&#x2F;devicetree&#x2F;bindings&#x2F;arm&#x2F;gic.txt。打开 imx6ull.dtsi 文件，其中的 intc 节点就是 IMX6ULL 的中断控制器节点，内容如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">intc: interrupt-controller@a01000 &#123;</span><br><span class="line">    compatible = &quot;arm,gic-400&quot;, &quot;arm,cortex-a7-gic&quot;;</span><br><span class="line">    interrupts = &lt;GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(1) | IRQ_TYPE_LEVEL_HIGH)&gt;;</span><br><span class="line">    #interrupt-cells = &lt;3&gt;;</span><br><span class="line">    interrupt-controller;</span><br><span class="line">    interrupt-parent = &lt;&amp;intc&gt;;</span><br><span class="line">    reg = &lt;0x00a01000 0x1000&gt;,</span><br><span class="line">            &lt;0x00a02000 0x2000&gt;,</span><br><span class="line">            &lt;0x00a04000 0x2000&gt;,</span><br><span class="line">            &lt;0x00a06000 0x2000&gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，compatible 属性值为 “arm,cortex-a7-gic”，可以在 Linux 内核源码中找到 GIC 中断控制器驱动文件。#interrupt-cells 和 #address-cells、#size-cells 一样，表示此中断控制器下设备的 cells 大小，对于设备而言，会使用 interrupts 属性描述中断信息，#interrupt-cells 描述了 interrupts 属性的 cells 大小，也就是一条信息有几个 cells。每个 cells 都是 32 位整型值，对于 ARM 处理的 GIC 来说，一共有 3 个 cells，其含义如下：<br>&emsp;&emsp;第一个：中断类型，0 表示 SPI，1 表示 PPI。<br>&emsp;&emsp;第二个：中断号，对于 SPI 来说中断号范围是 0-987，对于 PPI 来说中断号范围是 0-15。<br>&emsp;&emsp;第三个：标志，bit[3:0]表示中断触发类型，为1时上升沿触发，为2时下降沿触发，为4时高电平触发，为8时低电平触发。bit[15:8] 为 PPI 中断的 CPU 掩码。</p>
+<p>&emsp;&emsp;对于 GPIO 来说，gpio 节点也可以作为中断控制器，比如同文件的 gpio5 节点内容如下所示</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">gpio5: gpio@20ac000 &#123;</span><br><span class="line">    compatible = &quot;fsl,imx6ul-gpio&quot;, &quot;fsl,imx35-gpio&quot;;</span><br><span class="line">    reg = &lt;0x020ac000 0x4000&gt;;</span><br><span class="line">    interrupts = &lt;GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH&gt;,</span><br><span class="line">                &lt;GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH&gt;;</span><br><span class="line">    clocks = &lt;&amp;clks IMX6UL_CLK_GPIO5&gt;;</span><br><span class="line">    gpio-controller;</span><br><span class="line">    #gpio-cells = &lt;2&gt;;</span><br><span class="line">    interrupt-controller;</span><br><span class="line">    #interrupt-cells = &lt;2&gt;;</span><br><span class="line">    gpio-ranges = &lt;&amp;iomuxc 0 7 10&gt;, &lt;&amp;iomuxc 10 5 2&gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，interrupts 描述中断源信息，对于 gpio5 来说一共有两条信息，中断类型都是 SPI，触发电平都是 IRQ_TYPE_LEVEL_HIGH。不同之处在于中断源，一个是 74，一个是 75。从数据手册中可以看到，GPIO5 一共用了两个中断号，一个是 74，一个是 75.其中 74 对应 GPIO5_IO00 - GPIO5_IO15 这低 16 个 IO，75 对应 GPIO5_IO16 - GPIO5_IO31 这低 16 个 IO。interrupt-controller 表明了 gpio5 节点也是个中断控制器，用于控制 gpio5 所有 IO 的中断。</p>
+<p>&emsp;&emsp;这时我们注意到，为什么 GIC 控制器和 GPIO 控制器中都有 interrupt-controller 呢？两个 #interrupt-cells 还不一样，为什么呢？在现代 SOC 中，中断系统其实是分层结构，像一颗树，GIC 在树根，GPIO 在中间层。两者都能控制终端，只是层级不同。当 GPIO 检测到信号变化时，产生一个中断事件给 GIC。这里的 interrupt-controller 表示 GPIO 也可以给其他设备提供中断。同时，Linux 需要知道如果设备使用 GPIO 产生中断的话，需要提供哪些参数，所以 GPIO 声明 #interrupt-cells &#x3D; &lt;2&gt; 表示 一个 GPIO 中断描述需要两个参数。查阅文档得知其含义为 GPIO编号 和 触发方式。</p>
+<p>&emsp;&emsp;如下代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">etnphy0: ethernet-phy@0 &#123;</span><br><span class="line">    compatible = &quot;ethernet-phy-ieee802.3-c22&quot;;</span><br><span class="line">    reg = &lt;0&gt;;</span><br><span class="line">    pinctrl-names = &quot;default&quot;;</span><br><span class="line">    pinctrl-0 = &lt;&amp;pinctrl_etnphy0_int&gt;;</span><br><span class="line">    interrupt-parent = &lt;&amp;gpio5&gt;;</span><br><span class="line">    interrupts = &lt;5 IRQ_TYPE_EDGE_FALLING&gt;;</span><br><span class="line">    status = &quot;okay&quot;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这里 etnphy0 是一个网卡设备，其中有一个中断引脚连接到了 GPIO5_IO04，下降沿触发中断。</p>
+<h3 id="获取中断号"><a href="#获取中断号" class="headerlink" title="获取中断号"></a>获取中断号</h3><p>&emsp;&emsp;编写驱动时需要用到中断号，我们用到中断号，中断信息已经写到了设备树里面，因此可以通过 irq_of_parse_and_map 函数从 interupts 属性中提取到对应的设备号，函数原型如下</p>
+<pre><code>unsigned int irq_of_parse_and_map(struct device_node *dev, int index)
+</code></pre>
+<p>&emsp;&emsp;其中，dev 表示设备节点，index 表示索引号，返回值为中断号。如果使用 GPIO 的话，可以通过 gpio_to_irq 函数来获取对应的中断号，函数原型如下</p>
+<pre><code>int gpio_to_irq(unsigned int gpio)
+</code></pre>
+<p>&emsp;&emsp;其中，gpio表示要获取的 GPIO 编号，返回值为 GPIO 对应的中断号。</p>
+<h2 id="实验程序编写"><a href="#实验程序编写" class="headerlink" title="实验程序编写"></a>实验程序编写</h2><h3 id="设备树修改"><a href="#设备树修改" class="headerlink" title="设备树修改"></a>设备树修改</h3><p>&emsp;&emsp;本章实验将 KEY0 设置成中断模式。IMX开发板上的 KEY 使用了 UART1_CTS_B 这个 PIN，打开 imx6ull-hcw-emmc.dtsi，在 iomuxc 节点下创建一个名为 pinctrl_key 子节点，内容如下所示：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">pinctrl_camera_clock: cameraclockgrp &#123;</span><br><span class="line">    fsl,pins = &lt;</span><br><span class="line">        MX6UL_PAD_UART1_CTS_B__GPIO1_IO18 0xf080</span><br><span class="line">    &gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在根节点下添加 key 设备，如下所示</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">key&#123;</span><br><span class="line">    #address-cells = &lt;1&gt;;</span><br><span class="line">    #size-cells = &lt;1&gt;;</span><br><span class="line">    compatible = &quot;atkalpha-key&quot;;</span><br><span class="line">    pinctrl-names = &quot;default&quot;;</span><br><span class="line">    pinctrl-0 = &lt;pinctrl_key&gt;;</span><br><span class="line">    key-gpio = &lt;&amp;gpio1 18 GPIO_ACTIVE_LOW&gt;;</span><br><span class="line">    interrupt-parent = &lt;&amp;gpio1&gt;;</span><br><span class="line">    interrupts = &lt;18 IRQ_TYPE_EDGE_BOTH&gt;;</span><br><span class="line">    status = &quot;okay&quot;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;使用新编译的 dtb 文件启动 kernel，在设备树文件中看到 key 被成功创建。</p>
+<div align=center><img src="/img/linux驱动开发/19/key创建成功.png"  width=60%></div>
+<div style="text-align:center;">图 2 key 创建成功</div>
+
+<h3 id="程序编写"><a href="#程序编写" class="headerlink" title="程序编写"></a>程序编写</h3><p>&emsp;&emsp;新建文件夹，创建c文件，写入以下代码。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br><span class="line">285</span><br><span class="line">286</span><br><span class="line">287</span><br><span class="line">288</span><br><span class="line">289</span><br><span class="line">290</span><br><span class="line">291</span><br><span class="line">292</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * @Author: 胡城玮</span></span><br><span class="line"><span class="comment"> * @FilePath: imx6uirq.c</span></span><br><span class="line"><span class="comment"> * @Date: 2026-03-09</span></span><br><span class="line"><span class="comment"> * @Description: </span></span><br><span class="line"><span class="comment"> * @Version: 0.1</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/delay.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/cdev.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/irq.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/irqnr.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/timer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_irq.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/interrupt.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_gpio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     IMX6UIRQ_CNT    1           <span class="comment">// 设备号个数</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     IMX6UIRQ_NAME   <span class="string">&quot;imx6uirq&quot;</span>  <span class="comment">// 名字</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     KEY0VALUE       0x01        <span class="comment">// KEY0 按键值</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     INVAKEY         0xFF        <span class="comment">// 无效的按键值</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     KEY_NUM         1           <span class="comment">// 按键数量</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 中断 IO 描述结构体 */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">irq_keydesc</span> &#123;</span></span><br><span class="line">    <span class="type">int</span> gpio;                   <span class="comment">// gpio</span></span><br><span class="line">    <span class="type">int</span> irqnum;                 <span class="comment">// 中断号</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> value;        <span class="comment">// 按键对应的值</span></span><br><span class="line">    <span class="type">char</span> name[<span class="number">10</span>];              <span class="comment">// 名字</span></span><br><span class="line">    <span class="type">irqreturn_t</span> (*handler)(<span class="type">int</span>, <span class="type">void</span>*);  <span class="comment">// 中断服务函数</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">imx6uirq_dev</span>&#123;</span></span><br><span class="line">    <span class="type">dev_t</span> devid;            <span class="comment">// 设备号</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span> <span class="title">cdev</span>;</span>       <span class="comment">// cedv</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="keyword">class</span> *<span class="keyword">class</span>;</span>    <span class="comment">// 类</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">device</span>;</span>  <span class="comment">// 设备</span></span><br><span class="line">    <span class="type">int</span> major;              <span class="comment">// 主设备号</span></span><br><span class="line">    <span class="type">int</span> minor;              <span class="comment">// 次设备号</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device_node</span> *<span class="title">nd</span>;</span> <span class="comment">// 设备节点</span></span><br><span class="line">    <span class="type">atomic_t</span> keyvalue;      <span class="comment">// 有效的按键键值</span></span><br><span class="line">    <span class="type">atomic_t</span> releasekey;    <span class="comment">// 标记是否完成依次的按键</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timer_list</span> <span class="title">timer</span>;</span>                <span class="comment">// 定义一个定时器</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">irq_keydesc</span> <span class="title">irqkeydesc</span>[<span class="title">KEY_NUM</span>];</span> <span class="comment">// 按键描述数组</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> curkeynum;                <span class="comment">// 当前的按键号</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">imx6uirq_dev</span> <span class="title">imx6uirq</span>;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 按键中断回调函数</span></span><br><span class="line"><span class="comment"> * @param &#123;int&#125; irq 中断号</span></span><br><span class="line"><span class="comment"> * @param &#123;void&#125; *dev_id 设备结构</span></span><br><span class="line"><span class="comment"> * @return &#123;*&#125; 中断执行结果</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">key0_handler</span><span class="params">(<span class="type">int</span> irq, <span class="type">void</span> *dev_id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">imx6uirq_dev</span> *<span class="title">dev</span> =</span> (<span class="keyword">struct</span> imx6uirq_dev *)dev_id;</span><br><span class="line">    <span class="comment">/* 记录当前按键是编号 0 的按键 */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 在中断上下文中尽量少做工作，我们使用定时器</span></span><br><span class="line"><span class="comment">       延迟 10ms 进一步处理按键（去抖动、读取值等） */</span></span><br><span class="line">    mod_timer(&amp;dev-&gt;timer, jiffies + msecs_to_jiffies(<span class="number">10</span>));</span><br><span class="line">    <span class="keyword">return</span> IRQ_RETVAL(IRQ_HANDLED); <span class="comment">// 告诉内核中断已经被处理</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 定时器服务函数，用于按键消抖，定时器到了以后再次读取按键值，如果按键还是处于按下状态就表示按键有效</span></span><br><span class="line"><span class="comment"> * @param &#123;unsigned long&#125; arg 设备结构变量</span></span><br><span class="line"><span class="comment"> * @return &#123;*&#125; 无</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">timer_function</span><span class="params">(<span class="keyword">struct</span> timer_list *t)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> value;    <span class="comment">// 保存当前按键 GPIO 电平值</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> num;      <span class="comment">// 当前按键号</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">irq_keydesc</span> *<span class="title">keydesc</span>;</span>    <span class="comment">// 指向按键描述结构体</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">imx6uirq_dev</span> *<span class="title">dev</span> =</span> from_timer(dev, t, timer);</span><br><span class="line">    <span class="comment">// 将传入的参数转换为设备结构体指针。</span></span><br><span class="line"></span><br><span class="line">    num = dev-&gt;curkeynum;               <span class="comment">// 获取当前按键的触发中断的按键信号</span></span><br><span class="line">    keydesc = &amp;dev-&gt;irqkeydesc[num];    <span class="comment">// 获取相应按键的描述结构体</span></span><br><span class="line"></span><br><span class="line">    value = gpio_get_value(keydesc-&gt;gpio); <span class="comment">// 重新读取按键的 GPIO 值</span></span><br><span class="line">    <span class="keyword">if</span>(value == <span class="number">0</span>)  <span class="comment">// 如果读取到低电平，说明按键仍然按下。</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 设置按键值为按下状态</span></span><br><span class="line">        <span class="type">atomic_set</span>(&amp;dev-&gt;keyvalue ,keydesc-&gt;value);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="comment">// 读取到高电平，说梦按键已经松开   </span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 按键释放，最高位 0x80用于标记释放状态</span></span><br><span class="line">        <span class="type">atomic_set</span>(&amp;dev-&gt;keyvalue, <span class="number">0x80</span> | keydesc-&gt;value);</span><br><span class="line">        <span class="comment">// 设置按键释放标志</span></span><br><span class="line">        <span class="type">atomic_set</span>(&amp;dev-&gt;releasekey, <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 按键 IO 初始化</span></span><br><span class="line"><span class="comment"> * @return &#123;*&#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">keyio_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> i = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    imx6uirq.nd = of_find_node_by_path(<span class="string">&quot;/key&quot;</span>); <span class="comment">// 在设备树中获取设备节点</span></span><br><span class="line">    <span class="keyword">if</span>(imx6uirq.nd == <span class="literal">NULL</span>)&#123;</span><br><span class="line">        printk(<span class="string">&quot;key node not find\r\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 获取 GPIO 信息 */</span></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; KEY_NUM;i++)</span><br><span class="line">    &#123;</span><br><span class="line">        imx6uirq.irqkeydesc[i].gpio = of_get_named_gpio(imx6uirq.nd,<span class="string">&quot;key-gpio&quot;</span>,i);</span><br><span class="line">        <span class="keyword">if</span> (imx6uirq.irqkeydesc[i].gpio &lt; <span class="number">0</span>)&#123;</span><br><span class="line">            printk(<span class="string">&quot;cant get key %d\r\n&quot;</span>,i);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 初始化 key 所使用的 IO，并设置为为中断模式 */</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; KEY_NUM; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">memset</span>(imx6uirq.irqkeydesc[i].name,<span class="number">0</span>,<span class="keyword">sizeof</span>(imx6uirq.irqkeydesc[i].name));</span><br><span class="line">        <span class="built_in">sprintf</span>(imx6uirq.irqkeydesc[i].name,<span class="string">&quot;KEY%d&quot;</span>,i);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 申请 GPIO</span></span><br><span class="line">        gpio_request(imx6uirq.irqkeydesc[i].gpio,</span><br><span class="line">                    imx6uirq.irqkeydesc[i].name);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// GPIO 设置为 输入</span></span><br><span class="line">        gpio_direction_input(imx6uirq.irqkeydesc[i].gpio);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 获取中断号</span></span><br><span class="line">        imx6uirq.irqkeydesc[i].irqnum = irq_of_parse_and_map(imx6uirq.nd,i);</span><br><span class="line">        </span><br><span class="line">        printk(<span class="string">&quot;key%d:gpio = %d, irqnum = %d&quot;</span>,i,</span><br><span class="line">                                        imx6uirq.irqkeydesc[i].gpio,</span><br><span class="line">                                        imx6uirq.irqkeydesc[i].irqnum);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 申请中断 */</span></span><br><span class="line">    imx6uirq.irqkeydesc[<span class="number">0</span>].handler = key0_handler;</span><br><span class="line">    imx6uirq.irqkeydesc[<span class="number">0</span>].value = KEY0VALUE;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; KEY_NUM; i ++)&#123;</span><br><span class="line">        ret = request_irq(imx6uirq.irqkeydesc[i].irqnum,</span><br><span class="line">                        imx6uirq.irqkeydesc[i].handler,</span><br><span class="line">                        IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING,</span><br><span class="line">                        imx6uirq.irqkeydesc[i].name,</span><br><span class="line">                        &amp;imx6uirq);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            printk(<span class="string">&quot;irq %d request failed&quot;</span>,imx6uirq.irqkeydesc[i].irqnum);</span><br><span class="line">            <span class="keyword">return</span> -EFAULT;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 创建定时器 */</span></span><br><span class="line">    timer_setup(&amp;imx6uirq.timer, timer_function, <span class="number">0</span>);  </span><br><span class="line">    imx6uirq.timer.function = timer_function;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 打开设备</span></span><br><span class="line"><span class="comment"> * @param &#123;inode&#125; *inode 传递给驱动的 inode</span></span><br><span class="line"><span class="comment"> * @param &#123;file&#125; *filp 设备文件，file 结构体有个叫做 private_data 的成员变量，</span></span><br><span class="line"><span class="comment"> *                      一般在 open 的时候将 private_data 指向设备结构体</span></span><br><span class="line"><span class="comment"> * @return &#123;*&#125; 0 成功 其他失败</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">imx6uirq_open</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span></span><br><span class="line">&#123;</span><br><span class="line">    filp-&gt;private_data = &amp;imx6uirq; <span class="comment">// 设置私有数据</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 从设备读取数据</span></span><br><span class="line"><span class="comment"> * @param &#123;file&#125; *filp 要打开的设备文件</span></span><br><span class="line"><span class="comment"> * @param &#123;char __user&#125; *buf 返回给用户空间的数据缓冲区</span></span><br><span class="line"><span class="comment"> * @param &#123;size_t&#125; cnt 要读取的字符长度</span></span><br><span class="line"><span class="comment"> * @param &#123;loff_t&#125; *offt 相对于文件首地址的偏移</span></span><br><span class="line"><span class="comment"> * @return &#123;*&#125; 读取的字节数，若为负值表示失败。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">imx6uirq_read</span><span class="params">(<span class="keyword">struct</span> file *filp, <span class="type">char</span> __user *buf, <span class="type">size_t</span> cnt, <span class="type">loff_t</span> *offt)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> keyvalue = <span class="number">0</span>;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> releasekey = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">imx6uirq_dev</span> *<span class="title">dev</span> =</span> (<span class="keyword">struct</span> imx6uirq_dev *)filp-&gt;private_data;</span><br><span class="line"></span><br><span class="line">    keyvalue = <span class="type">atomic_read</span>(&amp;dev-&gt;keyvalue);</span><br><span class="line">    releasekey = <span class="type">atomic_read</span>(&amp;dev-&gt;releasekey);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(releasekey)&#123;</span><br><span class="line">        <span class="keyword">if</span>(keyvalue &amp; <span class="number">0x80</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            keyvalue &amp;= ~<span class="number">0x80</span>;</span><br><span class="line">            ret = copy_to_user(buf,&amp;keyvalue,<span class="keyword">sizeof</span>(keyvalue));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="keyword">goto</span> data_error;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">atomic_set</span>(&amp;dev-&gt;releasekey, <span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="keyword">goto</span> data_error;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">sizeof</span>(keyvalue);</span><br><span class="line"></span><br><span class="line">data_error:</span><br><span class="line">    <span class="keyword">return</span> -EINVAL;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">imx6uirq_fos</span> =</span> &#123;</span><br><span class="line">    .owner = THIS_MODULE,</span><br><span class="line">    .open = imx6uirq_open,</span><br><span class="line">    .read = imx6uirq_read,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">imx6uirq_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">/* 获取设备号 */</span></span><br><span class="line">    <span class="keyword">if</span>(imx6uirq.major)&#123;</span><br><span class="line">        imx6uirq.devid = MKDEV(imx6uirq.major,<span class="number">0</span>);</span><br><span class="line">        register_chrdev_region(imx6uirq.devid,IMX6UIRQ_CNT,IMX6UIRQ_NAME);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        alloc_chrdev_region(&amp;imx6uirq.devid, <span class="number">0</span> ,IMX6UIRQ_CNT,IMX6UIRQ_NAME);</span><br><span class="line">        imx6uirq.major = MAJOR(imx6uirq.devid);</span><br><span class="line">        imx6uirq.minor = MINOR(imx6uirq.devid);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 注册字符设备 */</span></span><br><span class="line">    cdev_init(&amp;imx6uirq.cdev, &amp;imx6uirq_fos);</span><br><span class="line">    cdev_add(&amp;imx6uirq.cdev,imx6uirq.devid,IMX6UIRQ_CNT);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 创建类 */</span></span><br><span class="line">    imx6uirq.class = class_create(THIS_MODULE, IMX6UIRQ_NAME);</span><br><span class="line">    <span class="keyword">if</span> (IS_ERR(imx6uirq.class))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(imx6uirq.class);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 创建设备 */</span></span><br><span class="line">    imx6uirq.device = device_create(imx6uirq.class,<span class="literal">NULL</span>,imx6uirq.devid,<span class="literal">NULL</span>,IMX6UIRQ_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(imx6uirq.device))&#123;</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(imx6uirq.device);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 初始化按键 */</span></span><br><span class="line">    <span class="type">atomic_set</span>(&amp;imx6uirq.keyvalue, INVAKEY);</span><br><span class="line">    <span class="type">atomic_set</span>(&amp;imx6uirq.releasekey, <span class="number">0</span>);</span><br><span class="line">    keyio_init();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">imx6uirq_exit</span><span class="params">(<span class="type">void</span>)</span>&#123;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">/* 删除定时器 */</span></span><br><span class="line">    del_timer_sync(&amp;imx6uirq.timer);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 释放中断 */</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i &lt; KEY_NUM;i++)</span><br><span class="line">    &#123;</span><br><span class="line">        free_irq(imx6uirq.irqkeydesc[i].irqnum,&amp;imx6uirq);</span><br><span class="line">        gpio_free(imx6uirq.irqkeydesc[i].gpio);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    cdev_del(&amp;imx6uirq.cdev);</span><br><span class="line">    unregister_chrdev_region(imx6uirq.devid, IMX6UIRQ_CNT);</span><br><span class="line">    device_destroy(imx6uirq.class,imx6uirq.devid);</span><br><span class="line">    class_destroy(imx6uirq.class);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(imx6uirq_init);</span><br><span class="line">module_exit(imx6uirq_exit);</span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;hcw&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;编译出 ko 文件，并加载到根文件系统中。启动并装载 ko 文件。</p>
+<div align=center><img src="/img/linux驱动开发/19/成功.png"  width=60%></div>
+<div style="text-align:center;">图 3 成功</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" rel="tag"># 驱动开发</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/03/05/linux-driver-learn-18/" rel="prev" title="Linux驱动学习日记(18) Linux 并发与竞争学习">
+      <i class="fa fa-chevron-left"></i> Linux驱动学习日记(18) Linux 并发与竞争学习
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/10/linux-driver-learn-20/" rel="next" title="Linux驱动学习日记(20) Linux 阻塞和非阻塞 IO">
+      Linux驱动学习日记(20) Linux 阻塞和非阻塞 IO <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux-%E4%B8%AD%E6%96%AD%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">Linux 中断简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#I-MX-%E4%B8%AD%E6%96%AD%E6%9C%BA%E5%88%B6"><span class="nav-number">1.1.</span> <span class="nav-text">I.MX 中断机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux-%E4%B8%AD%E6%96%AD-API-%E5%87%BD%E6%95%B0"><span class="nav-number">1.2.</span> <span class="nav-text">Linux 中断 API 函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8A%E5%8D%8A%E9%83%A8%E4%B8%8E%E4%B8%8B%E5%8D%8A%E9%83%A8"><span class="nav-number">1.3.</span> <span class="nav-text">上半部与下半部</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E6%A0%91%E4%B8%AD%E6%96%AD%E4%BF%A1%E6%81%AF%E8%8A%82%E7%82%B9"><span class="nav-number">1.4.</span> <span class="nav-text">设备树中断信息节点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E4%B8%AD%E6%96%AD%E5%8F%B7"><span class="nav-number">1.5.</span> <span class="nav-text">获取中断号</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%A8%8B%E5%BA%8F%E7%BC%96%E5%86%99"><span class="nav-number">2.</span> <span class="nav-text">实验程序编写</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E6%A0%91%E4%BF%AE%E6%94%B9"><span class="nav-number">2.1.</span> <span class="nav-text">设备树修改</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E7%BC%96%E5%86%99"><span class="nav-number">2.2.</span> <span class="nav-text">程序编写</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+    </div>
+</body>
+</html>
