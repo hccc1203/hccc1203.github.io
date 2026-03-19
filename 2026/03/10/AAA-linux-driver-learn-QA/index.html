@@ -32,7 +32,7 @@
 <meta property="og:description" content="学习过程中的 QA ,持续更新">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-10T08:56:33.000Z">
-<meta property="article:modified_time" content="2026-03-17T08:19:52.223Z">
+<meta property="article:modified_time" content="2026-03-19T10:39:21.441Z">
 <meta property="article:author" content="Hcc">
 <meta property="article:tag" content="Linux">
 <meta property="article:tag" content="驱动开发">
@@ -225,14 +225,15 @@
 
       
         <hr>
-<p>&emsp;&emsp;<strong>Q1、为什么在驱动文件中，fops 中的 open 函数要将 filp 的 private_data 指向设备地址，read 函数再从 private_data 获取设备信息，而不是直接访问呢？</strong><br>&emsp;&emsp;第一、驱动可能不止一个设备实例，一个驱动可能会支持多个设备，如果 read() 里直接访问全局变量，你根本不知道打开的是哪一个设备。而在 open 时内核已经通过 inode 知道设备号，可以在 open 找到对应设备结构体存到 private_data ，之后read、write 都可以拿到正确设备。<br>&emsp;&emsp;第二、一个设备可以被多个进程打开。在多个线程同时访问同一设备时，内核会创建多个不同的 struct file，每个现成的 fop 独立，不能互相访问。</p>
+<p>&emsp;&emsp;2026&#x2F;3&#x2F;10<br>&emsp;&emsp;<strong>Q1、为什么在驱动文件中，fops 中的 open 函数要将 filp 的 private_data 指向设备地址，read 函数再从 private_data 获取设备信息，而不是直接访问呢？</strong><br>&emsp;&emsp;第一、驱动可能不止一个设备实例，一个驱动可能会支持多个设备，如果 read() 里直接访问全局变量，你根本不知道打开的是哪一个设备。而在 open 时内核已经通过 inode 知道设备号，可以在 open 找到对应设备结构体存到 private_data ，之后read、write 都可以拿到正确设备。<br>&emsp;&emsp;第二、一个设备可以被多个进程打开。在多个线程同时访问同一设备时，内核会创建多个不同的 struct file，每个现成的 fop 独立，不能互相访问。</p>
 <hr>
-<p>&emsp;&emsp;<strong>Q2、为什么在驱动文件中，设备结构体的类和设备结构体要设置为指针？</strong><br>&emsp;&emsp;因为这些对象不是驱动程序创建的，而是内核创建的。驱动只是登记了一个设备类和设备节点，真正的对象是在内核设备模型里分配的，设备对象必须由内核统一管理，而不是驱动自己随便创建或释放。</p>
+<p>&emsp;&emsp;2026&#x2F;3&#x2F;12<br>&emsp;&emsp;<strong>Q2、为什么在驱动文件中，设备结构体的类和设备结构体要设置为指针？</strong><br>&emsp;&emsp;因为这些对象不是驱动程序创建的，而是内核创建的。驱动只是登记了一个设备类和设备节点，真正的对象是在内核设备模型里分配的，设备对象必须由内核统一管理，而不是驱动自己随便创建或释放。</p>
 <hr>
-<p>&emsp;&emsp;<strong>Q3、probe 和 init 的区别是什么，我在装载模块时和打开设备时候分别调用什么函数</strong><br>&emsp;&emsp;当执行 insmod xxx.ko 文件时，先调用 init 函数，只在模块加载时调用一次，在这个函数中通常做的是<strong>注册驱动</strong>。probe 函数是 <strong>设备和驱动匹配成功时调用</strong>，他的任务是获取硬件资源、初始化硬件、注册字符设备、创建 &#x2F;dev 节点。如果系统里有多个设备，probe 可能会执行多次。<br>&emsp;&emsp;在打开设备时，内核不会再调用 init 或 probe，而是进入 file_operations 里的函数。把三个阶段连起来之后就是这样：</p>
+<p>&emsp;&emsp;2026&#x2F;3&#x2F;16<br>&emsp;&emsp;<strong>Q3、probe 和 init 的区别是什么，我在装载模块时和打开设备时候分别调用什么函数</strong><br>&emsp;&emsp;当执行 insmod xxx.ko 文件时，先调用 init 函数，只在模块加载时调用一次，在这个函数中通常做的是<strong>注册驱动</strong>。probe 函数是 <strong>设备和驱动匹配成功时调用</strong>，他的任务是获取硬件资源、初始化硬件、注册字符设备、创建 &#x2F;dev 节点。如果系统里有多个设备，probe 可能会执行多次。<br>&emsp;&emsp;在打开设备时，内核不会再调用 init 或 probe，而是进入 file_operations 里的函数。把三个阶段连起来之后就是这样：</p>
 <figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">insmod 驱动</span><br><span class="line">   ↓</span><br><span class="line">module_init()</span><br><span class="line">   ↓</span><br><span class="line">xxx_init()</span><br><span class="line"></span><br><span class="line">设备匹配</span><br><span class="line">   ↓</span><br><span class="line">probe()</span><br><span class="line"></span><br><span class="line">用户访问设备</span><br><span class="line">   ↓</span><br><span class="line">open()</span><br><span class="line">read()</span><br><span class="line">write()</span><br></pre></td></tr></table></figure>
 
 <hr>
+<p>&emsp;&emsp;2026&#x2F;3&#x2F;19<br>&emsp;&emsp;<strong>Q4、如何更好的理解 Linux 中 SPI 通信需要将 spi_transfer 放到 spi_message 队列中</strong><br>&emsp;&emsp;Linux SPI 子系统管理的不是某一段字节流，而是完整的 SPI 事务，而一个事务往往由多个传输片段组成，所以需要 spi_message 将他们组织起来。<br>&emsp;&emsp;我们先来搞清楚 spi_transfer 和 spi_message 的分工。spi_transfer 描述的是一次具体传输数据，比如 tx_buf、rx_buf、len 等等信息，它关注的是某一小段如何传输</p>
 
     </div>
 

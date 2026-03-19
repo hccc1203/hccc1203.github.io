@@ -32,7 +32,7 @@
 <meta property="og:description" content="SPI 是一种常用的串行通信协议，本次我们就来学习一下如何在 Linux 下编写 SPI 设备驱动。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-18T10:49:18.000Z">
-<meta property="article:modified_time" content="2026-03-19T06:57:55.857Z">
+<meta property="article:modified_time" content="2026-03-19T10:33:55.096Z">
 <meta property="article:author" content="Hcc">
 <meta property="article:tag" content="Linux">
 <meta property="article:tag" content="驱动开发">
@@ -261,6 +261,18 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">spi_message_init</span><span class="params">(<span class="keyword">struct</span> spi_message *m)</span></span><br></pre></td></tr></table></figure>
 
 <p>&emsp;&emsp;其中，m 就表示要初始化的 spi_message。<br>&emsp;&emsp;spi_message 准备好以后就可以进行数据传输了，数据传输分为同步传输和异步传输，同步传输会阻塞的等待 SPI 数据传输完成，同步传输函数为 spi_sync，函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">spi_message_add_tail</span><span class="params">(<span class="keyword">struct</span> spi_transfer *t, <span class="keyword">struct</span> spi_message *m)</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，t 表示要添加到队列中的 spi_transfer，m 表示要加入的 spi_message。</p>
+<p>&emsp;&emsp;spi_message 准备好以后就可以进行数据传输了，数据传输分为同步传输和异步传输，同步传输会阻塞的等待 SPI 数据传输完成，同步传输函数为 spi_sync，函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">spi_sync</span><span class="params">(<span class="keyword">struct</span> spi_device *spi, <span class="keyword">struct</span> spi_message *message)</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，spi 就是要进行数据传输的 spi_device，message 表示要传输的 spi_message。</p>
+<p>&emsp;&emsp;异步传输不会阻塞的等待 SPI 数据传输完成，异步传输需要设置 spi_message 中的 complete 成员变量，其是一个回调函数，当 SPI 异步传输完成以后此函数就会被调用。SPI 异步传输函数为 spi_async，函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">spi_async</span><span class="params">(<span class="keyword">struct</span> spi_device *spi, <span class="keyword">struct</span> spi_message *message)</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，spi 就是要进行数据传输的 spi_device，message 就是要传输的 spi_message。</p>
+<p>&emsp;&emsp;综上所述，SPI 数据传输步骤如下：<br>&emsp;&emsp;①、申请并初始化 spi_transfer，设置 spi_transfer 的 tx_buf 成员变量，然后设置 rx_buf 成员变量，最后设置 len 成员变量。<br>&emsp;&emsp;②、使用 spi_message_init 函数初始化 spi_message。<br>&emsp;&emsp;③、使用 spi_message_add_tail 函数将前面设置好的 spi_transfer 添加到 spi_message 队列中。<br>&emsp;&emsp;④、使用 spi_sync 函数完成 SPI 数据同步传输。</p>
 <!-- flag of hidden posts -->
     </div>
 
