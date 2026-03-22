@@ -32,7 +32,7 @@
 <meta property="og:description" content="学习过程中的 QA ,持续更新">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-10T08:56:33.000Z">
-<meta property="article:modified_time" content="2026-03-19T10:39:21.441Z">
+<meta property="article:modified_time" content="2026-03-19T11:07:45.963Z">
 <meta property="article:author" content="Hcc">
 <meta property="article:tag" content="Linux">
 <meta property="article:tag" content="驱动开发">
@@ -233,7 +233,7 @@
 <figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">insmod 驱动</span><br><span class="line">   ↓</span><br><span class="line">module_init()</span><br><span class="line">   ↓</span><br><span class="line">xxx_init()</span><br><span class="line"></span><br><span class="line">设备匹配</span><br><span class="line">   ↓</span><br><span class="line">probe()</span><br><span class="line"></span><br><span class="line">用户访问设备</span><br><span class="line">   ↓</span><br><span class="line">open()</span><br><span class="line">read()</span><br><span class="line">write()</span><br></pre></td></tr></table></figure>
 
 <hr>
-<p>&emsp;&emsp;2026&#x2F;3&#x2F;19<br>&emsp;&emsp;<strong>Q4、如何更好的理解 Linux 中 SPI 通信需要将 spi_transfer 放到 spi_message 队列中</strong><br>&emsp;&emsp;Linux SPI 子系统管理的不是某一段字节流，而是完整的 SPI 事务，而一个事务往往由多个传输片段组成，所以需要 spi_message 将他们组织起来。<br>&emsp;&emsp;我们先来搞清楚 spi_transfer 和 spi_message 的分工。spi_transfer 描述的是一次具体传输数据，比如 tx_buf、rx_buf、len 等等信息，它关注的是某一小段如何传输</p>
+<p>&emsp;&emsp;2026&#x2F;3&#x2F;19<br>&emsp;&emsp;<strong>Q4、如何更好的理解 Linux 中 SPI 通信需要将 spi_transfer 放到 spi_message 队列中</strong><br>&emsp;&emsp;Linux SPI 子系统管理的不是某一段字节流，而是完整的 SPI 事务，而一个事务往往由多个传输片段组成，所以需要 spi_message 将他们组织起来。<br>&emsp;&emsp;我们先来搞清楚 spi_transfer 和 spi_message 的分工。spi_transfer 描述的是一次具体传输数据，比如 tx_buf、rx_buf、len 等等信息，它关注的是某一小段如何传输；而 spi_message 本质上是一个链表容器，用来挂载 spi_transfer，它关注的是这些小段合起来构成什么事务。</p>
 
     </div>
 
@@ -331,7 +331,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-count">36</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
