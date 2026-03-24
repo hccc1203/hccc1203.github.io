@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="触摸屏的使用场景很多，今天我们来学习一下如何编写电容触摸屏的驱动。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动学习日记(29) Linux 多点电容触摸">
+<meta property="og:url" content="https://hccc1203.github.io/2026/03/23/linux-driver-learn-29/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="触摸屏的使用场景很多，今天我们来学习一下如何编写电容触摸屏的驱动。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/29/%E5%8E%9F%E7%90%86%E5%9B%BE.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/29/input%E6%95%B0%E6%8D%AE.png">
+<meta property="article:published_time" content="2026-03-23T08:24:36.000Z">
+<meta property="article:modified_time" content="2026-03-24T12:18:01.488Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="驱动开发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/29/%E5%8E%9F%E7%90%86%E5%9B%BE.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/03/23/linux-driver-learn-29/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动学习日记(29) Linux 多点电容触摸 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/03/23/linux-driver-learn-29/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动学习日记(29) Linux 多点电容触摸
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-03-23 16:24:36" itemprop="dateCreated datePublished" datetime="2026-03-23T16:24:36+08:00">2026-03-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/Linux%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">Linux驱动</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="多点电容触摸简介"><a href="#多点电容触摸简介" class="headerlink" title="多点电容触摸简介"></a>多点电容触摸简介</h2><p>&emsp;&emsp;我手上使用的屏幕是 TFT LCD + 触摸屏组合起来的，底下是 LCD 面板，上面是触摸面板，将两个封装到一起就成了带有触摸屏的 LCD 屏幕。电容触摸屏也需要一个驱动 IC，驱动 IC 一般会提供一个 I2C 接口给主控制器，主控制器可以通过 I2C 接口来读取驱动 IC 的数据。我手上使用的触摸控制 IC 是 GT1151。</p>
+<h2 id="多点触摸（MT）协议"><a href="#多点触摸（MT）协议" class="headerlink" title="多点触摸（MT）协议"></a>多点触摸（MT）协议</h2><p>&emsp;&emsp;我们已经知道以下几点：<br>&emsp;&emsp;①、电容触摸屏是 I2C 接口，需要触摸 IC。<br>&emsp;&emsp;②、触摸 IC 提供了中断信号引脚 （INT），可以通过中断来获取触摸信息。<br>&emsp;&emsp;③、电容触摸屏得到的是触摸位置绝对信息以及触摸屏是否有按下。<br>&emsp;&emsp;结合以上几点我们可以得出电容触摸屏驱动起始就是以以下几种 Linux 驱动框架组合起来的：<br>&emsp;&emsp;①、I2C 设备驱动，因为电容触摸 IC 基本都是 I2C 接口，因此大框架就是 I2C 设备驱动。<br>&emsp;&emsp;②、通过中断引脚向 Linux 内核上报触摸信息，因此需要用到 Linux 的中断驱动框架。坐标的上报在中断服务函数中完成。<br>&emsp;&emsp;③、触摸屏的坐标信息、屏幕按下和抬起信息属于 Linux 的 input 子系统，因此向 Linux 内核上报触摸屏坐标信息就得用 input 子系统。</p>
+<p>&emsp;&emsp;接下来我们来学习 input 子系统下的多点电容触摸协议。<br>&emsp;&emsp;触摸点的信息通过一系列的 ABS_MT 事件上报给 Linux 内核，只有 ABS_MT 事件是用于多点出没的，ABS_MT 时间定义在文件 include&#x2F;dt-bindings&#x2F;input&#x2F;linux-event-codes.h 中，如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_SLOT     0x2f     <span class="comment">/* MT slot being modified */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_TOUCH_MAJOR     0x30     <span class="comment">/* Major axis of touching ellipse */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_TOUCH_MINOR     0x31     <span class="comment">/* Minor axis (omit if circular) */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_WIDTH_MAJOR     0x32     <span class="comment">/* Major axis of approaching ellipse */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_WIDTH_MINOR     0x33     <span class="comment">/* Minor axis (omit if circular) */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_ORIENTATION     0x34     <span class="comment">/* Ellipse orientation */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_POSITION_X     0x35     <span class="comment">/* Center X touch position */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_POSITION_Y     0x36     <span class="comment">/* Center Y touch position */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_TOOL_TYPE     0x37     <span class="comment">/* Type of touching device */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_BLOB_ID     0x38     <span class="comment">/* Group a set of packets as a blob */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_TRACKING_ID     0x39     <span class="comment">/* Unique ID of initiated contact */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_PRESSURE     0x3a     <span class="comment">/* Pressure on contact area */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_DISTANCE     0x3b     <span class="comment">/* Contact hover distance */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_TOOL_X     0x3c     <span class="comment">/* Center X tool position */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> ABS_MT_TOOL_Y     0x3d     <span class="comment">/* Center Y tool position */</span></span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在这么多的 ABS_MT 事件中，我们最常用的就是 ABS_MT_SLOT、ABS_MT_POSITION_X、ABS_MT_POSITION_Y 和 ABS_MT_TRACKING_ID。其中 ABS_MT_POSITION_X 和 ABS_MT_POSITION_Y，用来上报触摸点的（X,Y）坐标信息，ABS_MT_SLOT 用来上报触摸点的 ID。对于能区分触摸点的设备，使用 ABS_MT_TRACKING_ID 来区分触摸点。</p>
+<p>&emsp;&emsp;对于能区分触摸点的设备，我们上报触摸点信息的时候需要通过 input_mt_slot() 函数区分是哪一个触摸点，其原型如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">input_mt_slot</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">int</span> slot)</span></span><br><span class="line">&#123;</span><br><span class="line">    input_event(dev, EV_ABS, ABS_MT_SLOT, slot);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;此函数有两个参数，第一个参数是 input_dev 设备，第二个参数 slot 用于指定当前上报的是哪个触摸点信息。input_mt_slot() 函数会触发 ABS_MT_SLOT 事件，此事件会告诉接收者当前正在更新的是哪个触摸点的数据。</p>
+<p>&emsp;&emsp;不管是什么类型的设备，最终都要调用 <strong>input_sync</strong> 函数来表示多点触摸信息传输完成，告诉接收者处理之前累积的所有信息，并准备好下一次接收。对于能区分触摸点的设备，其使用 slot 协议区分具体的触摸点，slot 需要用到 ABS_MT_TRACKING_ID 信息，这个 ID 需要硬件提供，这个设备需要给每个识别出的触摸点分配一个 slot，后面使用这个 slot 上报信息。设备驱动给每个识别出来的触摸点分配一个 slot，后面使用这个 slot 来上报触摸点信息，可以通过 slot 的 ABS_MT_TRACKING_ID 来新增、替换或删除触摸点。一个非负数的 ID 表示一个有效的触摸点，-1 这个 ID 表示未使用 slot。一个以前不存在的 ID 表示这是一个新加的触摸点，一个 ID 如果在也不存在就表示删除了。</p>
+<p>&emsp;&emsp;对于能区分触摸点的设备驱动，发送触摸点信息的时序如下，</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ABS_MT_SLOT         0</span><br><span class="line">ABS_MT_TRACKING_ID  45</span><br><span class="line">ABS_MT_POSITION_X   x[0]</span><br><span class="line">ABS_MT_POSITION_Y   y[0]</span><br><span class="line">ABS_MY_SLOT         1</span><br><span class="line">ABS_MT_TRACKING_ID  46</span><br><span class="line">ABS_MT_POSITION_X   x[1]</span><br><span class="line">ABS_MT_POSITION_Y   y[1]</span><br><span class="line">SYN_REPORT</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;首先上报 ABS_MT_SLOT 事件，也就是触摸点对应的 SLOT。每次上报一个触摸点坐标是前要先用 input_mt_slot 函数上报当前触摸点 SLOT，触摸点的 SLOT 就是触摸点 ID，需要由触摸 IC 提供。接下来根据要求，每个 SLOT 必须关联一个 ABS_MT_TRACKING_ID，通过修改 SLOT 关联的 ABS_MT_TRACKING_ID 来完成对触摸点的添加、替换和删除。具体用到的函数就是 input_mt_report_slot_state，如果是添加一个新的触摸点，那么此函数第三个参数要设置为 true，Linux 内核会自动分配一个 ABS_MT_TRACKING_ID 的值。然后就是上报触摸点的 X、Y 坐标。最后需要上报 SYN_REPORT 事件以保证同步。</p>
+<p>&emsp;&emsp;当一个触摸点移除后，同样需要通过 SLOT 关联的 ABS_MT_TRACKING_ID 来处理，时序如下所示</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ABS_MT_TRACKING_ID      -1</span><br><span class="line">SYN_REPORT</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;ili210x.c 文件上报触摸坐标信息函数如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">bool</span> <span class="title function_">ili210x_report_events</span><span class="params">(<span class="keyword">struct</span> ili210x *priv, u8 *touchdata)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">input_dev</span> *<span class="title">input</span> =</span> priv-&gt;input;</span><br><span class="line">    <span class="type">int</span> i;</span><br><span class="line">    <span class="type">bool</span> contact = <span class="literal">false</span>, touch;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> x = <span class="number">0</span>, y = <span class="number">0</span>, z = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; priv-&gt;chip-&gt;max_touches; i++) &#123;</span><br><span class="line">        touch = priv-&gt;chip-&gt;parse_touch_data(touchdata, i, &amp;x, &amp;y, &amp;z);</span><br><span class="line"></span><br><span class="line">        input_mt_slot(input, i);</span><br><span class="line">        <span class="keyword">if</span> (input_mt_report_slot_state(input, MT_TOOL_FINGER, touch)) &#123;</span><br><span class="line">            touchscreen_report_pos(input, &amp;priv-&gt;prop, x, y, <span class="literal">true</span>);</span><br><span class="line">            <span class="keyword">if</span> (priv-&gt;chip-&gt;has_pressure_reg)</span><br><span class="line">                input_report_abs(input, ABS_MT_PRESSURE, z);</span><br><span class="line">            contact = <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    input_mt_report_pointer_emulation(input, <span class="literal">false</span>);</span><br><span class="line">    input_sync(input);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> contact;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;我们后续编写代码也是按照这个框架来编写。</p>
+<h2 id="多点触摸所使用的-API-函数"><a href="#多点触摸所使用的-API-函数" class="headerlink" title="多点触摸所使用的 API 函数"></a>多点触摸所使用的 API 函数</h2><p>&emsp;&emsp;<strong>1、input_mt_init_slots 函数</strong><br>&emsp;&emsp;input_mt_init_slots 函数用于初始化 MT 的输入 slots，编写 MT 驱动的时候必须先调用此函数初始化 slots，此函数原型如下所示</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">input_mt_init_slots</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">unsigned</span> <span class="type">int</span> num_slots,<span class="type">unsigned</span> <span class="type">int</span> flags)</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;dev 表示 MT 设备对应的 input_dev，因为 MT 设备属于 input_dev；num_slots 表示设备要使用的 SLOT 数量，也就是触摸点的数量；flags 表示其他一些flags 信息。返回值为 0 成功。</p>
+<p>&emsp;&emsp;<strong>2、input_mt_slot</strong><br>&emsp;&emsp;此函数用于产生 ABS_MT_SLOT 事件，告诉内核当前上报的是哪个触摸点的坐标数据，此函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">input_mt_slot</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">int</span> slot)</span></span><br><span class="line">&#123;</span><br><span class="line">    input_event(dev, EV_ABS, ABS_MT_SLOT, slot);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，dev 就是 MT 设备对应的 input_dev，slot 就是当前发送的触摸点信息。</p>
+<p>&emsp;&emsp;<strong>3、input_mt_report_slot_state</strong><br>&emsp;&emsp;此函数用于产生 ABS_MT_TRACKING_ID 和 ABS_MT_TOOL_TYPE 事件，ABS_MT_TRACKING_ID 事件给 slot 关联一个 ABS_MT_TRACKING_ID，ABS_MT_TOOL_TYPE 事件指定触摸类型。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">bool</span> <span class="title function_">input_mt_report_slot_state</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">unsigned</span> <span class="type">int</span> tool_type, <span class="type">bool</span> active)</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，dev 表示 MT 设备对应的 input_dev。tool_type 表示触摸类型，可以选择手指、笔或手掌等等。active 为 true 时就表示连续触摸，input 子系统内核会自动分配一个 ABS_MT_TRACKING_ID 给 slot。false 表示触摸点抬起。</p>
+<p>&emsp;&emsp;<strong>4、input_report_abs</strong><br>&emsp;&emsp;所有触摸设备都使用此函数来上报触摸点坐标信息，通过 ABS_MT_POSITION_X 和 ABS_MT_POSITION_Y 实现坐标信息上报。其函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">input_report_abs</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">unsigned</span> <span class="type">int</span> code, <span class="type">int</span> value)</span></span><br><span class="line">&#123;</span><br><span class="line">    input_event(dev, EV_ABS, code, value);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<strong>5、input_mt_report_pointer_emulation 函数</strong><br>&emsp;&emsp;若追踪到的触摸点数量大于当前上报的数量，驱动程序用 BTN_TOOL_TAP 事件来通知用户空间当前追踪到的触摸点总数，然后调用 input_mt_report_pointer_emulation 函数将 use_count 参数设置为 false，否则将 use_count 参数设置为 true，表示当前的触摸点数量。函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">input_mt_report_pointer_emulation</span><span class="params">(<span class="keyword">struct</span> input_dev *dev, <span class="type">bool</span> use_count)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，dev 就是 MT 设备对应的 input_dev，use_count true 表示有效的触摸点数量，false 表示追踪到的触摸点数量大于当前上报的数量。</p>
+<h2 id="多点电容触摸驱动框架"><a href="#多点电容触摸驱动框架" class="headerlink" title="多点电容触摸驱动框架"></a>多点电容触摸驱动框架</h2><p>&emsp;&emsp;综上所述，多点电容触摸框架需要以下几个内容：<br>&emsp;&emsp;1、主框架为 I2C。<br>&emsp;&emsp;2、Linux 中多用中断来上报触摸点坐标信息，使用到中断框架。<br>&emsp;&emsp;3、input 子系统框架<br>&emsp;&emsp;4、在中断处理中使用 Linux 的 MT 协议上报坐标信息。</p>
+<p>&emsp;&emsp;接下来我们逐个回顾框架如何编写</p>
+<p>&emsp;&emsp;<strong>1、I2C 驱动框架</strong><br>&emsp;&emsp;驱动总体采用 I2C 框架，其参考代码如下所示</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">i2c_device_id</span> <span class="title">xxx_ts_id</span>[] =</span> &#123;&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">of_device_id</span>  <span class="title">xxx_of_match</span>[] =</span> &#123;&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">i2c_driver</span> <span class="title">xxx_tx_driver</span> =</span> &#123;</span><br><span class="line">    .owner = THIS_MODULE,</span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">xxx_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    ret = i2c_add_driver(&amp;xxx_ts_driver);</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __exit <span class="title function_">xxx_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    i2c_del_driver(&amp;xxx_ts_driver);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(xxx_init);</span><br><span class="line">module_exit(xxx_exit);</span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;hcw&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;当设备树中触摸 IC 的设备节点和驱动匹配以后，probe 函数就会执行，可以在此函数中初始化触摸 IC、中断、input 子系统等等。</p>
+<p>&emsp;&emsp;<strong>2、初始化触摸 IC、中断和 input 子系统</strong><br>&emsp;&emsp;初始化操作都是在 xxx_ts_probe 函数中完成，参考框架如下所示</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">xxx_tx_probe</span><span class="params">(<span class="keyword">struct</span> i2c_client &amp;client, <span class="type">const</span> <span class="keyword">struct</span> i2c_device_id *id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">input_dev</span> *<span class="title">dev</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 1、初始化 I2C */</span></span><br><span class="line">    ······</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 2、申请中断 */</span></span><br><span class="line">    devm_request_threaded_irq(&amp;client-&gt;dev, client-&gt;irq, <span class="literal">NULL</span>, xxx_handler, IRQF_TRIGGER_FALLING | IRQF_ONESHOT, client-&gt;name , &amp;xxx);</span><br><span class="line">    ······</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 3、input 设备申请与初始化 */</span></span><br><span class="line">    input = devm_input_allocate_device(&amp;client-&gt;dev);</span><br><span class="line">    input-&gt;name = client-&gt;name;</span><br><span class="line">    input-&gt;id.bustype = BUS_I2C;</span><br><span class="line">    input-&gt;dev.parent = &amp;client -&gt; dev;</span><br><span class="line">    ······</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 4、初始化 input 和 MT */</span></span><br><span class="line">    __set_bit(EV_ABS, input-&gt;evbit);</span><br><span class="line">    __set_bit(BTN_TOUCH, input-&gt;keybit);</span><br><span class="line"></span><br><span class="line">    input_set_abs_params(input, ABS_X, <span class="number">0</span>, width, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    input_set_abs_params(input, ABS_Y, <span class="number">0</span>, height, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    input_set_abs_params(input, ABS_MT_POSITION_X, <span class="number">0</span>, width, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    input_set_abs_params(input, ABS_MT_POSITION_Y, <span class="number">0</span>, height, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    ······</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 5、注册 input_dev */</span></span><br><span class="line">    input_register_device(input);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;首先初始化触摸芯片，包括芯片的相关 IO，比如复位、中断等 IO 引脚，然后就是芯片本身的初始化，配置触摸芯片相关的寄存器。接下来就是申请中断、input dev，接着设置 input_dev 的上报事件。</p>
+<p>&emsp;&emsp;值得注意的是，这里申请中断使用的函数是 devm_request_threaded_irq，这里的意思是将此中断线程化，可以保证高优先级的任务能被优先处理。devm_ 前缀的意思是让 Linux 自动释放资源。</p>
+<p>&emsp;&emsp;<strong>3、上报坐标信息</strong><br>&emsp;&emsp;最后就是在中断服务程序中上报读取到的坐标信息，根据所使用的多点电容触摸设备类型选择发送时序，对于能区分多个触摸点的设备参考框架如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">xxx_handler</span><span class="params">(<span class="type">int</span> irq, <span class="type">void</span> *dev_id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> num;</span><br><span class="line">    <span class="type">int</span> x[n],y[n];</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 读取触摸点 */</span></span><br><span class="line">    ······</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 上报每一个触摸点坐标 */</span></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i&lt; num; i++)</span><br><span class="line">    &#123;</span><br><span class="line">        input_mt_slot(input, id);</span><br><span class="line">        input_mt_report_slot_state(input, MT_TOOL_FINGER, <span class="literal">true</span>);</span><br><span class="line">        input_report_abs(input, ABS_MT_POSITION_X, x[i]);</span><br><span class="line">        input_report_abs(input, ABS_MT_POSITION_Y, y[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    ······</span><br><span class="line">    input_sync(input);</span><br><span class="line">    ······</span><br><span class="line">    <span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="硬件分析"><a href="#硬件分析" class="headerlink" title="硬件分析"></a>硬件分析</h2><p>&emsp;&emsp;我手上的触摸芯片为 GT1151，这是一颗支持多点触控（最高5点）的电容触摸屏控制器，它通过最常用的 I2C总线 与主控芯片进行通信。除此之外，还有两根非常重要的GPIO线：<br>&emsp;&emsp;复位引脚（RST）： 用于对触摸芯片进行硬件复位。通常由主控控制，在驱动初始化时，先拉低再拉高，完成一次复位操作。<br>&emsp;&emsp;中断引脚（INT）： 这是触摸芯片主动“通知”主控的关键。当有触摸事件（按下、移动、抬起）发生时，GT1151会通过这个引脚向主控发送一个中断信号。采用中断方式，而不是让主控不停地去查询（轮询），可以极大地节省CPU资源，降低系统功耗。</p>
+<p>&emsp;&emsp;查询底板原理图，可以得知 39、38、36、35 pin 对应的就是四根线，对应关系如下</p>
+<table>
+<thead>
+<tr>
+<th>触摸屏引脚</th>
+<th>对应板级编号</th>
+<th>MX引脚</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CT_RST</td>
+<td>A48</td>
+<td>SNVS_TAMPERD9</td>
+</tr>
+<tr>
+<td>CT_INT</td>
+<td>B15</td>
+<td>GPIO_9</td>
+</tr>
+<tr>
+<td>I2C2_SDA</td>
+<td>B32</td>
+<td>UART5_RXD</td>
+</tr>
+<tr>
+<td>I2C2_SCL</td>
+<td>B31</td>
+<td>UART5_TXD</td>
+</tr>
+</tbody></table>
+<div align=center><img src="/img/linux驱动开发/29/原理图.png"  width=60%></div>
+<div style="text-align:center;">图 1 原理图</div>
+
+<h2 id="程序编写"><a href="#程序编写" class="headerlink" title="程序编写"></a>程序编写</h2><h3 id="修改设备树"><a href="#修改设备树" class="headerlink" title="修改设备树"></a>修改设备树</h3><p>&emsp;&emsp;打开 imx6ull-hcw-emmc.dtsi，找到 iomuxc 节点，添加以下 pinctrl 组</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">pinctrl_gt1151_int: gt1151intgrp&#123;</span><br><span class="line">    fsl,pins = &lt;</span><br><span class="line">        MX6UL_PAD_GPIO1_IO09__GPIO1_IO09    <span class="number">0xF080</span></span><br><span class="line">    &gt;;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">pinctrl_gt1151_reset: gt1151resetgrp&#123;</span><br><span class="line">    fsl,pins = &lt;</span><br><span class="line">        MX6UL_PAD_SNVS_TAMPER9__GPIO5_IO09  <span class="number">0x10B0</span></span><br><span class="line">    &gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来，在 i2c2 节点下添加设备，如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">gt1151@14&#123;</span><br><span class="line">    compatible = &quot;hcw,gt1151&quot;;</span><br><span class="line">    reg = &lt;0x14&gt;;</span><br><span class="line">    pinctrl-names = &quot;default&quot;;</span><br><span class="line">    pinctrl-0 = &lt;&amp;pinctrl_gt1151_int</span><br><span class="line">                &amp;pinctrl_gt1151_reset&gt;;</span><br><span class="line">    interrupt-parent = &lt;&amp;gpio1&gt;;</span><br><span class="line">    interrupts = &lt;9 0&gt;;</span><br><span class="line">    reset-gpios = &lt;&amp;gpio5 9 GPIO_ACTIVE_LOW&gt;;</span><br><span class="line">    interrupt-gpios = &lt;&amp;gpio1 9 GPIO_ACTIVE_LOW&gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;使用新编译好的设备树启动 Linux 内核。</p>
+<h3 id="编写代码"><a href="#编写代码" class="headerlink" title="编写代码"></a>编写代码</h3><p>&emsp;&emsp;创建 .c 文件，写入以下代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br><span class="line">285</span><br><span class="line">286</span><br><span class="line">287</span><br><span class="line">288</span><br><span class="line">289</span><br><span class="line">290</span><br><span class="line">291</span><br><span class="line">292</span><br><span class="line">293</span><br><span class="line">294</span><br><span class="line">295</span><br><span class="line">296</span><br><span class="line">297</span><br><span class="line">298</span><br><span class="line">299</span><br><span class="line">300</span><br><span class="line">301</span><br><span class="line">302</span><br><span class="line">303</span><br><span class="line">304</span><br><span class="line">305</span><br><span class="line">306</span><br><span class="line">307</span><br><span class="line">308</span><br><span class="line">309</span><br><span class="line">310</span><br><span class="line">311</span><br><span class="line">312</span><br><span class="line">313</span><br><span class="line">314</span><br><span class="line">315</span><br><span class="line">316</span><br><span class="line">317</span><br><span class="line">318</span><br><span class="line">319</span><br><span class="line">320</span><br><span class="line">321</span><br><span class="line">322</span><br><span class="line">323</span><br><span class="line">324</span><br><span class="line">325</span><br><span class="line">326</span><br><span class="line">327</span><br><span class="line">328</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * @Author: 胡城玮</span></span><br><span class="line"><span class="comment"> * @FilePath: gt1151.c</span></span><br><span class="line"><span class="comment"> * @Date: 2026-03-24</span></span><br><span class="line"><span class="comment"> * @Description: </span></span><br><span class="line"><span class="comment"> * @Version: 0.1</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/i2c.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/regmap.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/gpio/consumer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_irq.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/interrupt.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/input.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/input/mt.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/debugfs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/delay.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/slab.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/input/mt.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/input/touchscreen.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/i2c.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;asm/unaligned.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GT_CTRL_REG             0X8040  <span class="comment">/* GT1151控制寄存器         */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GT_MODSW_REG             0X804D  <span class="comment">/* GT1151模式切换寄存器        */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GT_1xx_CFGS_REG         0X8050  <span class="comment">/* GT1151配置起始地址寄存器    */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GT_CHECK_REG             0X80FF  <span class="comment">/* GT1151校验和寄存器       */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GT_PID_REG                 0X8140  <span class="comment">/* GT1151产品ID寄存器       */</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GT_GSTID_REG             0X814E  <span class="comment">/* GT1151当前检测到的触摸情况 */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GT_TP1_REG                 0X8150  <span class="comment">/* 第一个触摸点数据地址 */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GT_TP2_REG                 0X8158    <span class="comment">/* 第二个触摸点数据地址 */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GT_TP3_REG                 0X8160  <span class="comment">/* 第三个触摸点数据地址 */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GT_TP4_REG                 0X8168  <span class="comment">/* 第四个触摸点数据地址  */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GT_TP5_REG                 0X8170    <span class="comment">/* 第五个触摸点数据地址   */</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MAX_SUPPORT_POINTS      5       <span class="comment">/* 最多5点电容触摸 */</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">const</span> u8 irq_table[] = &#123;IRQ_TYPE_EDGE_RISING, IRQ_TYPE_EDGE_FALLING, IRQ_TYPE_LEVEL_LOW, IRQ_TYPE_LEVEL_HIGH&#125;;  <span class="comment">/* 触发方式 */</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">gt1151_dev</span>&#123;</span></span><br><span class="line">    <span class="type">int</span> irq_pin, reset_pin;</span><br><span class="line">    <span class="type">int</span> irqnum;</span><br><span class="line">    <span class="type">int</span> irqtype;</span><br><span class="line">    <span class="type">int</span> max_x;</span><br><span class="line">    <span class="type">int</span> max_y;</span><br><span class="line">    <span class="type">void</span> *private_data;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">input_dev</span> *<span class="title">input</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">i2c_client</span> *<span class="title">client</span>;</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">gt1151_dev</span> <span class="title">gt1151dev</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 硬件复位</span></span><br><span class="line"><span class="comment"> * @param &#123;i2c_client&#125; *client</span></span><br><span class="line"><span class="comment"> * @param &#123;gt1151_dev&#125; *dev</span></span><br><span class="line"><span class="comment"> * @return &#123;*&#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">gt1151_dev_init</span><span class="params">(<span class="keyword">struct</span> i2c_client *client, <span class="keyword">struct</span> gt1151_dev *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span> (gpio_is_valid(dev-&gt;reset_pin))</span><br><span class="line">    &#123;</span><br><span class="line">        ret = devm_gpio_request_one(&amp;client-&gt;dev, dev-&gt;reset_pin, </span><br><span class="line">                                    GPIOF_OUT_INIT_HIGH, <span class="string">&quot;gt1151 reset&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span>(ret)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">return</span> ret;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (gpio_is_valid(dev-&gt;irq_pin))</span><br><span class="line">    &#123;</span><br><span class="line">        ret = devm_gpio_request_one(&amp;client-&gt;dev, dev-&gt;irq_pin, </span><br><span class="line">                                    GPIOF_OUT_INIT_HIGH, <span class="string">&quot;gt1151 int&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span>(ret)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">return</span> ret;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    gpio_set_value(dev-&gt;reset_pin, <span class="number">0</span>); <span class="comment">/* 复位GT1151 */</span></span><br><span class="line">    msleep(<span class="number">10</span>);</span><br><span class="line">    gpio_set_value(dev-&gt;reset_pin, <span class="number">1</span>); <span class="comment">/* 停止复位GT1151 */</span></span><br><span class="line">    msleep(<span class="number">10</span>);</span><br><span class="line">    gpio_set_value(dev-&gt;irq_pin, <span class="number">0</span>);    <span class="comment">/* 拉低INT引脚 */</span></span><br><span class="line">    msleep(<span class="number">50</span>);</span><br><span class="line">    gpio_direction_input(dev-&gt;irq_pin); <span class="comment">/* INT引脚设置为输入 */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 读寄存器</span></span><br><span class="line"><span class="comment"> * @param &#123;gt1151_dev&#125; *dev</span></span><br><span class="line"><span class="comment"> * @param &#123;u16&#125; reg</span></span><br><span class="line"><span class="comment"> * @param &#123;u8&#125; *buf</span></span><br><span class="line"><span class="comment"> * @param &#123;int&#125; len</span></span><br><span class="line"><span class="comment"> * @return &#123;*&#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">gt1151_read_regs</span><span class="params">(<span class="keyword">struct</span> gt1151_dev *dev, u16 reg, u8 *buf, <span class="type">int</span> len)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> ret;</span><br><span class="line">    u8 regdata[<span class="number">2</span>];</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">i2c_msg</span> <span class="title">msg</span>[2];</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">i2c_client</span> *<span class="title">client</span> =</span> (<span class="keyword">struct</span> i2c_client *)dev-&gt;client;</span><br><span class="line"></span><br><span class="line">    regdata[<span class="number">0</span>] = reg &gt;&gt; <span class="number">8</span>;</span><br><span class="line">    regdata[<span class="number">1</span>] = reg &amp; <span class="number">0xff</span>;</span><br><span class="line"></span><br><span class="line">    msg[<span class="number">0</span>].addr = client-&gt;addr;</span><br><span class="line">    msg[<span class="number">0</span>].buf = &amp;regdata[<span class="number">0</span>];</span><br><span class="line">    msg[<span class="number">0</span>].flags = !I2C_M_RD;</span><br><span class="line">    msg[<span class="number">0</span>].len = <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">    msg[<span class="number">1</span>].addr = client-&gt;addr;</span><br><span class="line">    msg[<span class="number">1</span>].buf = buf;</span><br><span class="line">    msg[<span class="number">1</span>].flags = I2C_M_RD;</span><br><span class="line">    msg[<span class="number">1</span>].len = len;</span><br><span class="line"></span><br><span class="line">    ret = i2c_transfer(client-&gt;adapter, msg, <span class="number">2</span>);</span><br><span class="line">    <span class="keyword">if</span>(ret == <span class="number">2</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        ret = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        ret = -EREMOTEIO;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 写寄存器</span></span><br><span class="line"><span class="comment"> * @param &#123;gt1151_dev&#125; *dev</span></span><br><span class="line"><span class="comment"> * @param &#123;u16&#125; reg</span></span><br><span class="line"><span class="comment"> * @param &#123;u8&#125; *buf</span></span><br><span class="line"><span class="comment"> * @param &#123;int&#125; len</span></span><br><span class="line"><span class="comment"> * @return &#123;*&#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">gt1151_write_regs</span><span class="params">(<span class="keyword">struct</span> gt1151_dev *dev, u16 reg, u8 *buf, <span class="type">int</span> len)</span></span><br><span class="line">&#123;</span><br><span class="line">    u8 b[<span class="number">256</span>];</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">i2c_msg</span> <span class="title">msg</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">i2c_client</span> *<span class="title">client</span> =</span> (<span class="keyword">struct</span> i2c_client *)dev-&gt;client;</span><br><span class="line"></span><br><span class="line">    b[<span class="number">0</span>] = reg &gt;&gt; <span class="number">8</span>;</span><br><span class="line">    b[<span class="number">1</span>] = reg &amp; <span class="number">0xff</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memcpy</span>(&amp;b[<span class="number">2</span>], buf, len);</span><br><span class="line"></span><br><span class="line">    msg.addr = client-&gt;addr;</span><br><span class="line">    msg.flags = <span class="number">0</span>;</span><br><span class="line">    msg.buf = b;</span><br><span class="line">    msg.len = len + <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> i2c_transfer(client-&gt;adapter, &amp;msg, <span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">gt1151_irq_handler</span><span class="params">(<span class="type">int</span> irq, <span class="type">void</span> *dev_id)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> touch_num = <span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> input_x, input_y;</span><br><span class="line">    <span class="type">int</span> id = <span class="number">0</span>;</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    u8 data;</span><br><span class="line">    u8 touch_data[<span class="number">5</span>];</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">gt1151_dev</span> *<span class="title">dev</span> =</span> dev_id;</span><br><span class="line"></span><br><span class="line">    ret = gt1151_read_regs(dev, GT_GSTID_REG, &amp;data, <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">if</span> (data == <span class="number">0x00</span>)  &#123;     <span class="comment">/* 没有触摸数据，直接返回 */</span></span><br><span class="line">        <span class="keyword">goto</span> failed;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;                 <span class="comment">/* 统计触摸点数据 */</span></span><br><span class="line">        touch_num = data &amp; <span class="number">0x0f</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(touch_num) &#123;         <span class="comment">/* 单点触摸按下 */</span></span><br><span class="line">        gt1151_read_regs(dev, GT_TP1_REG, touch_data, <span class="number">5</span>);</span><br><span class="line">        id = touch_data[<span class="number">0</span>] &amp; <span class="number">0x0F</span>;</span><br><span class="line">        <span class="keyword">if</span>(id == <span class="number">0</span>) &#123;</span><br><span class="line">            input_x  = touch_data[<span class="number">1</span>] | (touch_data[<span class="number">2</span>] &lt;&lt; <span class="number">8</span>);</span><br><span class="line">            input_y  = touch_data[<span class="number">3</span>] | (touch_data[<span class="number">4</span>] &lt;&lt; <span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">            input_mt_slot(dev-&gt;input, id);</span><br><span class="line">            input_mt_report_slot_state(dev-&gt;input, MT_TOOL_FINGER, <span class="literal">true</span>);</span><br><span class="line">            input_report_abs(dev-&gt;input, ABS_MT_POSITION_X, input_x);</span><br><span class="line">            input_report_abs(dev-&gt;input, ABS_MT_POSITION_Y, input_y);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span>(touch_num == <span class="number">0</span>)&#123;                <span class="comment">/* 单点触摸释放 */</span></span><br><span class="line">        input_mt_slot(dev-&gt;input, id);</span><br><span class="line">        input_mt_report_slot_state(dev-&gt;input, MT_TOOL_FINGER, <span class="literal">false</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    input_mt_report_pointer_emulation(dev-&gt;input, <span class="literal">false</span>);</span><br><span class="line">    input_sync(dev-&gt;input);</span><br><span class="line"></span><br><span class="line">    data = <span class="number">0x00</span>;</span><br><span class="line">    gt1151_write_regs(dev, GT_GSTID_REG, &amp;data, <span class="number">1</span>);</span><br><span class="line">failed:</span><br><span class="line">    <span class="keyword">return</span> IRQ_HANDLED;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">gt1151_read_firmware</span><span class="params">(<span class="keyword">struct</span> i2c_client *client, <span class="keyword">struct</span> gt1151_dev *dev)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>,version = <span class="number">0</span>;</span><br><span class="line">    u8 data[<span class="number">7</span>] = &#123;<span class="number">0</span>&#125;;</span><br><span class="line">    gt1151_read_regs(dev, GT_1xx_CFGS_REG, data, <span class="number">7</span>);</span><br><span class="line">    <span class="keyword">if</span> (ret) &#123;</span><br><span class="line">        dev_err(&amp;client-&gt;dev, <span class="string">&quot;Unable to read Firmware.\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line">    dev-&gt;max_x = (data[<span class="number">2</span>] &lt;&lt; <span class="number">8</span>) + data[<span class="number">1</span>];</span><br><span class="line">    dev-&gt;max_y = (data[<span class="number">4</span>] &lt;&lt; <span class="number">8</span>) + data[<span class="number">3</span>];</span><br><span class="line">    dev-&gt;irqtype = data[<span class="number">6</span>] &amp; <span class="number">0x3</span>;</span><br><span class="line"></span><br><span class="line">    printk(<span class="string">&quot;X_MAX: %d, Y_MAX: %d, TRIGGER: 0x%02x&quot;</span>, dev-&gt;max_x, dev-&gt;max_y, dev-&gt;irqtype);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">of_device_id</span> <span class="title">gt1151_of_match</span>[] =</span> &#123;</span><br><span class="line">    &#123;.compatible = <span class="string">&quot;hcw,gt1151&quot;</span>&#125;,</span><br><span class="line">    &#123;&#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">MODULE_DEVICE_TABLE(of, gt1151_of_match);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">gt1151_i2c_probe</span><span class="params">(<span class="keyword">struct</span> i2c_client *client, <span class="type">const</span> <span class="keyword">struct</span> i2c_device_id *id)</span></span><br><span class="line">&#123;</span><br><span class="line">    printk(<span class="string">&quot;matched!!\r\n&quot;</span>);</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    u8 data = <span class="number">0</span>;</span><br><span class="line">    gt1151dev.client = client;</span><br><span class="line">    <span class="comment">/* 初始化设备 */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 获取设备信息</span></span><br><span class="line">    gt1151dev.irq_pin = of_get_named_gpio(client-&gt;dev.of_node, <span class="string">&quot;interrupt-gpios&quot;</span>, <span class="number">0</span>);</span><br><span class="line">    gt1151dev.reset_pin = of_get_named_gpio(client-&gt;dev.of_node, <span class="string">&quot;reset-gpios&quot;</span>, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 复位 gt1151</span></span><br><span class="line">    ret = gt1151_dev_init(client, &amp;gt1151dev);</span><br><span class="line">    <span class="keyword">if</span>(ret &lt; <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">goto</span> failed;</span><br><span class="line"></span><br><span class="line">    data = <span class="number">0x02</span>;</span><br><span class="line">    gt1151_write_regs(&amp;gt1151dev, GT_CTRL_REG, &amp;data, <span class="number">1</span>); <span class="comment">/* 软复位 */</span></span><br><span class="line">    mdelay(<span class="number">100</span>);</span><br><span class="line">    data = <span class="number">0x0</span>;</span><br><span class="line">    gt1151_write_regs(&amp;gt1151dev, GT_CTRL_REG, &amp;data, <span class="number">1</span>); <span class="comment">/* 停止软复位 */</span></span><br><span class="line">    mdelay(<span class="number">100</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 读取硬件信息</span></span><br><span class="line">    ret = gt1151_read_firmware(client, &amp;gt1151dev);</span><br><span class="line">    <span class="keyword">if</span>(ret &lt; <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">goto</span> failed;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// input 设备注册</span></span><br><span class="line">    gt1151dev.input = devm_input_allocate_device(&amp;client-&gt;dev);</span><br><span class="line">    <span class="keyword">if</span> (!gt1151dev.input) &#123;</span><br><span class="line">        ret = -ENOMEM;</span><br><span class="line">        <span class="keyword">goto</span> failed;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    gt1151dev.input-&gt;name = client-&gt;name;       <span class="comment">// 获取设备名</span></span><br><span class="line">    gt1151dev.input-&gt;id.bustype = BUS_I2C;      <span class="comment">// 输入设备来自 IIC 总线</span></span><br><span class="line">    gt1151dev.input-&gt;dev.parent = &amp;client-&gt;dev; <span class="comment">// 设置父设备为 I2C 设备</span></span><br><span class="line"></span><br><span class="line">    __set_bit(EV_KEY, gt1151dev.input-&gt;evbit);      </span><br><span class="line">    __set_bit(EV_ABS, gt1151dev.input-&gt;evbit);      <span class="comment">// 设置支持的事件类型，按下和绝对坐标</span></span><br><span class="line">    __set_bit(BTN_TOUCH, gt1151dev.input-&gt;keybit);  <span class="comment">// 设置支持的按键</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 配置 input 设备的坐标能力和多点触摸能力 */</span></span><br><span class="line">    input_set_abs_params(gt1151dev.input, ABS_X, <span class="number">0</span>, gt1151dev.max_x, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    input_set_abs_params(gt1151dev.input, ABS_Y, <span class="number">0</span>, gt1151dev.max_y, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    input_set_abs_params(gt1151dev.input, ABS_MT_POSITION_X,<span class="number">0</span>, gt1151dev.max_x, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    input_set_abs_params(gt1151dev.input, ABS_MT_POSITION_Y,<span class="number">0</span>, gt1151dev.max_y, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">    ret = input_mt_init_slots(gt1151dev.input, MAX_SUPPORT_POINTS, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (ret)</span><br><span class="line">        <span class="keyword">goto</span> failed;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    ret = input_register_device(gt1151dev.input);</span><br><span class="line">    <span class="keyword">if</span> (ret) </span><br><span class="line">        <span class="keyword">goto</span> failed;</span><br><span class="line"></span><br><span class="line">    ret = devm_request_threaded_irq(&amp;client-&gt;dev, client-&gt;irq, <span class="literal">NULL</span>, gt1151_irq_handler,</span><br><span class="line">                                    irq_table[gt1151dev.irqtype] | IRQF_ONESHOT, client-&gt;name, &amp;gt1151dev);</span><br><span class="line">    <span class="keyword">if</span> (ret) &#123;</span><br><span class="line">        dev_err(&amp;client-&gt;dev, <span class="string">&quot;Unable to request touchscreen IRQ.\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line">failed:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">gt1151_i2c_remove</span><span class="params">(<span class="keyword">struct</span> i2c_client *client)</span>&#123;</span><br><span class="line">    <span class="comment">/* 进行资源释放 */</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">i2c_driver</span> <span class="title">gt1151_i2c_driver</span> =</span> &#123;</span><br><span class="line">    .probe = gt1151_i2c_probe,</span><br><span class="line">    .remove = gt1151_i2c_remove,</span><br><span class="line">    .driver = &#123;</span><br><span class="line">        .name = <span class="string">&quot;gt1151_drv&quot;</span>,</span><br><span class="line">        .owner = THIS_MODULE,</span><br><span class="line">        .of_match_table = gt1151_of_match</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">gt1151_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    ret = i2c_add_driver(&amp;gt1151_i2c_driver);</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">gt1151_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    i2c_del_driver(&amp;gt1151_i2c_driver);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(gt1151_init);</span><br><span class="line">module_exit(gt1151_exit);</span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;hcw&quot;</span>);</span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;由于内核中已经存在了 gtxxx 的驱动，所以我们暂时先将设备树和驱动程序中的设备名改为 “hcw,gt1”。现在我们可以读取到触摸屏上传的数据了</p>
+<div align=center><img src="/img/linux驱动开发/29/input数据.png"  width=60%></div>
+<div style="text-align:center;">图 2 input数据</div>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" rel="tag"># 驱动开发</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/03/23/linux-driver-learn-28/" rel="prev" title="Linux驱动学习日记(28) GPIO 子系统详解">
+      <i class="fa fa-chevron-left"></i> Linux驱动学习日记(28) GPIO 子系统详解
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E7%82%B9%E7%94%B5%E5%AE%B9%E8%A7%A6%E6%91%B8%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">多点电容触摸简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E7%82%B9%E8%A7%A6%E6%91%B8%EF%BC%88MT%EF%BC%89%E5%8D%8F%E8%AE%AE"><span class="nav-number">2.</span> <span class="nav-text">多点触摸（MT）协议</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E7%82%B9%E8%A7%A6%E6%91%B8%E6%89%80%E4%BD%BF%E7%94%A8%E7%9A%84-API-%E5%87%BD%E6%95%B0"><span class="nav-number">3.</span> <span class="nav-text">多点触摸所使用的 API 函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E7%82%B9%E7%94%B5%E5%AE%B9%E8%A7%A6%E6%91%B8%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6"><span class="nav-number">4.</span> <span class="nav-text">多点电容触摸驱动框架</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%88%86%E6%9E%90"><span class="nav-number">5.</span> <span class="nav-text">硬件分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E7%BC%96%E5%86%99"><span class="nav-number">6.</span> <span class="nav-text">程序编写</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E8%AE%BE%E5%A4%87%E6%A0%91"><span class="nav-number">6.1.</span> <span class="nav-text">修改设备树</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E5%86%99%E4%BB%A3%E7%A0%81"><span class="nav-number">6.2.</span> <span class="nav-text">编写代码</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">38</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script data-pjax>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+    <div id="pjax">
+  
+
+  
+
+    </div>
+</body>
+</html>
