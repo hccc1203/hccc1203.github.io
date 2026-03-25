@@ -32,7 +32,7 @@
 <meta property="og:description" content="Linux 驱动知识点汇总收集，持续更新。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-03-24T12:23:29.000Z">
-<meta property="article:modified_time" content="2026-03-24T13:27:56.594Z">
+<meta property="article:modified_time" content="2026-03-25T12:04:25.081Z">
 <meta property="article:author" content="Hcc">
 <meta property="article:tag" content="Linux">
 <meta property="article:tag" content="驱动开发">
@@ -244,8 +244,21 @@
 </ul>
 <hr>
 <h2 id="中断"><a href="#中断" class="headerlink" title="中断"></a>中断</h2><hr>
-<p>&emsp;&emsp;<strong>1、什么是软中断和硬中断</strong></p>
+<p>&emsp;&emsp;<strong>1、什么是软中断和硬中断</strong><br>&emsp;&emsp;硬中断是由赢家按产生的，比如像磁盘、网卡、键盘等。每个设备或设备集都有自己的 <strong>IRQ (中断请求)<strong>。基于 IRQ，CPU 可以将相应的请求分发到对应的硬件驱动上。</strong>硬中断可以直接中断 CPU</strong>。<br>&emsp;&emsp;软中断的处理和硬中断类似，它们是由当前正在运行的进程所产生的。通常，软中断是一些对 I&#x2F;O 的请求，这些请求会调用内核中可以调度 I&#x2F;O 发生的程序。对于某些设备，I&#x2F;O 请求需要被立即处理，而磁盘 I&#x2F;O 请求通常可以排队并稍后处理。<strong>软中断不会直接中断 CPU</strong>，也<strong>只有当前正在运行的代码才会产生软中断</strong>。</p>
+<p>&emsp;&emsp;两者之间的区别如下：</p>
+<ul>
+<li>软中断是执行中断指令产生的，硬中断由外设引发。</li>
+<li>硬中断的中断号由中断控制器提供，软中断的中断号由指令直接给出。</li>
+<li>硬中断可以屏蔽，软中断不可屏蔽。</li>
+<li>硬中断处理程序需要确保快速完成任务，这样程序执行时才不会等待较长时间，称为上半部。</li>
+<li>软中断处理中断未完成的工作，是一种推后执行的机制，属于下半部。</li>
+</ul>
 <hr>
+<p>&emsp;&emsp;<strong>2、中断为什么要区分上半部和下半部</strong><br>&emsp;&emsp;为了避免中断处理过程被新的中断打断，因此将终端一分为二，上半部登记新中断，快速处理简单的任务，剩余复杂耗时间的交给下半部处理。下半部处理过程中可以被中断，上半部处理过程中不可以被中断。</p>
+<hr>
+<p>&emsp;&emsp;<strong>3、中断的下半部一般如何实现</strong><br>&emsp;&emsp;软中断、tasklet、工作队列。</p>
+<hr>
+<p>&emsp;&emsp;<strong>4、Linux 中断的响应执行流程是什么</strong><br>&emsp;&emsp;中断的响应流程：<strong>cpu接受中断 -&gt; 保存中断上下文并跳转到中断处理函数 -&gt; 执行中断上半部 -&gt; 执行中断下半部 -&gt; 恢复中断上下文</strong></p>
 
     </div>
 
@@ -268,7 +281,10 @@
     <a href="/2026/03/23/linux-driver-learn-29/" rel="prev" title="Linux驱动学习日记(29) Linux 多点电容触摸">
       <i class="fa fa-chevron-left"></i> Linux驱动学习日记(29) Linux 多点电容触摸
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/25/linux-driver-learn-30/" rel="next" title="Linux驱动学习日记(30) USB 设备学习(1)">
+      Linux驱动学习日记(30) USB 设备学习(1) <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -340,7 +356,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">39</span>
+          <span class="site-state-item-count">40</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
