@@ -428,7 +428,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2026/03/26/linux-driver-learn-31/" class="post-title-link" itemprop="url">Linux驱动学习日记(30) USB 设备学习(2)</a>
+            <a href="/2026/03/26/linux-driver-learn-31/" class="post-title-link" itemprop="url">Linux驱动学习日记(31) USB 设备学习(2)</a>
         </h2>
 
         <div class="post-meta">
@@ -545,83 +545,15 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="硬件框架"><a href="#硬件框架" class="headerlink" title="硬件框架"></a>硬件框架</h2><p>&emsp;&emsp;在嵌入式设备中，有一个 USB 控制器，其通过四根线与外部设备（D+,D-,5V,GND）相连。在 USB 系统中有两个硬件概念：</p>
-<ul>
-<li>USB Host：与处理器连接，处理器通过 USB Host 与各类 USB 设备进行通信，其内部集成有一个 root hub。</li>
-<li>USB Device：分为两类，Hub 用来扩展 USB 接口，Function 就是普通的 USB 设备，比如 U 盘、声卡等等。</li>
-</ul>
-<div align=center><img src="/img/linux驱动开发/30/USB模型.png"  width=60%></div>
-<div style="text-align:center;">图 1 USB硬件模型</div>
-
-<h2 id="USB-电气信号"><a href="#USB-电气信号" class="headerlink" title="USB 电气信号"></a>USB 电气信号</h2><p>&emsp;&emsp;对于 USB2.0 协议，其支持 3 种速率：低速（1.5Mbps）、全速（12Mbps）、高速（480Mbps）。USB Hub、USB 设备也分为低速、全速、高速三种类。型。</p>
-<h3 id="低速-全速信号电平"><a href="#低速-全速信号电平" class="headerlink" title="低速&#x2F;全速信号电平"></a>低速&#x2F;全速信号电平</h3><p>&emsp;&emsp;USB 使用差分信号 D+ &#x2F; D-，但实际上是单端驱动 + 差分检测。其表格如下</p>
-<div align=center><img src="/img/linux驱动开发/30/电子信号表.png"  width=60%></div>
-<div style="text-align:center;">图 2 电子信号表</div>
-
-<p>&emsp;&emsp;对于低速和全速设备，J 信号和 K 信号是反过来的。</p>
-<h3 id="设备的连接与断开"><a href="#设备的连接与断开" class="headerlink" title="设备的连接与断开"></a>设备的连接与断开</h3><p>&emsp;&emsp;Hub 端口的 D+、D- 都会有 15K 的下拉电阻，平时为低电平。全速设备内部的 D+ 有 1.5K 的上拉电阻，低速设备内部的 D- 有 15K 的上拉电阻，连接到 Hub 后会导致 Hub 的 D+ 或 D- 电平变化，Hub 根据变化的引脚来分辨接进来的是什么设备。</p>
-<p>&emsp;&emsp;告诉设备首先作为全速设备被识别出来，然后 Hub 端口会发出 SE- 信号，当告诉设备收到信号后，会返回一个序列表示自己能支持高速模式，接下来此设备就会工作在高速模式。</p>
-<h2 id="USB-协议层数据格式"><a href="#USB-协议层数据格式" class="headerlink" title="USB 协议层数据格式"></a>USB 协议层数据格式</h2><p>&emsp;&emsp;在 USB 传输协议中先传输最低位(LSB)。在后续文档中，描述数据时按照传输顺序从左到右列出来。</p>
-<div align=center><img src="/img/linux驱动开发/30/包格式.png"  width=60%></div>
-<div style="text-align:center;">图 3 包格式</div>
-
-<h3 id="包格式"><a href="#包格式" class="headerlink" title="包格式"></a>包格式</h3><h4 id="PID-域"><a href="#PID-域" class="headerlink" title="PID 域"></a>PID 域</h4><p>&emsp;&emsp;注意：所有的USB文档提到的”输入”、”输出”，都是基于 Host 的角度，”输出”表示从 Host 输出到设备，”输入”表示 Host 从设备得到数据。</p>
-<p>&emsp;&emsp;根据包数据里的 PID 的 bit1、0可以将 USB 包分为四类</p>
-<ul>
-<li>令牌包(Token)：01B</li>
-<li>数据包(Data)：11B</li>
-<li>握手包(Handshake)：10B</li>
-<li>特殊包(Special)：00B</li>
-</ul>
-<p>&emsp;&emsp;PID 有 4 位，接下来使用 bit3,bit2 进一步细分，如下表</p>
-<div align=center><img src="/img/linux驱动开发/30/PID分类.png"  width=60%></div>
-<div style="text-align:center;">图 3 PID分类</div>
-
-<p>&emsp;&emsp;在USB包中，PID域使用8位来表示，格式如下：</p>
-<div align=center><img src="/img/linux驱动开发/30/PID域.png"  width=60%></div>
-<div style="text-align:center;">图 4 PID域</div>
-
-<p>&emsp;&emsp;前4位表示 PID，后4位是对应位的取反。接收方发现后4位不是前4位的取反的话，就认为发生了错误。</p>
-<h4 id="令牌包"><a href="#令牌包" class="headerlink" title="令牌包"></a>令牌包</h4><p>&emsp;&emsp;令牌类的 PID 起通知作用，SOF 令牌包被用来通知所有设备，OUT&#x2F;IN&#x2F;SETUP 令牌包被用来通知某个设备。对于 OUT&#x2F;IN&#x2F;SETUP 令牌包，其格式如下：</p>
-<div align=center><img src="/img/linux驱动开发/30/PID域.png"  width=60%></div>
-<div style="text-align:center;">图 5 令牌包格式</div>
-
-<p>&emsp;&emsp;USB 设备的地址有 7 位，端点号有 4 位。</p>
-<h4 id="数据包"><a href="#数据包" class="headerlink" title="数据包"></a>数据包</h4><p>&emsp;&emsp;Host 使用 OUT、IN、SETUP 来通知设备即将传输数据。数据包也有四种类型 DATA0、DATA1、DATA2、MDATA，其中 DATA2 和 MDATA 用于高速设备。</p>
-<p>&emsp;&emsp;引入 DATA0、DATA1 这些不同类型的数据包是为了纠错。Host 和设备都会维护自己的数据包切换机制，当数据包成功发送或者接收时，数据包类型切换。当检测到对方使用的数据包类型不对时，USB 系统认为发生了错误。比如：<br>&emsp;&emsp;Host 发送 DATA0 给设备，设备返回 ACK 表示成功接收，设备期待下一个数据是DATA1，但是Host没有接收到ACK，Host认为数据没有发送成功，Host继续使用DATA0发送上一次的数据，设备再次接收到DATA0数据包，它就知道：哦，这是重传的数据包。<br>&emsp;&emsp;数据包格式如下，对于全速设备，数据包中的数据做大是1024字节。</p>
-<div align=center><img src="/img/linux驱动开发/30/数据包格式.png"  width=60%></div>
-<div style="text-align:center;">图 6 数据包格式</div>
-
-<h4 id="握手包"><a href="#握手包" class="headerlink" title="握手包"></a>握手包</h4><p>&emsp;&emsp;握手包有四类：ACK、NAK、STALL、NYET，其作用如下：</p>
-<ul>
-<li>ACK：数据接收方用来回复发送方，表示正确接收到了数据并且有足够的空间保存数据。</li>
-<li>NAK：Host发送数据给设备时，设备可以回应 NAK 表示”我还没准备好，没办法接收数据”；Host 想读取设备的数据时，设备可以回复 NAK 表示”我没有数据给你”。</li>
-<li>STALL：表示发生了错误，比如设备无法执行这个请求(不支持该断点等待)、断点已经挂起。设备返回 STALL 后，需要主机进行干预才能接触 STALL 状态。</li>
-<li>NYET：仅适用于高速设备。Host 可以发出 PING 包用来确认设备有数据，设备可以回应NYET表示”还没呢”。Hub 也可以回应 NYET 表示低速&#x2F;全速传输还没完结。</li>
-</ul>
-<h3 id="传输细节"><a href="#传输细节" class="headerlink" title="传输细节"></a>传输细节</h3><h4 id="传输与事务"><a href="#传输与事务" class="headerlink" title="传输与事务"></a>传输与事务</h4><p>&emsp;&emsp;USB 传输的基本单位是包（packet），包的类型由 PID 表示。一个单纯的包是无法传输完整的数据的。完整的数据传输需要涉及多个包：令牌包、数据包、握手包。这个完整的数据传输过程被称为 <strong>事务</strong>。<br>&emsp;&emsp;一共有四类事务：</p>
-<ul>
-<li>批量事务：用来传输大量的数据，数据的正确性有保证，时效没有保证。</li>
-<li>中断事务：用来传输周期性的、小量的数据，数据的正确性和时效都有保证。</li>
-<li>实时事务：用来传输实时数据，数据的正确性没有保证，时效性有保证。</li>
-<li>建立事务：根批量事务类似。</li>
-</ul>
-<p>&emsp;&emsp;有四类传输</p>
-<ul>
-<li>批量传输：就是使用批量事务实现数据传输，比如 U 盘。</li>
-<li>实时传输：就是使用中断事务实现数据传输，比如鼠标。</li>
-<li>中断传输：就是使用实时事务实现数据传输，比如摄像头。</li>
-<li>控制传输：由建立事务、批量事务组成，所有 USB 设备都必须支持控制传输，用于识别、枚举</li>
-</ul>
-<p>&emsp;&emsp;<strong>Bit -&gt; 域 -&gt; 包 -&gt; 事务 -&gt; 传输</strong></p>
-<h4 id="过程和阶段"><a href="#过程和阶段" class="headerlink" title="过程和阶段"></a>过程和阶段</h4><p>&emsp;&emsp;比如如 Host 要发送数据给设备，这就会涉及很多个包：OUT、DATA0、ACK 等等。这个完整的事务涉及三个包，于是被分为三个阶段：</p>
-<ul>
-<li>令牌阶段</li>
-<li>数据阶段</li>
-<li>握手阶段</li>
-</ul>
-<p>&emsp;&emsp;对于批量传输、中断传输、实时传输，它们分别由一个事务组成，不再细分为若干个过程。<br>&emsp;&emsp;综上所述：控制传输由多个过程(stage)组成，每个过程由一个事务来实现，每个事务由多个阶段(phase)组成，每个阶段有一个包来实现。</p>
-
+          学习 USB 的硬件框架和传输协议
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2026/03/25/linux-driver-learn-30/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
