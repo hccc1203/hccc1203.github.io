@@ -24,21 +24,20 @@
 
 
 
-  <meta name="description" content="Linux 驱动知识点汇总收集，持续更新。">
+  <meta name="description" content="学习 python 的推导式">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Linux 驱动知识点收集">
-<meta property="og:url" content="https://hccc1203.github.io/2026/03/24/linux-driver-knowledge-points/index.html">
+<meta property="og:title" content="python 学习日记(2) 推导式、迭代器、生成器">
+<meta property="og:url" content="https://hccc1203.github.io/2026/03/31/python-learn-2/index.html">
 <meta property="og:site_name" content="Hcc的Blog">
-<meta property="og:description" content="Linux 驱动知识点汇总收集，持续更新。">
+<meta property="og:description" content="学习 python 的推导式">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-03-24T12:23:29.000Z">
-<meta property="article:modified_time" content="2026-03-25T12:04:25.081Z">
+<meta property="article:published_time" content="2026-03-31T02:35:43.000Z">
+<meta property="article:modified_time" content="2026-04-01T07:20:33.255Z">
 <meta property="article:author" content="Hcc">
-<meta property="article:tag" content="Linux">
-<meta property="article:tag" content="驱动开发">
+<meta property="article:tag" content="python">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://hccc1203.github.io/2026/03/24/linux-driver-knowledge-points/">
+<link rel="canonical" href="https://hccc1203.github.io/2026/03/31/python-learn-2/">
 
 
 <script id="page-configurations">
@@ -51,7 +50,7 @@
   };
 </script>
 
-  <title>Linux 驱动知识点收集 | Hcc的Blog</title>
+  <title>python 学习日记(2) 推导式、迭代器、生成器 | Hcc的Blog</title>
   
 
 
@@ -166,7 +165,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/03/24/linux-driver-knowledge-points/">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/03/31/python-learn-2/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -179,16 +178,10 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Linux 驱动知识点收集
+          python 学习日记(2) 推导式、迭代器、生成器
         </h1>
 
         <div class="post-meta">
-        
-          <span class="post-meta-item-icon">
-              <i class="fa fa-thumb-tack"></i>
-          </span>
-          <font color="red">置顶</font>
-          <span class="post-meta-divider">|</span>
         
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -196,7 +189,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2026-03-24 20:23:29" itemprop="dateCreated datePublished" datetime="2026-03-24T20:23:29+08:00">2026-03-24</time>
+              <time title="创建时间：2026-03-31 10:35:43" itemprop="dateCreated datePublished" datetime="2026-03-31T10:35:43+08:00">2026-03-31</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -208,7 +201,7 @@
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/Linux%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">Linux驱动</span></a>
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/python/" itemprop="url" rel="index"><span itemprop="name">python</span></a>
                 </span>
             </span>
 
@@ -223,42 +216,51 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="UBoot"><a href="#UBoot" class="headerlink" title="UBoot"></a>UBoot</h2><p>&emsp;&emsp;<strong>1、什么是 bootloader？</strong><br>&emsp;&emsp;Linux 系统要启动就必须要一个 bootloader 程序，芯片上电后运行的程序。一般来说，这段程序会先初始化<strong>时钟、看门狗、中断、SDRAM 等外设</strong>，然后将 Linux 内核从 flash 拷贝到 SDRAM 中，最后启动 Linux 内核。</p>
-<hr>
-<p>&emsp;&emsp;<strong>2、uboot 如何跳转至内核？</strong><br>&emsp;&emsp;Uboot 启动后已经完成了基本的硬件初始化，其<strong>直接修改 PC 寄存器的值为 Linux 内核所在的地址</strong>，这样 CPU 就会从 Linux 内核所在的地址去取指令，从而执行内核代码。</p>
-<hr>
-<p>&emsp;&emsp;<strong>3、Uboot 在跳转内核前一定要做哪些事？</strong><br>&emsp;&emsp;①、cpu 寄存器的设置，R0 &#x3D; 0, R1 &#x3D; 机器类型 ID，R2 &#x3D; 启动参数表及列表在 RAM 中起始基址。<br>&emsp;&emsp;②、必须禁止中断，设置 CPU 为 SVC 模式。<br>&emsp;&emsp;③、关闭 MMU、数据 cache。</p>
-<hr>
-<p>&emsp;&emsp;<strong>4、如何给内核传递参数？</strong><br>&emsp;&emsp;uboot 把及其 ID 通过 R1 传递给内核，R2 寄存器存放了内存的基地址，这块内存中存放了 uboot 给 Linux 内核的其他参数，有<strong>起始地址、内存大小、Linux 内核启动后挂载文件系统的方式等信息。</strong></p>
-<hr>
-<p>&emsp;&emsp;<strong>5、为什么 uboot 要关闭 caches？</strong><br>&emsp;&emsp;caches 是 cpu 内部的一个二级缓存，其作用是将常用的数据和指令放在 CPU 内部。caches 是通过 CP15 管理的，刚上电的时候，cpu 还不能管理 caches。一定要关闭数据 cache，可能导致刚开始时候，RAM 的数据还没有复制到 cache，但是代码去取数据的时候从 cache 中取，发生错误。</p>
-<hr>
-<h2 id="文件系统"><a href="#文件系统" class="headerlink" title="文件系统"></a>文件系统</h2><p>&emsp;&emsp;<strong>1、什么是根文件系统</strong><br>&emsp;&emsp;根文件系统首先是一种文件系统，该系统不仅具有普通文件系统的存储数据文件的功能，还是内核启动时所挂载的<strong>第一个文件系统，内核代码的映像文件保存在根文件系统中</strong>，系统引导启动程序会在根文件系统挂在之后从中把一些初始化脚本和服务加载到内存中运行，里面包含 Linux 系统能够运行所<strong>必需的应用程序、库</strong>等。</p>
-<hr>
-<p>&emsp;&emsp;<strong>2、根文件系统为什么重要</strong><br>&emsp;&emsp;根文件系统包含系统启动时所必需的目录和关键性文件，以及使其他文件系统得以挂载所必要的文件。比如：</p>
+        <p>&emsp;&emsp;python 的推导式是一种独特的数据处理方式，可以从一个数据序列构建另一个数据序列的结构体。Python 推导式是一种强大且简洁的语法，适用于生成列表、字典、集合和生成器。在使用推导式时，需要注意可读性，尽量保持表达式干净简洁，以免影响代码的可读性和可维护性。Python 支持各种数据结构的推导式：</p>
 <ul>
-<li>init 进程的应用程序必须运行在根文件系统上</li>
-<li>根文件系统提供了目录&#x2F;</li>
-<li>linux 挂载分区时所依赖的信息存放于根文件系统 &#x2F;etc&#x2F;fstab 这个文件中</li>
-<li>shell 命令程序必须运行在根文件系统上</li>
+<li>列表(list)推导式</li>
+<li>字典(dict)推导式</li>
+<li>集合(set)推导式</li>
+<li>元组(tuple)推导式</li>
 </ul>
-<hr>
-<h2 id="中断"><a href="#中断" class="headerlink" title="中断"></a>中断</h2><hr>
-<p>&emsp;&emsp;<strong>1、什么是软中断和硬中断</strong><br>&emsp;&emsp;硬中断是由赢家按产生的，比如像磁盘、网卡、键盘等。每个设备或设备集都有自己的 <strong>IRQ (中断请求)<strong>。基于 IRQ，CPU 可以将相应的请求分发到对应的硬件驱动上。</strong>硬中断可以直接中断 CPU</strong>。<br>&emsp;&emsp;软中断的处理和硬中断类似，它们是由当前正在运行的进程所产生的。通常，软中断是一些对 I&#x2F;O 的请求，这些请求会调用内核中可以调度 I&#x2F;O 发生的程序。对于某些设备，I&#x2F;O 请求需要被立即处理，而磁盘 I&#x2F;O 请求通常可以排队并稍后处理。<strong>软中断不会直接中断 CPU</strong>，也<strong>只有当前正在运行的代码才会产生软中断</strong>。</p>
-<p>&emsp;&emsp;两者之间的区别如下：</p>
+<h2 id="列表推导式"><a href="#列表推导式" class="headerlink" title="列表推导式"></a>列表推导式</h2><p>&emsp;&emsp;列表推导式的格式如下</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">[表达式 for 变量 in 列表] </span><br><span class="line">[out_exp_res for out_exp in input_list]</span><br><span class="line"></span><br><span class="line">或者 </span><br><span class="line"></span><br><span class="line">[表达式 for 变量 in 列表 if 条件]</span><br><span class="line">[out_exp_res for out_exp in input_list if condition]</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，各个值含义如下：</p>
 <ul>
-<li>软中断是执行中断指令产生的，硬中断由外设引发。</li>
-<li>硬中断的中断号由中断控制器提供，软中断的中断号由指令直接给出。</li>
-<li>硬中断可以屏蔽，软中断不可屏蔽。</li>
-<li>硬中断处理程序需要确保快速完成任务，这样程序执行时才不会等待较长时间，称为上半部。</li>
-<li>软中断处理中断未完成的工作，是一种推后执行的机制，属于下半部。</li>
+<li>out_exp_res：列表生成元素表达式，可以是有返回值的函数。</li>
+<li>for out_exp in input_list：迭代 input_list 将 out_exp 传入到 out_exp_res 表达式中。</li>
+<li>if condition：条件语句，可以过滤列表中不符合条件的值。</li>
 </ul>
-<hr>
-<p>&emsp;&emsp;<strong>2、中断为什么要区分上半部和下半部</strong><br>&emsp;&emsp;为了避免中断处理过程被新的中断打断，因此将终端一分为二，上半部登记新中断，快速处理简单的任务，剩余复杂耗时间的交给下半部处理。下半部处理过程中可以被中断，上半部处理过程中不可以被中断。</p>
-<hr>
-<p>&emsp;&emsp;<strong>3、中断的下半部一般如何实现</strong><br>&emsp;&emsp;软中断、tasklet、工作队列。</p>
-<hr>
-<p>&emsp;&emsp;<strong>4、Linux 中断的响应执行流程是什么</strong><br>&emsp;&emsp;中断的响应流程：<strong>cpu接受中断 -&gt; 保存中断上下文并跳转到中断处理函数 -&gt; 执行中断上半部 -&gt; 执行中断下半部 -&gt; 恢复中断上下文</strong></p>
+<p>&emsp;&emsp;如下代码可以筛选出原序列中可以被 3 整除的数</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">raw_list = [<span class="number">5</span>,<span class="number">6</span>,<span class="number">7</span>,<span class="number">8</span>,<span class="number">9</span>,<span class="number">0</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>]</span><br><span class="line">filter_list = [l <span class="keyword">for</span> l <span class="keyword">in</span> raw_list <span class="keyword">if</span> l%<span class="number">3</span> == <span class="number">0</span>]</span><br><span class="line"><span class="built_in">print</span>(filter_list)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;如下代码可以筛选出原序列中长度大于 3 的字符串</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">raw_list = [<span class="string">&#x27;hcw&#x27;</span>,<span class="string">&#x27;your&#x27;</span>,<span class="string">&#x27;sn&#x27;</span>,<span class="string">&#x27;asdasf&#x27;</span>]</span><br><span class="line">filter_list = [l <span class="keyword">for</span> l <span class="keyword">in</span> raw_list <span class="keyword">if</span> <span class="built_in">len</span>(l)&gt;<span class="number">3</span>]</span><br><span class="line"><span class="built_in">print</span>(filter_list)</span><br></pre></td></tr></table></figure>
+
+<h2 id="字典推导式"><a href="#字典推导式" class="headerlink" title="字典推导式"></a>字典推导式</h2><p>&emsp;&emsp;字典推导基本格式：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123; key_expr: value_expr for value in collection &#125;</span><br><span class="line"></span><br><span class="line">或</span><br><span class="line"></span><br><span class="line">&#123; key_expr: value_expr for value in collection if condition &#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;使用示例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">listdemo = [<span class="string">&#x27;Google&#x27;</span>,<span class="string">&#x27;Runoob&#x27;</span>, <span class="string">&#x27;Taobao&#x27;</span>]</span><br><span class="line"><span class="comment"># 将列表中各字符串值为键，各字符串的长度为值，组成键值对</span></span><br><span class="line">new_dict = &#123;key:<span class="built_in">len</span>(key) <span class="keyword">for</span> key <span class="keyword">in</span> listdemo&#125;</span><br><span class="line"><span class="built_in">print</span>(new_dict)</span><br></pre></td></tr></table></figure>
+
+<h2 id="集合推导式"><a href="#集合推导式" class="headerlink" title="集合推导式"></a>集合推导式</h2><p>&emsp;&emsp;集合推导式基本形式如下：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123; expression for item in Sequence &#125;</span><br><span class="line">或</span><br><span class="line">&#123; expression for item in Sequence if conditional &#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;比如可以使用如下代码来实现一个 x^2 的集合</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">setnew = &#123;i**<span class="number">2</span> <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>,<span class="number">6</span>)&#125;</span><br><span class="line"><span class="built_in">print</span>(setnew)</span><br></pre></td></tr></table></figure>
+
+<h2 id="元组推导式"><a href="#元组推导式" class="headerlink" title="元组推导式"></a>元组推导式</h2><p>&emsp;&emsp;元组推导式可以利用 range 区间、元组、列表、字典和集合等数据类型，快速生成一个满足指定需求的元组。其基本格式如下：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(expression for item in Sequence )</span><br><span class="line">或</span><br><span class="line">(expression for item in Sequence if conditional )</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;元组推导式和列表推导式的用法也完全相同，只是元组推导式是用 () 圆括号将各部分括起来，而列表推导式用的是中括号 []，另外元组推导式返回的结果是一个生成器对象。最后使用 tuple 函数，可以直接将生成器对象转换成元组。</p>
+<h2 id="迭代器"><a href="#迭代器" class="headerlink" title="迭代器"></a>迭代器</h2><p>&emsp;&emsp;迭代是 Python 最强大的功能之一，是访问集合元素的一种方式。<br>&emsp;&emsp;迭代器是一个可以记住遍历的位置的对象。<br>&emsp;&emsp;迭代器对象从集合的第一个元素开始访问，直到所有的元素被访问完结束。迭代器只能往前不会后退。<br>&emsp;&emsp;迭代器有两个基本的方法：iter() 和 next()。<br>&emsp;&emsp;字符串，列表或元组对象都可用于创建迭代器：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">testlist = [<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>]</span><br><span class="line">it = <span class="built_in">iter</span>(testlist)</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">next</span>(it))</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">next</span>(it))</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">next</span>(it))</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">next</span>(it))</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;运行如上程序，会输出 1、2、3、4。迭代器对象还可以使用常规for语句进行遍历，如下代码也会输出 1 2 3 4 。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">testlist = [<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>]</span><br><span class="line">it = <span class="built_in">iter</span>(testlist)</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> it:</span><br><span class="line">    <span class="built_in">print</span>(i)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;把一个类作为一个迭代器使用需要在类中实现两个方法 <strong>iter</strong>() 与 <strong>next</strong>() 。</p>
 
     </div>
 
@@ -268,8 +270,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/Linux/" rel="tag"># Linux</a>
-              <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" rel="tag"># 驱动开发</a>
+              <a href="/tags/python/" rel="tag"># python</a>
           </div>
 
         
@@ -278,13 +279,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2026/03/23/linux-driver-learn-29/" rel="prev" title="Linux驱动学习日记(29) Linux 多点电容触摸">
-      <i class="fa fa-chevron-left"></i> Linux驱动学习日记(29) Linux 多点电容触摸
+    <a href="/2026/03/30/python-learn-1/" rel="prev" title="python 学习日记(1) 基本语法">
+      <i class="fa fa-chevron-left"></i> python 学习日记(1) 基本语法
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2026/03/25/linux-driver-learn-30/" rel="next" title="Linux驱动学习日记(30) USB 设备学习(1)">
-      Linux驱动学习日记(30) USB 设备学习(1) <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -343,7 +341,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#UBoot"><span class="nav-number">1.</span> <span class="nav-text">UBoot</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F"><span class="nav-number">2.</span> <span class="nav-text">文件系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD"><span class="nav-number">3.</span> <span class="nav-text">中断</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%97%E8%A1%A8%E6%8E%A8%E5%AF%BC%E5%BC%8F"><span class="nav-number">1.</span> <span class="nav-text">列表推导式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%97%E5%85%B8%E6%8E%A8%E5%AF%BC%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">字典推导式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9B%86%E5%90%88%E6%8E%A8%E5%AF%BC%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">集合推导式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%83%E7%BB%84%E6%8E%A8%E5%AF%BC%E5%BC%8F"><span class="nav-number">4.</span> <span class="nav-text">元组推导式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%AD%E4%BB%A3%E5%99%A8"><span class="nav-number">5.</span> <span class="nav-text">迭代器</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
