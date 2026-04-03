@@ -26,18 +26,22 @@
 
   <meta name="description" content="学习机器学习的分类、基本概念">
 <meta property="og:type" content="article">
-<meta property="og:title" content="机器学习日记(2) 线性回归模型">
-<meta property="og:url" content="https://hccc1203.github.io/2026/04/04/machine-learning-2/index.html">
+<meta property="og:title" content="机器学习日记(1) 机器学习的一些基本概念">
+<meta property="og:url" content="https://hccc1203.github.io/2026/04/02/machine-learning-1/index.html">
 <meta property="og:site_name" content="Hcc的Blog">
 <meta property="og:description" content="学习机器学习的分类、基本概念">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-04-04T06:53:10.000Z">
-<meta property="article:modified_time" content="2026-04-03T07:54:03.964Z">
+<meta property="og:image" content="https://hccc1203.github.io/img/machine_learning/1/%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0%E5%92%8C%E6%97%A0%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0%E7%9A%84%E6%95%B0%E6%8D%AE%E9%9B%86.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/machine_learning/1/%E4%B8%8D%E6%AD%A2%E4%B8%80%E4%B8%AA%E6%9C%80%E5%B0%8F%E5%80%BC.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/machine_learning/1/wb%E6%9B%B4%E6%96%B0.png">
+<meta property="article:published_time" content="2026-04-02T06:53:10.000Z">
+<meta property="article:modified_time" content="2026-04-03T07:54:39.344Z">
 <meta property="article:author" content="Hcc">
 <meta property="article:tag" content="机器学习">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/machine_learning/1/%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0%E5%92%8C%E6%97%A0%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0%E7%9A%84%E6%95%B0%E6%8D%AE%E9%9B%86.png">
 
-<link rel="canonical" href="https://hccc1203.github.io/2026/04/04/machine-learning-2/">
+<link rel="canonical" href="https://hccc1203.github.io/2026/04/02/machine-learning-1/">
 
 
 <script id="page-configurations">
@@ -50,7 +54,7 @@
   };
 </script>
 
-  <title>机器学习日记(2) 线性回归模型 | Hcc的Blog</title>
+  <title>机器学习日记(1) 机器学习的一些基本概念 | Hcc的Blog</title>
   
 
 
@@ -165,7 +169,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/04/04/machine-learning-2/">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/04/02/machine-learning-1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -178,7 +182,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          机器学习日记(2) 线性回归模型
+          机器学习日记(1) 机器学习的一些基本概念
         </h1>
 
         <div class="post-meta">
@@ -189,7 +193,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2026-04-04 14:53:10" itemprop="dateCreated datePublished" datetime="2026-04-04T14:53:10+08:00">2026-04-04</time>
+              <time title="创建时间：2026-04-02 14:53:10" itemprop="dateCreated datePublished" datetime="2026-04-02T14:53:10+08:00">2026-04-02</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -216,21 +220,36 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="数学原理"><a href="#数学原理" class="headerlink" title="数学原理"></a>数学原理</h2><p>&emsp;&emsp;给定数据集 $D &#x3D; {(x_1, y_1), (x_2, y_2), \ldots, (x_m, y_m)}$，其中 $x_i &#x3D; (x_{i1}, x_{i2}, \ldots, x_{id}), \quad y_i \in \mathbb{R}$，“线性回归”(linear regression) 试图学得一个线性模型以尽可能准确地预测给定输入值的输出。</p>
-<p>&emsp;&emsp;线性回归试图学得</p>
-<p>$$<br>f(x_i) &#x3D; w x_i + b, \quad 使得 ; f(x_i) \simeq y_i<br>$$</p>
-<p>&emsp;&emsp;如何确定 w 和 b 呢？关键在于如何衡量 f(x) 和 y 之间的差别。在第一次学习中我们已经得知均方误差是回归任务重最常用的性能变量，因此我们可以试图让均方误差最小化，即</p>
-<p>$$<br>(w^*, b^*) &#x3D; \arg\min_{(w,b)} \sum_{i&#x3D;1}^{m} (f(x_i) - y_i)^2<br>$$<br>$$<br>&#x3D; \arg\min_{(w,b)} \sum_{i&#x3D;1}^{m} (y_i - w x_i - b)^2<br>$$</p>
-<p>&emsp;&emsp;均方误差有非常好的几何意义，它对应了常用的欧几里得距离或简称“欧氏距离”，基于均方误差最小化来进行模型求解的方法称为 “最小二乘法”。在线性回归中，最小二乘法就是试图找到一条直线，使所有样本导致线上的欧氏距离之和最小。</p>
-<p>&emsp;&emsp;求解 w 和 b 使得 $E(w,b) &#x3D; \sum_{i&#x3D;1}^{m} (y_i - w x_i - b)^2$ 最小化的过程，成为线性回归模型的最小二乘“参数估计”，我们将 E(w,b) 分别对 w 和 b 求偏导，可以得到</p>
-<p>$$<br>\frac{\partial E(w,b)}{\partial w}&#x3D;2\left(w \sum_{i&#x3D;1}^{m} x_i^2-\sum_{i&#x3D;1}^{m} (y_i - b)x_i\right)<br>$$</p>
-<p>$$<br>\frac{\partial E(w,b)}{\partial b}&#x3D;2\left(mb-\sum_{i&#x3D;1}^{m}(y_i - wx_i)\right)<br>$$</p>
-<h2 id="代码实现"><a href="#代码实现" class="headerlink" title="代码实现"></a>代码实现</h2><p>&emsp;&emsp;使用 AI 工具生成一份 csv 格式的线性回归数据集，并使用 python 得 pandas 工具读取，完整代码如下：</p>
-<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line">data = pd.read_csv(<span class="string">&quot;data.csv&quot;</span>)</span><br><span class="line">X = data[<span class="string">&quot;x&quot;</span>].values</span><br><span class="line">y = data[<span class="string">&quot;y&quot;</span>].values</span><br><span class="line">m = <span class="built_in">len</span>(X)</span><br><span class="line"><span class="comment"># 2. 初始化参数</span></span><br><span class="line">w = <span class="number">0.0</span></span><br><span class="line">b = <span class="number">0.0</span></span><br><span class="line"><span class="comment"># 3. 超参数</span></span><br><span class="line">alpha = <span class="number">0.0001</span></span><br><span class="line">epochs = <span class="number">10000</span></span><br><span class="line"><span class="comment"># 4. 训练</span></span><br><span class="line"><span class="keyword">for</span> epoch <span class="keyword">in</span> <span class="built_in">range</span>(epochs):</span><br><span class="line">    y_pred = w * X + b</span><br><span class="line"></span><br><span class="line">    dw = (<span class="number">1</span>/m) * np.<span class="built_in">sum</span>((y_pred - y) * X)</span><br><span class="line">    db = (<span class="number">1</span>/m) * np.<span class="built_in">sum</span>(y_pred - y)</span><br><span class="line"></span><br><span class="line">    w = w - alpha * dw</span><br><span class="line">    b = b - alpha * db</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> epoch % <span class="number">1000</span> == <span class="number">0</span>:</span><br><span class="line">        cost = (<span class="number">1</span>/(<span class="number">2</span>*m)) * np.<span class="built_in">sum</span>((y_pred - y)**<span class="number">2</span>)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;epoch=<span class="subst">&#123;epoch&#125;</span>, cost=<span class="subst">&#123;cost:<span class="number">.6</span>f&#125;</span>, w=<span class="subst">&#123;w:<span class="number">.6</span>f&#125;</span>, b=<span class="subst">&#123;b:<span class="number">.6</span>f&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n训练结束：&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;w = <span class="subst">&#123;w:<span class="number">.6</span>f&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;b = <span class="subst">&#123;b:<span class="number">.6</span>f&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+        <h2 id="监督学习"><a href="#监督学习" class="headerlink" title="监督学习"></a>监督学习</h2><p>&emsp;&emsp;监督学习指的是训练从 input 到 指定 output label 的过程，在训练过程中，给予程序输入和对应的正确输出，最终使程序可以仅凭输入给出准确的预测。例如垃圾邮件过滤器、语音识别、机器翻译、自动驾驶等等。</p>
+<p>&emsp;&emsp;例如我们得知了部分房子的尺寸与其对应的卖价，学习程序可以通过分析这些数据来得到其中的关系，然后我们再输入一个全新的尺寸，就可以得到其对应的大概卖价。</p>
+<p>&emsp;&emsp;这种房价预测就是监督学习的回归，是指我们可以从无限多个可能的数字中预测一个数字，就如例子中的房价。</p>
+<p>&emsp;&emsp;另一种监督学习的类型叫做分类，以乳腺癌检测为例，这就是一种分类模型。在训练机器学习系统时，输入患者的就诊记录（肿瘤大小等数据）和对应的结果（如恶性、良性），与回归不同的是，我们预测结果的输出只能在离散且有限的结果中。</p>
+<h2 id="无监督学习"><a href="#无监督学习" class="headerlink" title="无监督学习"></a>无监督学习</h2><p>&emsp;&emsp;在监督学习之后，最广泛使用的是无监督学习。<br>&emsp;&emsp;在无监督学习中，我们得到的数据没有任何与其对应的输出标签，在上面的例子中，假设我们已经得到了患者的肿瘤尺寸和年龄信息，但是没有对应的恶性、良性信息。</p>
+<div align=center><img src="/img/machine_learning/1/监督学习和无监督学习的数据集.png"  width=60%></div>
+<div style="text-align:center;">图 1 监督学习和无监督学习的数据集</div>
 
-<p>&emsp;&emsp;在这段代码中，(1&#x2F;m) * np.sum((y_pred - y) * X) 求得就是上文中的 (1&#x2F;2m)E(w,b) 对 w 的偏导数。</p>
-<p>&emsp;&emsp;最终的训练结果如下，和目标值基本吻合。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">······</span><br><span class="line">epoch=69000, cost=0.122594, w=3.572612, b=5.953159</span><br><span class="line">epoch=70000, cost=0.122571, w=3.572573, b=5.955743</span><br><span class="line">epoch=71000, cost=0.122552, w=3.572538, b=5.958144</span><br><span class="line">epoch=72000, cost=0.122536, w=3.572504, b=5.960373</span><br><span class="line">epoch=73000, cost=0.122521, w=3.572473, b=5.962444</span><br><span class="line">epoch=74000, cost=0.122509, w=3.572445, b=5.964367</span><br><span class="line">epoch=75000, cost=0.122498, w=3.572418, b=5.966153</span><br><span class="line">epoch=76000, cost=0.122489, w=3.572393, b=5.967813</span><br><span class="line">epoch=77000, cost=0.122481, w=3.572370, b=5.969354</span><br><span class="line">epoch=78000, cost=0.122474, w=3.572349, b=5.970785</span><br><span class="line">epoch=79000, cost=0.122468, w=3.572329, b=5.972114</span><br><span class="line">epoch=80000, cost=0.122463, w=3.572311, b=5.973349</span><br><span class="line">epoch=81000, cost=0.122459, w=3.572293, b=5.974496</span><br><span class="line">epoch=82000, cost=0.122455, w=3.572278, b=5.975561</span><br><span class="line">epoch=83000, cost=0.122452, w=3.572263, b=5.976550</span><br><span class="line">epoch=84000, cost=0.122449, w=3.572249, b=5.977469</span><br><span class="line">epoch=85000, cost=0.122447, w=3.572236, b=5.978322</span><br><span class="line">epoch=86000, cost=0.122445, w=3.572225, b=5.979115</span><br><span class="line">epoch=87000, cost=0.122443, w=3.572214, b=5.979851</span><br><span class="line">epoch=88000, cost=0.122441, w=3.572203, b=5.980535</span><br><span class="line">epoch=89000, cost=0.122440, w=3.572194, b=5.981170</span><br><span class="line">epoch=90000, cost=0.122439, w=3.572185, b=5.981760</span><br><span class="line">epoch=91000, cost=0.122438, w=3.572177, b=5.982308</span><br><span class="line">epoch=92000, cost=0.122437, w=3.572169, b=5.982817</span><br><span class="line">epoch=93000, cost=0.122436, w=3.572162, b=5.983289</span><br><span class="line">epoch=94000, cost=0.122435, w=3.572156, b=5.983728</span><br><span class="line">epoch=95000, cost=0.122435, w=3.572150, b=5.984136</span><br><span class="line">epoch=96000, cost=0.122434, w=3.572144, b=5.984515</span><br><span class="line">epoch=97000, cost=0.122434, w=3.572139, b=5.984867</span><br><span class="line">epoch=98000, cost=0.122434, w=3.572134, b=5.985193</span><br><span class="line">epoch=99000, cost=0.122433, w=3.572129, b=5.985497</span><br><span class="line"></span><br><span class="line">训练结束：</span><br><span class="line">w = 3.572125</span><br><span class="line">b = 5.985778</span><br></pre></td></tr></table></figure>
+<p>&emsp;&emsp;在无监督学习中，检测算法不被要求检测肿瘤是否 良性&#x2F;恶性，我们需要算法自己找出数据中可能存在的模式或结构。</p>
+<p>&emsp;&emsp;无监督学习又被分为 聚类、异常检测、降维 三种。</p>
+<p>&emsp;&emsp;聚类算法可以决定输入的未标记数据集可以分到两个或更多的组中，举个例子，这种算法用于谷歌新闻，谷歌新闻每天阅读数十万条信息并将其分类到不同的组中。</p>
+<p>&emsp;&emsp;降维的目标是把高维数据转换到低维，例如 100维特征 → 2维，其用途主要是可视化、数据压缩、去噪等等。</p>
+<p>&emsp;&emsp;异常检测的目标是找到 <strong>异常样本</strong>，应用在信用卡欺诈、工业故障检测、网络攻击检测等等。</p>
+<h2 id="代价函数"><a href="#代价函数" class="headerlink" title="代价函数"></a>代价函数</h2><p>&emsp;&emsp;代价函数(cost-function)是衡量模型在 <strong>整个训练数据集上的误差大小</strong>，训练的目标就是让这个值 <strong>尽可能小</strong>。</p>
+<p>$$<br>J(\theta) &#x3D; \frac{1}{m} \sum_{i&#x3D;1}^{m} L(y_i, \hat{y}_i)<br>$$</p>
+<p>&emsp;&emsp;在线性回归中，我们常常使用样本平均方差来表示代价函数，如下</p>
+<p>$$<br>J(w,b) &#x3D; \frac{1}{2m} \sum_{i&#x3D;1}^{m} \left(\hat{y}^{(i)} - y^{(i)}\right)^2<br>$$</p>
+<p>&emsp;&emsp;我们已经了解了代价函数的定义。当我们在训练一个线性回归模型时，选取不同的 w 和 b 会对代价函数产生不同的影响。当代价函数值最小时，此时的 [w,b] 就是最合适的值。</p>
+<h2 id="梯度下降"><a href="#梯度下降" class="headerlink" title="梯度下降"></a>梯度下降</h2><p>&emsp;&emsp;梯度下降算法在机器学习中广泛使用于训练模型。在线性回归模型中，我们有一个代价函数 J(w,b)，并且我们想要得到这个函数的最小值和其 w,b 的取值。</p>
+<p>&emsp;&emsp;以线性回归举例，使用梯度下降时，我们先把 w,b 的初始值设置为 0，并且每次都尝试减少代价函数 J 的值，知道 J 最终接近或稳定在最小值。对于一些 J ，其可能不只有一个最小值，可视化效果如下图所示</p>
+<div align=center><img src="/img/machine_learning/1/不止一个最小值.png"  width=60%></div>
+<div style="text-align:center;">图 2 某个 J 可视化</div>
+
+<p>&emsp;&emsp;在这样的图中，如果我想尽可能快的从一个点到最小值，我们应该选择负梯度方向（下降最快的方向）。但是当你的起点不同，可能会达到不同的局部最小值。</p>
+<p>&emsp;&emsp;那我们如何实际实现梯度下降算法呢？在实际计算中，我们每一步通常这样计算：$w &#x3D; w - \alpha \frac{\partial}{\partial w} J(w,b)$，其中 α 就是学习率，其通常是一个介于 0 - 1 之间的小数，其作用就是控制你每次改变走的每一步。同理，对应另一个参数计算公式如下：$b &#x3D; b - \alpha \frac{\partial}{\partial b} J(w,b)$。</p>
+<p>&emsp;&emsp;在实际的代码书写过程中，我们应该同时更新 w 和 b 的值。如果你先更新了 w 的值，再通过上面的公式计算新的 b 就会受到 w 更新的影响。其正确逻辑如下:</p>
+<div align=center><img src="/img/machine_learning/1/wb更新.png"  width=60%></div>
+<div style="text-align:center;">图 3 w b 更新</div>
+
+<h2 id="学习率"><a href="#学习率" class="headerlink" title="学习率"></a>学习率</h2><p>&emsp;&emsp;正如上文所说，学习率控制的是梯度下降每一步的大小。如果学习率过小，会导致导数项乘一个非常小的数，因此会采取一个非常小的步长，整个下降过程会非常的缓慢。如果学习率过大，当你非常接近最小值时，会导致你大步更新参数，从而超过最小值，然后一直在最小值附近震荡，无法收敛至最小值。因此，在实际训练中需要选择一个合适的学习率，使得梯度下降既能较快收敛，又不会发生震荡或发散。</p>
 
     </div>
 
@@ -249,10 +268,13 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2026/04/03/machine-learning-1/" rel="prev" title="机器学习日记(1) 机器学习的一些基本概念">
-      <i class="fa fa-chevron-left"></i> 机器学习日记(1) 机器学习的一些基本概念
+    <a href="/2026/03/31/python-learn-2/" rel="prev" title="python 学习日记(2) 推导式、迭代器、生成器">
+      <i class="fa fa-chevron-left"></i> python 学习日记(2) 推导式、迭代器、生成器
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2026/04/03/machine-learning-2/" rel="next" title="机器学习日记(2) 线性回归模型">
+      机器学习日记(2) 线性回归模型 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -311,7 +333,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E5%AD%A6%E5%8E%9F%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">数学原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">代码实现</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0"><span class="nav-number">1.</span> <span class="nav-text">监督学习</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A0%E7%9B%91%E7%9D%A3%E5%AD%A6%E4%B9%A0"><span class="nav-number">2.</span> <span class="nav-text">无监督学习</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A3%E4%BB%B7%E5%87%BD%E6%95%B0"><span class="nav-number">3.</span> <span class="nav-text">代价函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D"><span class="nav-number">4.</span> <span class="nav-text">梯度下降</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%A6%E4%B9%A0%E7%8E%87"><span class="nav-number">5.</span> <span class="nav-text">学习率</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
