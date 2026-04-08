@@ -24,19 +24,19 @@
 
 
 
-  <meta name="description" content="学习向量化、多元线性回归的数学原理、特征缩放">
+  <meta name="description" content="学习向量化、多元线性回归的数学原理、特征缩放、特征工程的概念">
 <meta property="og:type" content="article">
 <meta property="og:title" content="机器学习日记(3) 多元线性回归">
 <meta property="og:url" content="https://hccc1203.github.io/2026/04/07/machine-learning-3/index.html">
 <meta property="og:site_name" content="Hcc的Blog">
-<meta property="og:description" content="学习向量化、多元线性回归的数学原理、特征缩放">
+<meta property="og:description" content="学习向量化、多元线性回归的数学原理、特征缩放、特征工程的概念">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://hccc1203.github.io/img/machine_learning/3/%E4%BD%BF%E7%94%A8numpy%E5%B7%A5%E5%85%B7%E5%90%91%E9%87%8F%E5%8C%96.jpg">
 <meta property="og:image" content="https://hccc1203.github.io/img/machine_learning/3/%E4%B8%BA%E4%BD%95%E6%9B%B4%E5%BF%AB.png">
 <meta property="og:image" content="https://hccc1203.github.io/img/machine_learning/3/%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D%E6%9B%B4%E5%BF%AB.png">
 <meta property="og:image" content="https://hccc1203.github.io/img/machine_learning/3/%E7%BC%A9%E6%94%BE%E5%89%8D%E5%90%8E%E5%AF%B9%E6%AF%94.png">
 <meta property="article:published_time" content="2026-04-07T02:20:05.000Z">
-<meta property="article:modified_time" content="2026-04-07T04:07:02.190Z">
+<meta property="article:modified_time" content="2026-04-07T08:54:04.318Z">
 <meta property="article:author" content="Hcc">
 <meta property="article:tag" content="机器学习">
 <meta name="twitter:card" content="summary">
@@ -264,6 +264,29 @@ $$
 <div align=center><img src="/img/machine_learning/3/缩放前后对比.png"  width=60%></div>
 <div style="text-align:center;">图 4 缩放前后对比</div>
 
+<h2 id="特征工程"><a href="#特征工程" class="headerlink" title="特征工程"></a>特征工程</h2><p>&emsp;&emsp;特征工程（Feature Engineering）是机器学习中非常关键的一步，它指的是从原始数据中提取、选择、转换出更适合模型使用的特征的过程。它的核心目的是让模型更容易学习到数据中的规律，从而提高预测精度和泛化能力。</p>
+<p>&emsp;&emsp;在机器学习中，模型的输入是特征，输出是预测结果。特征质量直接影响模型表现：好特征 → 模型更容易学到模式 → 预测准确，坏特征 → 噪声大、信息少 → 模型表现差。例如：对房价预测任务，原始数据可能有 “房屋面积” “建造年份” “街区” 等。经过特征工程可以提取 “房屋年龄” “每平方英尺价格” “是否靠近学校” 等更有意义的特征。</p>
+<p>&emsp;&emsp;特征工程有以下几种常用方法：<br>&emsp;&emsp;(1) 特征选择：从已有特征中挑选对模型有用的。</p>
+<ul>
+<li>过滤法：基于统计指标（相关系数、方差等）筛选。</li>
+<li>包裹法：用模型性能评估特征组合，如递归特征消除（RFE）。</li>
+<li>嵌入法：在模型训练中自动选择特征，如决策树或 Lasso 回归。</li>
+</ul>
+<p>&emsp;&emsp;(2) 特征提取：从原始数据生成新的特征。</p>
+<ul>
+<li>数值特征：归一化、标准化、对数变换。</li>
+<li>类别特征：独热编码（One-Hot）、标签编码（Label Encoding）。</li>
+<li>文本特征：TF-IDF、词向量。</li>
+<li>时间序列特征：提取年、月、日、周、小时等周期性特征。</li>
+</ul>
+<p>&emsp;&emsp;(3) 特征构造：通过已有特征组合或衍生新的特征。</p>
+<ul>
+<li>简单数学运算：相加、相减、相乘、相除。</li>
+<li>高级组合：交叉特征、分组统计（平均值、最大值等）。</li>
+<li>Domain knowledge：结合业务理解构造特征，如“客户活跃度 &#x3D; 登录次数 × 平均在线时长”。</li>
+</ul>
+<p>&emsp;&emsp;特征工程的目标：提高模型的预测能力、减少噪声和冗余信息、让模型更快收敛，降低计算复杂度、提供可解释性，帮助理解模型决策。</p>
+
     </div>
 
     
@@ -284,7 +307,10 @@ $$
     <a href="/2026/04/03/machine-learning-2/" rel="prev" title="机器学习日记(2) 线性回归模型">
       <i class="fa fa-chevron-left"></i> 机器学习日记(2) 线性回归模型
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2026/04/07/machine-learning-4/" rel="next" title="机器学习日记(4) 分类">
+      机器学习日记(4) 分类 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -343,7 +369,7 @@ $$
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E7%89%B9%E5%BE%81%E8%BE%93%E5%85%A5"><span class="nav-number">1.</span> <span class="nav-text">多特征输入</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E5%8C%96"><span class="nav-number">2.</span> <span class="nav-text">向量化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E5%85%83%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92%E7%9A%84%E6%95%B0%E5%AD%A6%E5%8E%9F%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">多元线性回归的数学原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E7%BC%A9%E6%94%BE"><span class="nav-number">4.</span> <span class="nav-text">特征缩放</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E7%89%B9%E5%BE%81%E8%BE%93%E5%85%A5"><span class="nav-number">1.</span> <span class="nav-text">多特征输入</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%91%E9%87%8F%E5%8C%96"><span class="nav-number">2.</span> <span class="nav-text">向量化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E5%85%83%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92%E7%9A%84%E6%95%B0%E5%AD%A6%E5%8E%9F%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">多元线性回归的数学原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E7%BC%A9%E6%94%BE"><span class="nav-number">4.</span> <span class="nav-text">特征缩放</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E5%BE%81%E5%B7%A5%E7%A8%8B"><span class="nav-number">5.</span> <span class="nav-text">特征工程</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -356,7 +382,7 @@ $$
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">46</span>
+          <span class="site-state-item-count">47</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
