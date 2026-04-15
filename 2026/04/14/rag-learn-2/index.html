@@ -24,28 +24,35 @@
 
 
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Hcc的Blog">
-<meta property="og:url" content="https://hccc1203.github.io/index.html">
+  <meta name="description" content="回顾&emsp;&emsp;之前我们学习了 RAG 的基本流程，分片、索引、召回、重排、生成。现在我们在 LangChain 环境下尝试一下搭建自己的智能客服。 分片&emsp;&emsp;我们让 chatgpt 生成一份简单的数据集 12345678910111213141516171819智能温室系统的核心目标是自动监测环境参数，并根据作物生长需求调节设备状态。常见监测参数包括温度、湿度、光照">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 LangChain 环境搭建自己的智能客服">
+<meta property="og:url" content="https://hccc1203.github.io/2026/04/14/rag-learn-2/index.html">
 <meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="回顾&emsp;&emsp;之前我们学习了 RAG 的基本流程，分片、索引、召回、重排、生成。现在我们在 LangChain 环境下尝试一下搭建自己的智能客服。 分片&emsp;&emsp;我们让 chatgpt 生成一份简单的数据集 12345678910111213141516171819智能温室系统的核心目标是自动监测环境参数，并根据作物生长需求调节设备状态。常见监测参数包括温度、湿度、光照">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/rag/1/%E6%88%90%E5%8A%9F.png">
+<meta property="article:published_time" content="2026-04-14T12:15:37.000Z">
+<meta property="article:modified_time" content="2026-04-15T03:49:23.838Z">
 <meta property="article:author" content="Hcc">
+<meta property="article:tag" content="RAG">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/rag/1/%E6%88%90%E5%8A%9F.png">
 
-<link rel="canonical" href="https://hccc1203.github.io/">
+<link rel="canonical" href="https://hccc1203.github.io/2026/04/14/rag-learn-2/">
 
 
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
     sidebar: "",
-    isHome : true,
-    isPost : false,
+    isHome : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>Hcc的Blog</title>
+  <title>使用 LangChain 环境搭建自己的智能客服 | Hcc的Blog</title>
   
 
 
@@ -153,94 +160,10 @@
         <div class="content-wrap">
           
 
-          <div class="content index posts-expand">
+          <div class="content post posts-expand">
             
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/01/10/%E5%A6%82%E4%BD%95%E8%AF%BB%E6%87%82%E6%88%91%E7%9A%84%E6%99%BA%E8%83%BD%E8%BD%A6%E5%BC%80%E6%BA%90/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Hcc">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hcc的Blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2026/01/10/%E5%A6%82%E4%BD%95%E8%AF%BB%E6%87%82%E6%88%91%E7%9A%84%E6%99%BA%E8%83%BD%E8%BD%A6%E5%BC%80%E6%BA%90/" class="post-title-link" itemprop="url">如何读懂我的智能车开源</a>
-        </h2>
-
-        <div class="post-meta">
-        
-          <span class="post-meta-item-icon">
-              <i class="fa fa-thumb-tack"></i>
-          </span>
-          <font color="red">置顶</font>
-          <span class="post-meta-divider">|</span>
-        
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2026-01-10 20:20:10" itemprop="dateCreated datePublished" datetime="2026-01-10T20:20:10+08:00">2026-01-10</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%99%BA%E8%83%BD%E8%BD%A6%E7%AB%9E%E8%B5%9B/" itemprop="url" rel="index"><span itemprop="name">智能车竞赛</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%99%BA%E8%83%BD%E8%BD%A6%E7%AB%9E%E8%B5%9B/%E5%BC%80%E6%BA%90/" itemprop="url" rel="index"><span itemprop="name">开源</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
 
     
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          教学大家如何读懂开源
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/01/10/%E5%A6%82%E4%BD%95%E8%AF%BB%E6%87%82%E6%88%91%E7%9A%84%E6%99%BA%E8%83%BD%E8%BD%A6%E5%BC%80%E6%BA%90/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
@@ -256,10 +179,9 @@
       <meta itemprop="name" content="Hcc的Blog">
     </span>
       <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2026/04/14/rag-learn-2/" class="post-title-link" itemprop="url">使用 LangChain 环境搭建自己的智能客服</a>
-        </h2>
+        <h1 class="post-title" itemprop="name headline">
+          使用 LangChain 环境搭建自己的智能客服
+        </h1>
 
         <div class="post-meta">
         
@@ -296,7 +218,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="回顾"><a href="#回顾" class="headerlink" title="回顾"></a>回顾</h2><p>&emsp;&emsp;之前我们学习了 RAG 的基本流程，分片、索引、召回、重排、生成。现在我们在 LangChain 环境下尝试一下搭建自己的智能客服。</p>
+        <h2 id="回顾"><a href="#回顾" class="headerlink" title="回顾"></a>回顾</h2><p>&emsp;&emsp;之前我们学习了 RAG 的基本流程，分片、索引、召回、重排、生成。现在我们在 LangChain 环境下尝试一下搭建自己的智能客服。</p>
 <h2 id="分片"><a href="#分片" class="headerlink" title="分片"></a>分片</h2><p>&emsp;&emsp;我们让 chatgpt 生成一份简单的数据集</p>
 <figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">智能温室系统的核心目标是自动监测环境参数，并根据作物生长需求调节设备状态。常见监测参数包括温度、湿度、光照强度和土壤湿度。</span><br><span class="line"></span><br><span class="line">温度传感器用于采集温室内部空气温度。当温度低于 18 摄氏度时，系统可以启动加热设备；当温度高于 30 摄氏度时，系统可以启动风扇进行降温。</span><br><span class="line"></span><br><span class="line">湿度传感器用于检测空气湿度。如果空气湿度低于 40%，可以开启加湿器；如果湿度高于 80%，可以适当通风，防止病虫害滋生。</span><br><span class="line"></span><br><span class="line">光照传感器用于检测当前光照强度。在阴天或夜间，若光照不足，系统可以自动打开补光灯，以保证植物正常进行光合作用。</span><br><span class="line"></span><br><span class="line">土壤湿度传感器用于检测土壤含水量。当土壤湿度低于设定阈值时，控制器会启动水泵进行自动灌溉；当湿度恢复正常后，关闭水泵。</span><br><span class="line"></span><br><span class="line">智能温室系统通常由传感器、主控器、执行器和云平台组成。传感器负责采集数据，主控器负责逻辑判断，执行器负责动作控制，云平台负责远程监控与数据存储。</span><br><span class="line"></span><br><span class="line">在嵌入式温室项目中，主控器可以使用 STM32、ESP32 或 Linux 开发板。对于需要图形界面、网络通信和多任务处理的场景，Linux 开发板更有优势。</span><br><span class="line"></span><br><span class="line">自动灌溉系统的基本流程是：读取土壤湿度数据，判断是否低于阈值，如果低于阈值则启动继电器，继电器再控制水泵工作，从而完成灌溉。</span><br><span class="line"></span><br><span class="line">远程监控平台可以显示实时温度、湿度和设备运行状态。用户可以通过网页或手机查看数据，并手动控制风扇、水泵和补光灯。</span><br><span class="line"></span><br><span class="line">为了提高系统稳定性，智能温室软件通常采用状态机设计。这样可以将采集、判断、控制、报警等功能划分为不同状态，方便维护和扩展。</span><br></pre></td></tr></table></figure>
 
@@ -322,262 +244,34 @@
 
 <figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_ollama <span class="keyword">import</span> ChatOllama</span><br><span class="line"></span><br><span class="line"><span class="comment"># 1. 初始化本地大模型</span></span><br><span class="line">llm = ChatOllama(</span><br><span class="line">    model=<span class="string">&quot;gemma3&quot;</span>,</span><br><span class="line">    temperature=<span class="number">0</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 检索函数</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">retrieve_docs</span>(<span class="params">query, top_k=<span class="number">3</span></span>):</span><br><span class="line">    query_embedding = model.encode(query).tolist()</span><br><span class="line"></span><br><span class="line">    results = collection.query(</span><br><span class="line">        query_embeddings=[query_embedding],</span><br><span class="line">        n_results=top_k</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    docs = results[<span class="string">&quot;documents&quot;</span>][<span class="number">0</span>]</span><br><span class="line">    metadatas = results[<span class="string">&quot;metadatas&quot;</span>][<span class="number">0</span>] <span class="keyword">if</span> <span class="string">&quot;metadatas&quot;</span> <span class="keyword">in</span> results <span class="keyword">else</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> docs, metadatas, results</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 生成上下文</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">build_context</span>(<span class="params">docs</span>):</span><br><span class="line">    context_parts = []</span><br><span class="line">    <span class="keyword">for</span> i, doc <span class="keyword">in</span> <span class="built_in">enumerate</span>(docs):</span><br><span class="line">        context_parts.append(<span class="string">f&quot;参考资料<span class="subst">&#123;i+<span class="number">1</span>&#125;</span>：\n<span class="subst">&#123;doc&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;\n\n&quot;</span>.join(context_parts)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. RAG问答函数</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">rag_qa</span>(<span class="params">query, top_k=<span class="number">3</span></span>):</span><br><span class="line">    docs, metadatas, results = retrieve_docs(query, top_k=top_k)</span><br><span class="line">    context = build_context(docs)</span><br><span class="line"></span><br><span class="line">    prompt = <span class="string">f&quot;&quot;&quot;你是一个问答助手。</span></span><br><span class="line"><span class="string">请严格根据下面提供的参考资料回答问题。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">参考资料：</span></span><br><span class="line"><span class="string"><span class="subst">&#123;context&#125;</span></span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">用户问题：</span></span><br><span class="line"><span class="string"><span class="subst">&#123;query&#125;</span></span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    response = llm.invoke(prompt)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;query&quot;</span>: query,</span><br><span class="line">        <span class="string">&quot;docs&quot;</span>: docs,</span><br><span class="line">        <span class="string">&quot;metadatas&quot;</span>: metadatas,</span><br><span class="line">        <span class="string">&quot;context&quot;</span>: context,</span><br><span class="line">        <span class="string">&quot;answer&quot;</span>: response.content</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 5. 测试</span></span><br><span class="line">result = rag_qa(<span class="string">&quot;温度太高怎么样&quot;</span>, top_k=<span class="number">3</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 大模型回答 ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result[<span class="string">&quot;answer&quot;</span>])</span><br></pre></td></tr></table></figure>
 
-      
     </div>
 
     
     
     
+
       <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
+          <div class="post-tags">
+              <a href="/tags/RAG/" rel="tag"># RAG</a>
+          </div>
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/04/14/rag-learn-1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Hcc">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hcc的Blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2026/04/14/rag-learn-1/" class="post-title-link" itemprop="url">初识 RAG</a>
-        </h2>
-
-        <div class="post-meta">
         
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2026-04-14 16:27:59" itemprop="dateCreated datePublished" datetime="2026-04-14T16:27:59+08:00">2026-04-14</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
-                </span>
-            </span>
 
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          学习 RAG 的基本框架与工作流程
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/04/14/rag-learn-1/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
         
-      
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/04/14/rag-learn-1/" rel="prev" title="初识 RAG">
+      <i class="fa fa-chevron-left"></i> 初识 RAG
+    </a></div>
+      <div class="post-nav-item"></div>
     </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
       </footer>
+    
   </article>
   
   
   
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/04/13/machine-learning-7/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Hcc">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hcc的Blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2026/04/13/machine-learning-7/" class="post-title-link" itemprop="url">机器学习日记(7) 激活函数的进一步理解</a>
-        </h2>
-
-        <div class="post-meta">
-        
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2026-04-13 10:15:12" itemprop="dateCreated datePublished" datetime="2026-04-13T10:15:12+08:00">2026-04-13</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">机器学习</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          学习神经网络中的激活函数
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/04/13/machine-learning-7/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/04/09/machine-learning-6/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Hcc">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hcc的Blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2026/04/09/machine-learning-6/" class="post-title-link" itemprop="url">机器学习日记(6) 初识神经网络</a>
-        </h2>
-
-        <div class="post-meta">
-        
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2026-04-09 14:41:25" itemprop="dateCreated datePublished" datetime="2026-04-09T14:41:25+08:00">2026-04-09</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index"><span itemprop="name">机器学习</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          学习什么是神经网络
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2026/04/09/machine-learning-6/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-
-  
-  <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/11/">11</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
-  </nav>
 
 
 
@@ -629,6 +323,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9E%E9%A1%BE"><span class="nav-number">1.</span> <span class="nav-text">回顾</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E7%89%87"><span class="nav-number">2.</span> <span class="nav-text">分片</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95"><span class="nav-number">3.</span> <span class="nav-text">索引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AC%E5%9B%9E"><span class="nav-number">4.</span> <span class="nav-text">召回</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8D%E6%8E%92"><span class="nav-number">5.</span> <span class="nav-text">重排</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%9F%E6%88%90"><span class="nav-number">6.</span> <span class="nav-text">生成</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
