@@ -220,7 +220,7 @@
 <p>&emsp;&emsp;线性回归试图学得</p>
 <p>$$<br>f(x_i) &#x3D; w x_i + b, \quad 使得 ; f(x_i) \simeq y_i<br>$$</p>
 <p>&emsp;&emsp;如何确定 w 和 b 呢？关键在于如何衡量 f(x) 和 y 之间的差别。在第一次学习中我们已经得知均方误差是回归任务重最常用的性能变量，因此我们可以试图让均方误差最小化，即</p>
-<p>$$<br>(w^*, b^*) &#x3D; \arg\min_{(w,b)} \sum_{i&#x3D;1}^{m} (f(x_i) - y_i)^2<br>$$<br>$$<br>&#x3D; \arg\min_{(w,b)} \sum_{i&#x3D;1}^{m} (y_i - w x_i - b)^2<br>$$</p>
+<p>$$<br>(w^<em>, b^</em>) &#x3D; \arg\min_{(w,b)} \sum_{i&#x3D;1}^{m} (f(x_i) - y_i)^2<br>$$<br>$$<br>&#x3D; \arg\min_{(w,b)} \sum_{i&#x3D;1}^{m} (y_i - w x_i - b)^2<br>$$</p>
 <p>&emsp;&emsp;均方误差有非常好的几何意义，它对应了常用的欧几里得距离或简称“欧氏距离”，基于均方误差最小化来进行模型求解的方法称为 “最小二乘法”。在线性回归中，最小二乘法就是试图找到一条直线，使所有样本导致线上的欧氏距离之和最小。</p>
 <p>&emsp;&emsp;求解 w 和 b 使得 $E(w,b) &#x3D; \sum_{i&#x3D;1}^{m} (y_i - w x_i - b)^2$ 最小化的过程，成为线性回归模型的最小二乘“参数估计”，我们将 E(w,b) 分别对 w 和 b 求偏导，可以得到</p>
 <p>$$<br>\frac{\partial E(w,b)}{\partial w}&#x3D;2\left(w \sum_{i&#x3D;1}^{m} x_i^2-\sum_{i&#x3D;1}^{m} (y_i - b)x_i\right)<br>$$</p>
@@ -327,7 +327,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-count">55</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

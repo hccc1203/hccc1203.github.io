@@ -238,7 +238,7 @@
 </ul>
 <hr>
 <h2 id="中断"><a href="#中断" class="headerlink" title="中断"></a>中断</h2><hr>
-<p>&emsp;&emsp;<strong>1、什么是软中断和硬中断</strong><br>&emsp;&emsp;硬中断是由赢家按产生的，比如像磁盘、网卡、键盘等。每个设备或设备集都有自己的 <strong>IRQ (中断请求)<strong>。基于 IRQ，CPU 可以将相应的请求分发到对应的硬件驱动上。</strong>硬中断可以直接中断 CPU</strong>。<br>&emsp;&emsp;软中断的处理和硬中断类似，它们是由当前正在运行的进程所产生的。通常，软中断是一些对 I&#x2F;O 的请求，这些请求会调用内核中可以调度 I&#x2F;O 发生的程序。对于某些设备，I&#x2F;O 请求需要被立即处理，而磁盘 I&#x2F;O 请求通常可以排队并稍后处理。<strong>软中断不会直接中断 CPU</strong>，也<strong>只有当前正在运行的代码才会产生软中断</strong>。</p>
+<p>&emsp;&emsp;<strong>1、什么是软中断和硬中断</strong><br>&emsp;&emsp;硬中断是由赢家按产生的，比如像磁盘、网卡、键盘等。每个设备或设备集都有自己的 <strong>IRQ (中断请求)</strong>。基于 IRQ，CPU 可以将相应的请求分发到对应的硬件驱动上。<strong>硬中断可以直接中断 CPU</strong>。<br>&emsp;&emsp;软中断的处理和硬中断类似，它们是由当前正在运行的进程所产生的。通常，软中断是一些对 I&#x2F;O 的请求，这些请求会调用内核中可以调度 I&#x2F;O 发生的程序。对于某些设备，I&#x2F;O 请求需要被立即处理，而磁盘 I&#x2F;O 请求通常可以排队并稍后处理。<strong>软中断不会直接中断 CPU</strong>，也<strong>只有当前正在运行的代码才会产生软中断</strong>。</p>
 <p>&emsp;&emsp;两者之间的区别如下：</p>
 <ul>
 <li>软中断是执行中断指令产生的，硬中断由外设引发。</li>
@@ -350,7 +350,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-count">55</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

@@ -226,7 +226,7 @@
 <p>&emsp;&emsp;接下来，我们定义主设备号和设备名称，如下</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span>     CHRDEVBASE_MAJOR    200</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     CHRDEVBASE_NAME     <span class="string">&quot;chrdevbase&quot;</span></span></span><br></pre></td></tr></table></figure>
 
-<p>&emsp;&emsp;接下来我们写上 open 和 release 函数的基本框架。在函数的参数中，<em><em>struct inode <em>inode</em></em> 表示设备对象本身，可以通过函数操作 inode 获得设备本身的信息，如主设备号、次设备号等。</em><em>struct file <em>filp</em></em> 表示当前这一次 open 的文件实例。每执行一次 open(“&#x2F;dev&#x2F;xxx”)，内核都会创建一个 struct file，如果两个进程同时打开设备，inode 是共享的，filp 不共享。</p>
+<p>&emsp;&emsp;接下来我们写上 open 和 release 函数的基本框架。在函数的参数中，*<em>struct inode <em>inode</em></em> 表示设备对象本身，可以通过函数操作 inode 获得设备本身的信息，如主设备号、次设备号等。*<em>struct file <em>filp</em></em> 表示当前这一次 open 的文件实例。每执行一次 open(“&#x2F;dev&#x2F;xxx”)，内核都会创建一个 struct file，如果两个进程同时打开设备，inode 是共享的，filp 不共享。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">chedevbase_open</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">chrdevbase_release</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>&emsp;&emsp;然后我们来实现设备的注册与注销函数，框架如下。</p>
@@ -351,7 +351,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-count">55</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

@@ -310,7 +310,7 @@
 <p>&emsp;&emsp;<strong>6、gpio_set_value函数</strong><br>&emsp;&emsp;此函数用于设置某个 GPIO 的值，此函数是个宏，定义如下：</p>
 <pre><code>#define gpio_set_value  __gpio_set_value void __gpio_set_value(unsigned gpio, int value)
 </code></pre>
-<p>&emsp;&emsp;函数参数和返回值含义如下：<br><strong>gpio：</strong>要设置的 GPIO 标号。<br><strong>value：</strong>要设置的值。<br><strong>返回值：</strong>无<br>&emsp;&emsp;关于 gpio 子系统常用的 API 函数就讲这些，这些是我们用的最多的。</p>
+<p>&emsp;&emsp;函数参数和返回值含义如下：<br>**gpio：**要设置的 GPIO 标号。<br>**value：**要设置的值。<br>**返回值：**无<br>&emsp;&emsp;关于 gpio 子系统常用的 API 函数就讲这些，这些是我们用的最多的。</p>
 <h3 id="在设备树中添加-gpio-节点模板"><a href="#在设备树中添加-gpio-节点模板" class="headerlink" title="在设备树中添加 gpio 节点模板"></a>在设备树中添加 gpio 节点模板</h3><p>&emsp;&emsp;继续完成之前的 test 设备，在前面我们已经说了如何创建 test 设备的 pinctrl 节点，接下来我们来创建 test 设备的 GPIO 节点。</p>
 <p>&emsp;&emsp;<strong>1、创建 test 设备节点</strong><br>&emsp;&emsp;在根节点 “&#x2F;” 下创建 test 设备子节点，如下所示</p>
 <pre><code>test&#123;
@@ -336,16 +336,16 @@
 <p>&emsp;&emsp;of_gpio_named_count 函数用于获取设备树某个属性里面定义了几个 GPIO 信息，其函数的原型如下</p>
 <pre><code>int of_gpio_named_count(struct device_node *np, const char  *propname)
 </code></pre>
-<p>&emsp;&emsp;函数参数和返回值含义如下：<br>&emsp;&emsp;<strong>np：</strong>设备节点。<br>&emsp;&emsp;<strong>propname：</strong>要统计的 GPIO 属性。<br>&emsp;&emsp;<strong>返回值：</strong>正值，统计到的 GPIO 数量；负值，失败。</p>
+<p>&emsp;&emsp;函数参数和返回值含义如下：<br>&emsp;&emsp;**np：**设备节点。<br>&emsp;&emsp;**propname：**要统计的 GPIO 属性。<br>&emsp;&emsp;**返回值：**正值，统计到的 GPIO 数量；负值，失败。</p>
 <p>&emsp;&emsp;<strong>2、of_gpio_count 函数</strong><br>&emsp;&emsp;of_gpio_named_count 函数一样，但是不同的地方在于，此函数统计的是“gpios”这个属性的 GPIO 数量，而 of_gpio_named_count 函数可以统计任意属性的 GPIO 信息，函数原型如下所示：</p>
 <pre><code>int of_gpio_count(struct device_node *np)
 </code></pre>
-<p>&emsp;&emsp;函数参数和返回值含义如下：<br>&emsp;&emsp;<strong>np：</strong>设备节点。<br>&emsp;&emsp;<strong>返回值：</strong>正值，统计到的 GPIO 数量；负值，失败。</p>
+<p>&emsp;&emsp;函数参数和返回值含义如下：<br>&emsp;&emsp;**np：**设备节点。<br>&emsp;&emsp;**返回值：**正值，统计到的 GPIO 数量；负值，失败。</p>
 <p>&emsp;&emsp;<strong>3、of_get_named_gpio 函数</strong></p>
 <p>&emsp;&emsp;此函数获取 GPIO 编号，因为 Linux 内核中关于 GPIO 的 API 函数都要使用 GPIO 编号，此函数会将设备树中类似&lt;&amp;gpio5 7 GPIO_ACTIVE_LOW&gt;的属性信息转换为对应的 GPIO 编号，此函数在驱动中使用很频繁！函数原型如下：</p>
 <pre><code>int of_get_named_gpio(struct device_node const char int *np, *propname, index)
 </code></pre>
-<p>&emsp;&emsp;函数参数和返回值含义如下：<br>&emsp;&emsp;<strong>np：</strong>设备节点。<br>&emsp;&emsp;<strong>propname：</strong>包含要获取 GPIO 信息的属性名。<br>&emsp;&emsp;<strong>index：</strong>GPIO 索引，因为一个属性里面可能包含多个 GPIO，此参数指定要获取哪个 GPIO 的编号，如果只有一个 GPIO 信息的话此参数为 0。<br>&emsp;&emsp;<strong>返回值：</strong>正值，获取到的 GPIO 编号；负值，失败。</p>
+<p>&emsp;&emsp;函数参数和返回值含义如下：<br>&emsp;&emsp;**np：**设备节点。<br>&emsp;&emsp;**propname：**包含要获取 GPIO 信息的属性名。<br>&emsp;&emsp;**index：**GPIO 索引，因为一个属性里面可能包含多个 GPIO，此参数指定要获取哪个 GPIO 的编号，如果只有一个 GPIO 信息的话此参数为 0。<br>&emsp;&emsp;**返回值：**正值，获取到的 GPIO 编号；负值，失败。</p>
 <h2 id="实验程序编写"><a href="#实验程序编写" class="headerlink" title="实验程序编写"></a>实验程序编写</h2><h3 id="修改设备树文件"><a href="#修改设备树文件" class="headerlink" title="修改设备树文件"></a>修改设备树文件</h3><p>&emsp;&emsp;<strong>1、添加 pinctrl 节点</strong><br>&emsp;&emsp;I.MX6U-ALPHA 开发板上的 LED 灯使用了 GPIO1_IO03 这个 PIN，打开 imx6ull-hcw-emmc.dtsi，在 iomuxc 节点的 imx6ul-evk 子节点下创建一个名为“pinctrl_led”的子节点，节点内容如下所示：</p>
 <pre><code>pinctrl_led: ledgrp&#123;
     fsl,pins = &lt;
@@ -527,7 +527,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-count">55</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

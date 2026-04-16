@@ -329,7 +329,7 @@
 <td>将 p 地址的第 nr 位翻转，并返回 nr 位原来的值。</td>
 </tr>
 </tbody></table>
-<h2 id="自旋锁"><a href="#自旋锁" class="headerlink" title="自旋锁"></a>自旋锁</h2><p>&emsp;&emsp;原子操作只能对整型变量或者位进行保护，但是在实际情况下不只有整型变量或位为临界区，比如设备结构体变量就不是整型变量。我们需要自旋锁来确保只有一个线程访问此结构体变量。<br>&emsp;&emsp;当一个线程要访问某个共享资源的时候首先要获取相应的锁，锁只能被一个线程持有，只要此线程不释放持有的锁，那么其他的线程就不能获取此锁。对于自旋锁而言，如果自旋锁正在被 线程 A 持有，线程 B 想要获取自旋锁，那么线程 B 就会处于忙循环-旋转-等待状态，线程 B 不会进入休眠状态或者说去做其他的处理，而是会一直等待获取到自旋锁。从这里就可以看到自旋锁的缺点：<strong>等待自旋锁的线程会一直处于自旋状态，这样会浪费性能，所以自旋锁的持有时间不能太长。</strong>所以自旋锁适合<strong>短时期的轻量加锁</strong>。</p>
+<h2 id="自旋锁"><a href="#自旋锁" class="headerlink" title="自旋锁"></a>自旋锁</h2><p>&emsp;&emsp;原子操作只能对整型变量或者位进行保护，但是在实际情况下不只有整型变量或位为临界区，比如设备结构体变量就不是整型变量。我们需要自旋锁来确保只有一个线程访问此结构体变量。<br>&emsp;&emsp;当一个线程要访问某个共享资源的时候首先要获取相应的锁，锁只能被一个线程持有，只要此线程不释放持有的锁，那么其他的线程就不能获取此锁。对于自旋锁而言，如果自旋锁正在被 线程 A 持有，线程 B 想要获取自旋锁，那么线程 B 就会处于忙循环-旋转-等待状态，线程 B 不会进入休眠状态或者说去做其他的处理，而是会一直等待获取到自旋锁。从这里就可以看到自旋锁的缺点：<strong>等待自旋锁的线程会一直处于自旋状态，这样会浪费性能，所以自旋锁的持有时间不能太长。<strong>所以自旋锁适合</strong>短时期的轻量加锁</strong>。</p>
 <p>&emsp;&emsp;Linux 内核使用结构体 spinlock_t 表示自旋锁，结构体定义如下</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">spinlock</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">raw_spinlock</span> <span class="title">rlock</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_DEBUG_LOCK_ALLOC</span></span><br><span class="line"><span class="meta"># <span class="keyword">define</span> LOCK_PADSIZE (offsetof(struct raw_spinlock, dep_map))</span></span><br><span class="line">        <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">            u8 __padding[LOCK_PADSIZE];</span><br><span class="line">            <span class="class"><span class="keyword">struct</span> <span class="title">lockdep_map</span> <span class="title">dep_map</span>;</span></span><br><span class="line">        &#125;;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">    &#125;;</span><br><span class="line">&#125; <span class="type">spinlock_t</span>;</span><br></pre></td></tr></table></figure>
 
@@ -592,7 +592,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-count">55</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

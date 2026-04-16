@@ -231,7 +231,7 @@
 
 <p>&emsp;&emsp;<strong>3、召回</strong><br>&emsp;&emsp;召回就是搜索与用户问题相关内容的过程。首先，用户的问题会被发送给 Embedding 模型，Embedding 模型会将它转换为向量，然后再把它发送给向量数据库，然后向量数据库会返回若干个最相似的结果。</p>
 <p>&emsp;&emsp;向量数据库使用<strong>余弦相似度、欧氏距离、点积</strong>等方法来判断向量的相似度。</p>
-<p>&emsp;&emsp;<strong>4、重排</strong><br>&emsp;&emsp;重排就是重新排序，召回返回了若干个片段，而重排就是在这里面选更少的几个片段来发送给大模型。<br>&emsp;&emsp;<strong>重排和召回使用的文本向量相似度计算逻辑不同。</strong>召回阶段使用的向量相似度的几种方法成本低、耗时短，但是准确率低，所以适合在大量的向量中筛选。而重排阶段一般是使用一种叫 cross-encoder 的模型来筛选，这种方法成本高、耗时长，但是准确率更高，适合精挑细选。</p>
+<p>&emsp;&emsp;<strong>4、重排</strong><br>&emsp;&emsp;重排就是重新排序，召回返回了若干个片段，而重排就是在这里面选更少的几个片段来发送给大模型。<br>&emsp;&emsp;**重排和召回使用的文本向量相似度计算逻辑不同。**召回阶段使用的向量相似度的几种方法成本低、耗时短，但是准确率低，所以适合在大量的向量中筛选。而重排阶段一般是使用一种叫 cross-encoder 的模型来筛选，这种方法成本高、耗时长，但是准确率更高，适合精挑细选。</p>
 <p>&emsp;&emsp;<strong>5、生成</strong><br>&emsp;&emsp;最终，我们将用户问题和重排输出的参考资料发送给大模型，让大模型生成回答并发送给用户。</p>
 
     </div>
@@ -329,7 +329,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">54</span>
+          <span class="site-state-item-count">55</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
