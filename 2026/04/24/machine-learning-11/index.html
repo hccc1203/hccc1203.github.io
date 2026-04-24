@@ -31,11 +31,14 @@
 <meta property="og:site_name" content="Hcc的Blog">
 <meta property="og:description" content="学习决策树模型">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/machine_learning/11/%E5%86%B3%E7%AD%96%E6%A0%91%E6%A8%A1%E5%9E%8B%E5%9B%BE.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/machine_learning/11/%E4%BF%A1%E6%81%AF%E7%86%B5%E5%9B%BE%E5%83%8F.png">
 <meta property="article:published_time" content="2026-04-24T06:11:11.000Z">
-<meta property="article:modified_time" content="2026-04-24T06:27:51.563Z">
+<meta property="article:modified_time" content="2026-04-24T08:55:17.939Z">
 <meta property="article:author" content="Hcc">
 <meta property="article:tag" content="机器学习">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/machine_learning/11/%E5%86%B3%E7%AD%96%E6%A0%91%E6%A8%A1%E5%9E%8B%E5%9B%BE.png">
 
 <link rel="canonical" href="https://hccc1203.github.io/2026/04/24/machine-learning-11/">
 
@@ -50,7 +53,7 @@
   };
 </script>
 
-  <title>机器学习日记(11) 决策树模型 | Hcc的Blog</title><meta name="robots" content="noindex">
+  <title>机器学习日记(11) 决策树模型 | Hcc的Blog</title>
   
 
 
@@ -216,7 +219,82 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <!-- flag of hidden posts -->
+        <h2 id="决策树"><a href="#决策树" class="headerlink" title="决策树"></a>决策树</h2><p>&emsp;&emsp;下图是一个简易的决策树模型，用来检测一张图片的内容是否为一只猫。在这个决策树中，Ear shape 被称为根节点，所有的椭圆形被称为决策节点，最终的方框型节点被称为叶节点。</p>
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/machine_learning/11/决策树模型图.png"  width=60%></div>
+<div style="text-align:center;">图 1 决策树模型图</div>
+&emsp;&emsp;
+
+<p>&emsp;&emsp;构建决策树时最关键的问题是<strong>每一步应该选择哪个特征来划分数据</strong>。当有多个特征时，我们需要一个标准来判断依照哪个特征划分后效果最好。</p>
+<p>&emsp;&emsp;假设我们要判断是否适合打球，原始数据中打球和不打球各五个。如果按照 “天气” 划分后，晴天大多数不打球，阴天全部打球，雨天大多数不打球，那么每组内部的结果就更统一了，说明这个特征更有用。所以选择决策特征的关键因素是，<strong>决策后，子节点尽量单一</strong>。</p>
+<p>&emsp;&emsp;为了衡量一个样本集的纯度，我们引入熵的概念，其计算公式如下：</p>
+<p>$$<br>H(D) &#x3D; - \sum_{k&#x3D;1}^{K} p_k \log_2 p_k<br>$$</p>
+<p>&emsp;&emsp;其中，D 表示当前数据集，p_k 表示第 k 类样本所占的比例。熵越大，数据越混乱，熵越小，数据越纯净。</p>
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/machine_learning/11/信息熵图像.png"  width=60%></div>
+<div style="text-align:center;">图 2 信息熵图像</div>
+&emsp;&emsp;
+
+<p>&emsp;&emsp;我们常常使用 <strong>ID3</strong> 算法来选择决策特征。信息增益则表示了划分前后混乱程度减少了多少</p>
+<p>$$<br>Gain(D, A) &#x3D; H(D) - H(D|A)<br>$$</p>
+<p>$$<br>\text{信息增益} &#x3D; \text{划分前的混乱程度} - \text{划分后的混乱程度}<br>$$</p>
+<p>&emsp;&emsp;信息增益越大，说明这个特征划分效果越好。ID3 算法就是每次选择信息增益最大的特征。</p>
+<p>&emsp;&emsp;但是 ID3 也有一个问题，它容易偏向取值很多的特征。比如“学号”这个特征，每个人都不一样，用它划分后，每个节点可能只有一个样本，看起来非常纯，但实际上没有泛化能力。因此我们引入 C4.5 信息增益率，公式如下</p>
+<p>$$<br>GainRatio(D, A) &#x3D; \frac{Gain(D, A)}{IV(A)}<br>$$</p>
+<p>&emsp;&emsp;其中，IV(A) 表示特征 A 的固有值，也可以理解为特征 A 本身取值的复杂程度。特征取值越多，IV(A) 通常越大，因此信息增益率可以在一定程度上抑制 ID3 偏向多取值特征的问题。</p>
+<p>&emsp;&emsp;构建决策树一般按照下面的步骤：</p>
+<pre><code>1. 从根节点开始，把所有训练数据放进去
+2. 计算每个特征的划分效果
+3. 选择最优特征进行划分
+4. 对每个子节点重复上述过程
+5. 直到满足停止条件
+6. 得到最终的决策树
+</code></pre>
+<p>&emsp;&emsp;可以理解成递归过程：</p>
+<pre><code>构建决策树(当前数据集):
+    如果当前数据已经足够纯:
+        返回一个叶子节点
+
+    如果没有特征可用:
+        返回多数类作为叶子节点
+
+    找到最优划分特征
+    根据该特征把数据分成多个子集
+
+    对每个子集继续构建决策树
+</code></pre>
+<p>&emsp;&emsp;我们还需要设置决策树的停止条件，例如当前节点中的样本已经属于同一类、没有更多特征可以划分、树的深度达到上限、当前节点样本数量太少、划分带来的提升很小等等。</p>
+<p>&emsp;&emsp;如果一个分类特征可以取 K 个可能值，那么我们可以用 K 个二元特征值替换他。例如原问题是判断水果类别，输入为苹果、香蕉、橘子，那么就可以将其拆分为三个问题</p>
+<ul>
+<li>是不是苹果？</li>
+<li>是不是香蕉？</li>
+<li>是不是橘子？</li>
+</ul>
+<h2 id="分类回归树-CART"><a href="#分类回归树-CART" class="headerlink" title="分类回归树(CART)"></a>分类回归树(CART)</h2><p>&emsp;&emsp;CART 同时支持分类任务和回归任务。<br>&emsp;&emsp;CART 的一个重要特点是：每个节点只分成两个分支，也就是每次只做一次“是 &#x2F; 否”判断。对于连续特征，CART 通常使用类似“特征值是否小于等于某个阈值”的方式划分；对于离散特征，CART 可以使用类似“是否属于某个取值集合”的方式划分。<br>&emsp;&emsp;CART 做分类任务时，常用<strong>基尼指数 Gini</strong> 来选择划分特征，其公式如下</p>
+<p>$$<br>Gini(D) &#x3D; 1 - \sum_{k&#x3D;1}^{K} p_k^2<br>$$</p>
+<p>&emsp;&emsp;其中，D 表示当前数据集，p_k 表示第 k 类样本所占的比例，K 表示类别数量。Gini 越小，说明数据越纯。</p>
+<p>&emsp;&emsp;当 CART 尝试某个划分条件时，会把数据分成左右两个子节点，并计算划分后的加权 Gini：</p>
+<p>$$<br>Gini_{split} &#x3D;<br>\frac{|D_{left}|}{|D|}Gini(D_{left})<br>+<br>\frac{|D_{right}|}{|D|}Gini(D_{right})<br>$$</p>
+<p>&emsp;&emsp;CART 会尝试不同的特征和划分点，最终选择让加权 Gini 最小的划分方式。</p>
+<p>&emsp;&emsp;CART 做回归任务时，使用平方误差，让每个子节点中的 y 值尽量接近。</p>
+<p>&emsp;&emsp;和上文中的 ID3 &#x2F; C4.5 相比，CART 用二叉树结构，既能分类也能回归。</p>
+<h2 id="回归树"><a href="#回归树" class="headerlink" title="回归树"></a>回归树</h2><p>&emsp;&emsp;回归树就是用决策树来解决回归问题，分类树预测的是类别，而回归树预测的是连续数值。回归树不能用类别纯度，因为其预测的是连续值，所以常用 <strong>均方误差 MSE</strong>:</p>
+<p>$$<br>MSE &#x3D; \frac{1}{m}\sum_{i&#x3D;1}^{m}(y_i - \bar{y})^2<br>$$</p>
+<p>&emsp;&emsp;其中：</p>
+<ul>
+<li>$y_i$：第 $i$ 个样本的真实值</li>
+<li>$\bar{y}$：当前节点中所有 $y$ 的平均值</li>
+<li>$m$：当前节点中的样本数量</li>
+</ul>
+<p>&emsp;&emsp;MSE 越小，说明这个节点里的数值越接近。</p>
+<p>&emsp;&emsp;回归树的构建过程是</p>
+<pre><code>1. 从根节点开始
+2. 尝试不同特征和划分点
+3. 选择让误差最小的划分
+4. 继续递归划分
+5. 到叶子节点后，用该节点样本 y 的平均值作为预测值
+</code></pre>
+
     </div>
 
     
@@ -232,6 +310,13 @@
 
 
         
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/04/20/machine-learning-10/" rel="prev" title="机器学习日记(10) 如何开发机器学习模型">
+      <i class="fa fa-chevron-left"></i> 机器学习日记(10) 如何开发机器学习模型
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
       </footer>
     
   </article>
@@ -289,6 +374,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%B3%E7%AD%96%E6%A0%91"><span class="nav-number">1.</span> <span class="nav-text">决策树</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E7%B1%BB%E5%9B%9E%E5%BD%92%E6%A0%91-CART"><span class="nav-number">2.</span> <span class="nav-text">分类回归树(CART)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9E%E5%BD%92%E6%A0%91"><span class="nav-number">3.</span> <span class="nav-text">回归树</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -301,7 +387,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">56</span>
+          <span class="site-state-item-count">57</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
