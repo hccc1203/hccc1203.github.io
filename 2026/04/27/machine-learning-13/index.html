@@ -24,15 +24,15 @@
 
 
 
-  <meta name="description" content="异常检测算法&emsp;&emsp;异常检测算法是从大量正常数据中找出那些不太一样的数据点，常用于设备故障检测、网络攻击检测、金融欺诈检测等等。接下来让我们看看几种用于异常检测的算法。 密度估计&emsp;&emsp;这类方法会估计一个样本出现的概率，如果 $p(x)$ 很小，则说明这个样本在数据集中很少出现，极有可能是异常。所以判断规则可以写成 $$p(x) &lt; \varepsilon$$">
+  <meta name="description" content="异常检测算法是从大量正常数据中找出那些不太一样的数据点，常用于设备故障检测、网络攻击检测、金融欺诈检测等等。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="机器学习日记(13) 异常检测系统">
 <meta property="og:url" content="https://hccc1203.github.io/2026/04/27/machine-learning-13/index.html">
 <meta property="og:site_name" content="Hcc的Blog">
-<meta property="og:description" content="异常检测算法&emsp;&emsp;异常检测算法是从大量正常数据中找出那些不太一样的数据点，常用于设备故障检测、网络攻击检测、金融欺诈检测等等。接下来让我们看看几种用于异常检测的算法。 密度估计&emsp;&emsp;这类方法会估计一个样本出现的概率，如果 $p(x)$ 很小，则说明这个样本在数据集中很少出现，极有可能是异常。所以判断规则可以写成 $$p(x) &lt; \varepsilon$$">
+<meta property="og:description" content="异常检测算法是从大量正常数据中找出那些不太一样的数据点，常用于设备故障检测、网络攻击检测、金融欺诈检测等等。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-04-27T09:36:05.000Z">
-<meta property="article:modified_time" content="2026-04-27T09:37:18.745Z">
+<meta property="article:modified_time" content="2026-04-28T03:32:40.158Z">
 <meta property="article:author" content="Hcc">
 <meta property="article:tag" content="机器学习">
 <meta name="twitter:card" content="summary">
@@ -50,7 +50,7 @@
   };
 </script>
 
-  <title>机器学习日记(13) 异常检测系统 | Hcc的Blog</title><meta name="robots" content="noindex">
+  <title>机器学习日记(13) 异常检测系统 | Hcc的Blog</title>
   
 
 
@@ -216,11 +216,47 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="异常检测算法"><a href="#异常检测算法" class="headerlink" title="异常检测算法"></a>异常检测算法</h2><p>&emsp;&emsp;异常检测算法是从大量正常数据中找出那些不太一样的数据点，常用于设备故障检测、网络攻击检测、金融欺诈检测等等。接下来让我们看看几种用于异常检测的算法。</p>
-<h3 id="密度估计"><a href="#密度估计" class="headerlink" title="密度估计"></a>密度估计</h3><p>&emsp;&emsp;这类方法会估计一个样本出现的概率，如果 $p(x)$ 很小，则说明这个样本在数据集中很少出现，极有可能是异常。所以判断规则可以写成</p>
+        <p>&emsp;&emsp;异常检测算法是从大量正常数据中找出那些不太一样的数据点，常用于设备故障检测、网络攻击检测、金融欺诈检测等等。异常检测的核心思路是：<strong>先学习正常数据的分布规律，再判断一个新样本是否偏离这个规律太远。</strong></p>
+<p>&emsp;&emsp;这类方法会估计一个样本出现的概率，如果 $p(x)$ 很小，则说明这个样本在数据集中很少出现，极有可能是异常。所以判断规则可以写成</p>
 <p>$$<br>p(x) &lt; \varepsilon<br>$$</p>
 <p>&emsp;&emsp;其中 $\varepsilon$ 是人为设置的阈值。</p>
-<h3 id="DBSCAN-异常检测"><a href="#DBSCAN-异常检测" class="headerlink" title="DBSCAN 异常检测"></a>DBSCAN 异常检测</h3><!-- flag of hidden posts -->
+<h3 id="高斯分布异常检测"><a href="#高斯分布异常检测" class="headerlink" title="高斯分布异常检测"></a>高斯分布异常检测</h3><p>&emsp;&emsp;假设某个特征服从高斯分布：</p>
+<p>$$<br>x \sim N(\mu, \sigma^2)<br>$$</p>
+<p>&emsp;&emsp;其中 $\mu$ 表示均值，$\sigma^2$ 表示方差。高斯分布的概率密度函数为：</p>
+<p>$$<br>p(x)&#x3D;\frac{1}{\sqrt{2\pi}\sigma}e^{-\frac{(x-\mu)^2}{2\sigma^2}}<br>$$</p>
+<p>&emsp;&emsp;如果 $x$ 离均值 $\mu$ 很远，那么 $p(x)$ 就会很小，说明这个样本出现的可能性很低，因此可能是异常点。</p>
+<p>&emsp;&emsp;在实际问题中，一个样本通常不只有一个特征。假设每个特征之间相互独立，那么整个样本的概率就可以写成：</p>
+<p>$$<br>p(x)&#x3D;\prod_{j&#x3D;1}^{n}p(x_j)<br>$$</p>
+<p>&emsp;&emsp;如果某个样本整体概率很低，就说明这个样本在多个特征组合下都不太正常。</p>
+<p>&emsp;&emsp;对于每一个特征，我们需要计算它的均值和方差。其计算方法如下</p>
+<p>$$<br>\mu_j &#x3D; \frac{1}{m}\sum_{i&#x3D;1}^{m}x_j^{(i)}<br>$$</p>
+<p>$$<br>\sigma_j^2 &#x3D; \frac{1}{m}\sum_{i&#x3D;1}^{m}\left(x_j^{(i)}-\mu_j\right)^2<br>$$</p>
+<p>&emsp;&emsp;其中：</p>
+<ul>
+<li>$m$：训练样本数量</li>
+<li>$x_j^{(i)}$：第 $i$ 个样本的第 $j$ 个特征</li>
+<li>$\mu_j$：第 $j$ 个特征的均值</li>
+<li>$\sigma_j^2$：第 $j$ 个特征的方差</li>
+</ul>
+<p>&emsp;&emsp;计算出每个特征的均值和方差后，就可以得到每个特征的概率分布。</p>
+<h2 id="DBSCAN"><a href="#DBSCAN" class="headerlink" title="DBSCAN"></a>DBSCAN</h2><p>&emsp;&emsp;DBSCAN 是一种基于<strong>密度的聚类算法</strong>。可以理解为：如果一片区域里的样本点足够密集，就把它们归为一类；如果某个点周围太稀疏，就把它当成噪声点或异常点。和 K-Means 不同的是，DBSCAN 不需要提前指定聚类数量，而且可以发现不规则形状的簇。</p>
+<p>&emsp;&emsp;假设有一堆数据点，DBSCAN 会查看每个点周围一定范围内有多少个邻近点，这个范围使用<strong>邻域半径</strong> $\varepsilon$ 表示。邻近点数量的最低要求使用参数：$MinPts$ 表示。</p>
+<p>&emsp;&emsp;$\varepsilon$表示一个点周围多大范围内算作它的邻居。</p>
+<p>&emsp;&emsp;比如：</p>
+<p>$$<br>\varepsilon &#x3D; 0.5<br>$$</p>
+<p>&emsp;&emsp;就表示距离这个点不超过 $0.5$ 的点，都算作它的邻居。</p>
+<p>&emsp;&emsp;$MinPts$表示在 $\varepsilon$ 范围内，至少要有多少个点，才能认为这个区域是密集的。</p>
+<p>&emsp;&emsp;比如：</p>
+<p>$$<br>MinPts &#x3D; 5<br>$$</p>
+<p>&emsp;&emsp;表示一个点周围半径为 $\varepsilon$ 的范围内，至少有 $5$ 个点，这个点才可能成为核心点。</p>
+<p>&emsp;&emsp;DBSCAN 会把样本点分为三类：</p>
+<p>&emsp;&emsp;<strong>1、核心点</strong>：如果某个点在半径 $\varepsilon$ 内，邻居数量不少于 $MinPts$，那么这个点就是核心点。</p>
+<p>&emsp;&emsp;<strong>2、边界点</strong>：如果某个点本身邻居数量不够，不能成为核心点，但是它落在某个核心点的 $\varepsilon$ 邻域内，那么它就是边界点。</p>
+<p>&emsp;&emsp;<strong>3、噪声点</strong>：如果某个点既不是核心点，也不是边界点，那么它就是噪声点。</p>
+<p>&emsp;&emsp;DBSCAN 的过程可以理解为“从核心点向外扩展”。步骤如下：</p>
+<p>&emsp;&emsp;1. 随机选择一个还没有访问过的点。<br>&emsp;&emsp;2. 找出它半径 $\varepsilon$ 内的所有邻居。<br>&emsp;&emsp;3. 如果邻居数量小于 $MinPts$，暂时把它标记为噪声点。<br>&emsp;&emsp;4. 如果邻居数量不少于 $MinPts$，说明它是核心点，于是创建一个新簇。<br>&emsp;&emsp;5. 从这个核心点开始，把它邻域内的点加入这个簇。<br>&emsp;&emsp;6. 如果邻域中的某些点也是核心点，就继续从这些点向外扩展。<br>&emsp;&emsp;7. 直到不能继续扩展为止。<br>&emsp;&emsp;8. 再选择下一个未访问点，重复上面的过程。</p>
+<p>&emsp;&emsp;所以 DBSCAN 形成的簇不是靠“中心点”，而是靠“密度连通”。</p>
+
     </div>
 
     
@@ -236,6 +272,13 @@
 
 
         
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/04/27/machine-learning-12/" rel="prev" title="机器学习日记(12) K-Means">
+      <i class="fa fa-chevron-left"></i> 机器学习日记(12) K-Means
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
       </footer>
     
   </article>
@@ -293,7 +336,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E6%A3%80%E6%B5%8B%E7%AE%97%E6%B3%95"><span class="nav-number">1.</span> <span class="nav-text">异常检测算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%86%E5%BA%A6%E4%BC%B0%E8%AE%A1"><span class="nav-number">1.1.</span> <span class="nav-text">密度估计</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DBSCAN-%E5%BC%82%E5%B8%B8%E6%A3%80%E6%B5%8B"><span class="nav-number">1.2.</span> <span class="nav-text">DBSCAN 异常检测</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E6%96%AF%E5%88%86%E5%B8%83%E5%BC%82%E5%B8%B8%E6%A3%80%E6%B5%8B"><span class="nav-number">1.</span> <span class="nav-text">高斯分布异常检测</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DBSCAN"><span class="nav-number"></span> <span class="nav-text">DBSCAN</span></a></div>
       </div>
       <!--/noindex-->
 
@@ -306,7 +349,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-count">59</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
