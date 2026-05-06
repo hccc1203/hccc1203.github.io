@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="基于 Pandas 构建个人消费数据分析系统，实现消费数据清洗、类别统计、趋势分析、异常支出检测与自动报告生成。通过 Matplotlib 可视化月度支出变化，并结合 LLM 根据统计结果自动生成自然语言分析报告。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="项目实战(1) 个人消费流水智能分析系统">
+<meta property="og:url" content="https://hccc1203.github.io/2026/05/06/Project-1/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="基于 Pandas 构建个人消费数据分析系统，实现消费数据清洗、类别统计、趋势分析、异常支出检测与自动报告生成。通过 Matplotlib 可视化月度支出变化，并结合 LLM 根据统计结果自动生成自然语言分析报告。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/project/1/1.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/project/1/category_pie.png">
+<meta property="article:published_time" content="2026-05-06T03:58:52.000Z">
+<meta property="article:modified_time" content="2026-05-06T04:30:41.255Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="机器学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/project/1/1.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/05/06/Project-1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>项目实战(1) 个人消费流水智能分析系统 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/05/06/Project-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          项目实战(1) 个人消费流水智能分析系统
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-05-06 11:58:52" itemprop="dateCreated datePublished" datetime="2026-05-06T11:58:52+08:00">2026-05-06</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AE%9E%E6%88%98%E7%AF%87/" itemprop="url" rel="index"><span itemprop="name">实战篇</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AE%9E%E6%88%98%E7%AF%87/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="项目目标"><a href="#项目目标" class="headerlink" title="项目目标"></a>项目目标</h2><p>&emsp;&emsp;导入一份消费流水数据，自动分析：</p>
+<ul>
+<li>每月总支出</li>
+<li>每类消费占比</li>
+<li>哪些月份花钱异常</li>
+<li>哪些类别支出增长明显</li>
+<li>自动生成消费分析报告</li>
+</ul>
+<h2 id="开始做"><a href="#开始做" class="headerlink" title="开始做"></a>开始做</h2><h3 id="excel-转换为-CSV"><a href="#excel-转换为-CSV" class="headerlink" title="excel 转换为 CSV"></a>excel 转换为 CSV</h3><p>&emsp;&emsp;首先我们获取数据，在微信中导出近一个月的账单，发现有许多数据，如交易时间、交易类型、交易对方、商品收&#x2F;支 等等。但并不是所有的信息我们都需要使用，例如交易订单号我们就不需要。因此我们先读取 excel 表格提取出有用的信息再转换成 csv。</p>
+<p>&emsp;&emsp;创建 src&#x2F;data_loader.py 文件，写入三个工具，分别问读取、清洗、转化。读取函数读入 excel 表格并将其转化为 dataframe 格式，然后清洗步骤筛选出支付成功的信息并将表头重命名为英文，最后转化成 csv 并导出，方便后续处理。</p>
+<h3 id="数据分类"><a href="#数据分类" class="headerlink" title="数据分类"></a>数据分类</h3><p>&emsp;&emsp;接下来，我们应该将这些数据分类为具体的几种类别。我的想法是我们先根据关键字分类，不能分类的再交给 LLM 具体分类。我们创建固定类别如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">CATEGORIES = [</span><br><span class="line">    <span class="string">&quot;餐饮&quot;</span>,</span><br><span class="line">    <span class="string">&quot;交通&quot;</span>,</span><br><span class="line">    <span class="string">&quot;购物&quot;</span>,</span><br><span class="line">    <span class="string">&quot;数码&quot;</span>,</span><br><span class="line">    <span class="string">&quot;住房&quot;</span>,</span><br><span class="line">    <span class="string">&quot;娱乐&quot;</span>,</span><br><span class="line">    <span class="string">&quot;医疗&quot;</span>,</span><br><span class="line">    <span class="string">&quot;学习&quot;</span>,</span><br><span class="line">    <span class="string">&quot;人情往来&quot;</span>,</span><br><span class="line">    <span class="string">&quot;转账&quot;</span>,</span><br><span class="line">    <span class="string">&quot;收入&quot;</span>,</span><br><span class="line">    <span class="string">&quot;其他&quot;</span></span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来我们使用简单的关键字匹配函数分类数据。匹配完成后可以看出匹配率还是很高的。接下来我们可以使用 LLM 模型再去给待分类的匹配。</p>
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/project/1/1.png"  width=100%></div>
+<div style="text-align:center;">图 1 LLM 分类</div>
+&emsp;&emsp;
+
+<p>&emsp;&emsp;但是这样也存在问题啊，LLM 分类太慢了，如果有很多记录，还得一个个等！我们需要优化他的分类速度。</p>
+<p>&emsp;&emsp;我们是否可以通过聚类的机器学习算法来将这些待分类的分到一起，然后再喂给 LLM 分类呢？结合之前做过的 RAG，我想到可以使用 embadding 模型将这些语句向量化，然后再将其进行 K-Means 聚类算法，最后将整个聚类喂给 LLM 不就可以了吗？</p>
+<p>&emsp;&emsp;经过代码验证，这样的速度确实快了许多，接下来让我们看看更多的技术细节。</p>
+<p>&emsp;&emsp;在 K-Means 的过程中，聚类数量我们使用了自适应的算法，具体代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">target_cluster_size = <span class="number">8</span></span><br><span class="line">n_clusters = math.ceil(<span class="built_in">len</span>(unknown_df) / target_cluster_size)</span><br><span class="line">n_clusters = <span class="built_in">max</span>(<span class="number">5</span>, <span class="built_in">min</span>(n_clusters, <span class="number">80</span>, <span class="built_in">len</span>(unknown_df)))</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这样我们就可以根据待分类数量自动估算簇的数量，保证其每个簇中大约有 8 条信息。</p>
+<p>&emsp;&emsp;接下来，为了减少 LLM 对每个簇的推理量，我们在每个簇中抽样发送给 LLM，这样比每一条都发给 LLM 进行推理分析快了不少。</p>
+<h3 id="数据分析"><a href="#数据分析" class="headerlink" title="数据分析"></a>数据分析</h3><p>&emsp;&emsp;接下来我们实现月度支出分析、消费类别占比分析、每月各类别支出分析、Top 商家分析等等。接下来我们看看每一个如何具体实现。</p>
+<p>&emsp;&emsp;<strong>0、转换格式</strong><br>&emsp;&emsp;将日期转换为可以识别的年月日、再将 amount 转换为数字，并删除 date 和 amount 为空的行。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">load_transactions</span>(<span class="params">csv_path: <span class="built_in">str</span></span>) -&gt; pd.DataFrame:</span><br><span class="line">    df = pd.read_csv(csv_path)</span><br><span class="line"></span><br><span class="line">    df[<span class="string">&quot;date&quot;</span>] = pd.to_datetime(df[<span class="string">&quot;date&quot;</span>], errors=<span class="string">&quot;coerce&quot;</span>)</span><br><span class="line">    df[<span class="string">&quot;amount&quot;</span>] = pd.to_numeric(df[<span class="string">&quot;amount&quot;</span>], errors=<span class="string">&quot;coerce&quot;</span>)</span><br><span class="line"></span><br><span class="line">    df = df.dropna(subset=[<span class="string">&quot;date&quot;</span>, <span class="string">&quot;amount&quot;</span>])</span><br><span class="line">    df[<span class="string">&quot;month&quot;</span>] = df[<span class="string">&quot;date&quot;</span>].dt.to_period(<span class="string">&quot;M&quot;</span>).astype(<span class="built_in">str</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> df</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<strong>1、月度总支出分析</strong><br>&emsp;&emsp;将消费数据按月份排序、求和并返回。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">analyze_monthly_expense</span>(<span class="params">df: pd.DataFrame</span>) -&gt; pd.DataFrame:</span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">        df.groupby(<span class="string">&quot;month&quot;</span>)[<span class="string">&quot;amount&quot;</span>]</span><br><span class="line">        .<span class="built_in">sum</span>()</span><br><span class="line">        .reset_index()</span><br><span class="line">        .sort_values(<span class="string">&quot;month&quot;</span>)</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<strong>2、消费类别占比分析</strong><br>&emsp;&emsp;按照 category 分类并留下 amount 数据，再对每一组的 amount 进行求和，然后从大到小排列，最后整理成普通表格。最后添加新的一列 ratio 表示每一项的占比。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">analyze_category_expense</span>(<span class="params">df: pd.DataFrame</span>) -&gt; pd.DataFrame:</span><br><span class="line">    result = (</span><br><span class="line">        df.groupby(<span class="string">&quot;category&quot;</span>)[<span class="string">&quot;amount&quot;</span>]</span><br><span class="line">        .<span class="built_in">sum</span>()</span><br><span class="line">        .sort_values(ascending=<span class="literal">False</span>)</span><br><span class="line">        .reset_index()</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    result[<span class="string">&quot;ratio&quot;</span>] = result[<span class="string">&quot;amount&quot;</span>] / result[<span class="string">&quot;amount&quot;</span>].<span class="built_in">sum</span>()</span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<strong>3、消费商家排行</strong><br>&emsp;&emsp;按照商家分组后，对其金额求和，再将其排序后保留顶部 top_n 个，最后重新整理成表格并返回。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">analyze_top_merchants</span>(<span class="params">df: pd.DataFrame, top_n: <span class="built_in">int</span> = <span class="number">15</span></span>) -&gt; pd.DataFrame:</span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">        df.groupby(<span class="string">&quot;merchant&quot;</span>)[<span class="string">&quot;amount&quot;</span>]</span><br><span class="line">        .<span class="built_in">sum</span>()</span><br><span class="line">        .sort_values(ascending=<span class="literal">False</span>)</span><br><span class="line">        .head(top_n)</span><br><span class="line">        .reset_index()</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<strong>4、单笔异常消费检测</strong><br>&emsp;&emsp;这里使用了 IQR 检测方法，会去数据的下四分位数 Q1 和上四分位数 Q3，IQR &#x3D; Q3 - Q1，于是异常消费的上边界就在 Q3 + 1.5 * IQR。超过这个边界的消费就可以认为是异常消费。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">detect_abnormal_transactions</span>(<span class="params">df: pd.DataFrame</span>) -&gt; pd.DataFrame:</span><br><span class="line">    q1 = df[<span class="string">&quot;amount&quot;</span>].quantile(<span class="number">0.25</span>)</span><br><span class="line">    q3 = df[<span class="string">&quot;amount&quot;</span>].quantile(<span class="number">0.75</span>)</span><br><span class="line">    iqr = q3 - q1</span><br><span class="line"></span><br><span class="line">    upper_bound = q3 + <span class="number">1.5</span> * iqr</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> df[df[<span class="string">&quot;amount&quot;</span>] &gt; upper_bound].sort_values(<span class="string">&quot;amount&quot;</span>, ascending=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<strong>5、异常月度检测</strong><br>&emsp;&emsp;这里用的是 z_score 计算。首先计算这份数据的均值和标准差，接下来通过此公式计算 z_score：</p>
+<pre><code>z_score = (当前月份支出 - 平均月支出) / 标准差
+</code></pre>
+<p>&emsp;&emsp;表明了这个月的支出距离平均水平有多少个标准差，在本次分析中，我们筛选出比平均水平高出 2.5 个标准差的月份。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">detect_abnormal_months</span>(<span class="params">monthly_expense: pd.DataFrame</span>) -&gt; pd.DataFrame:</span><br><span class="line">    mean_value = monthly_expense[<span class="string">&quot;amount&quot;</span>].mean()</span><br><span class="line">    std_value = monthly_expense[<span class="string">&quot;amount&quot;</span>].std()</span><br><span class="line"></span><br><span class="line">    monthly_expense = monthly_expense.copy()</span><br><span class="line">    monthly_expense[<span class="string">&quot;z_score&quot;</span>] = (</span><br><span class="line">        monthly_expense[<span class="string">&quot;amount&quot;</span>] - mean_value</span><br><span class="line">    ) / std_value</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> monthly_expense[monthly_expense[<span class="string">&quot;z_score&quot;</span>].<span class="built_in">abs</span>() &gt; <span class="number">2</span>]</span><br></pre></td></tr></table></figure>
+
+<h3 id="可视化"><a href="#可视化" class="headerlink" title="可视化"></a>可视化</h3><p>&emsp;&emsp;新建 data_visiable.py 文件，并使用 matplotlib 工具将分析得到的数据进行可视化，结果如下所示：</p>
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/project/1/category_pie.png"  width=100%></div>
+<div style="text-align:center;">图 2 支出占比饼状图</div>
+&emsp;&emsp;
+
+<h3 id="生成自然语言报告"><a href="#生成自然语言报告" class="headerlink" title="生成自然语言报告"></a>生成自然语言报告</h3><p>&emsp;&emsp;新建 report_generator.py 工具，先使用 pandas 工具分析数据，再调用本地 LLM 模型生成语言报告。</p>
+<p>&emsp;&emsp;完整代码仓库如下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://github.com/hccc1203/Personal_expense_analysis_sys</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0/" rel="tag"># 机器学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/04/27/machine-learning-13/" rel="prev" title="机器学习日记(13) 异常检测系统">
+      <i class="fa fa-chevron-left"></i> 机器学习日记(13) 异常检测系统
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E7%9B%AE%E6%A0%87"><span class="nav-number">1.</span> <span class="nav-text">项目目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B%E5%81%9A"><span class="nav-number">2.</span> <span class="nav-text">开始做</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#excel-%E8%BD%AC%E6%8D%A2%E4%B8%BA-CSV"><span class="nav-number">2.1.</span> <span class="nav-text">excel 转换为 CSV</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%88%86%E7%B1%BB"><span class="nav-number">2.2.</span> <span class="nav-text">数据分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90"><span class="nav-number">2.3.</span> <span class="nav-text">数据分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E8%A7%86%E5%8C%96"><span class="nav-number">2.4.</span> <span class="nav-text">可视化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E6%8A%A5%E5%91%8A"><span class="nav-number">2.5.</span> <span class="nav-text">生成自然语言报告</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">60</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
