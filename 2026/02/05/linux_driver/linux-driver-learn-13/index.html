@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="学习 Linux 环境下 LED 驱动的开发">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动学习日记(13) Linux 环境下点灯">
+<meta property="og:url" content="https://hccc1203.github.io/2026/02/05/linux_driver/linux-driver-learn-13/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="学习 Linux 环境下 LED 驱动的开发">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/12/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84.png">
+<meta property="article:published_time" content="2026-02-05T05:39:28.000Z">
+<meta property="article:modified_time" content="2026-02-05T08:06:10.474Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="驱动开发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/12/%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/02/05/linux_driver/linux-driver-learn-13/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动学习日记(13) Linux 环境下点灯 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/02/05/linux_driver/linux-driver-learn-13/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动学习日记(13) Linux 环境下点灯
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-02-05 13:39:28" itemprop="dateCreated datePublished" datetime="2026-02-05T13:39:28+08:00">2026-02-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/Linux%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">Linux驱动</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="原理分析"><a href="#原理分析" class="headerlink" title="原理分析"></a>原理分析</h2><h3 id="硬件原理"><a href="#硬件原理" class="headerlink" title="硬件原理"></a>硬件原理</h3><p>&emsp;&emsp;在前面的学习日志中已经提到。</p>
+<h3 id="地址映射"><a href="#地址映射" class="headerlink" title="地址映射"></a>地址映射</h3><p>&emsp;&emsp;在编写驱动之前，我们需要先简单了解一下 MMU 这个神器，MMU 全称叫做 Memory Manage Unit，也就是内存管理单元。在老版本的 Linux 中要求处理器必须有 MMU，但是现在 Linux 内核已经支持无 MMU 的处理器了。MMU 主要完成的功能如下：<br>&emsp;&emsp;①、完成虚拟空间到物理空间的映射。<br>&emsp;&emsp;②、内存保护，设置存储器的访问权限，设置虚拟存储空间的缓冲特性。<br>其中地址映射指的是虚拟空间到物理空间的映射，对于32位的处理器来说，虚拟地址(VA)的范围是2^32 &#x3D; 4 GB，而板载内存只有512MB，经过 MMU 可以将其映射到整个的 4GB 虚拟空间，如下图所示</p>
+<div align=center><img src="/img/linux驱动开发/12/地址映射.png"  width=60%></div>
+<div style="text-align:center;">图 1 地址映射</div>
+
+<p>&emsp;&emsp;Linux 内核启动的时候会初始化 MMU，设置好内存映射，设置好以后 CPU 访问的都是虚拟地址。比如 I.MX6ULL 的 GPIO1_IO03 引脚的复用寄存器 IOMUXC_SW_MUX_CTL_PAD_GPIO1_IO03 的地址为 0X020E0068。如果没有开启 MMU 的话直接向 0X020E0068 这个寄存器地址写入数据就可以配置 GPIO1_IO03 的复用功能。现在开启了 MMU，并且设置了内存映射， 因此就不能直接向 0X020E0068 这个地址写入数据了。我们必须得到 0X020E0068 这个物理地址在 Linux 系统里面对应的虚拟地址，这里就涉及到了物理内存和虚拟内存之间的转换，需要用到两个函数：ioremap 和 iounmap。</p>
+<h4 id="ioremap"><a href="#ioremap" class="headerlink" title="ioremap"></a>ioremap</h4><p>&emsp;&emsp;ioremap 函数用于获取指定物理地址空间对应的虚拟地址空间，定义在 arch&#x2F;arm&#x2F;include&#x2F;asm&#x2F;io.h 文件中，定义如下：</p>
+<figure class="highlight h"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> __iomem *<span class="title function_">ioremap</span><span class="params">(<span class="type">resource_size_t</span> res_cookie, <span class="type">size_t</span> size)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;ioremap 是个宏，有两个参数：cookie 和 size，这里的 cookie 是要映射的物理起始地址，size 是要映射的内存空间大小。返回值：__iomem 类型的指针，指向映射后的虚拟空间首地址。 假如我们要获取 I.MX6ULL 的 IOMUXC_SW_MUX_CTL_PAD_GPIO1_IO03 寄存器对应的虚拟地址，使用如下代码即可：</p>
+<pre><code>#define SW_MUX_GPIO1_IO03_BASE (0X020E0068)
+static void __iomem*  SW_MUX_GPIO1_IO03;
+SW_MUX_GPIO1_IO03 = ioremap(SW_MUX_GPIO1_IO03_BASE, 4);
+</code></pre>
+<p>SW_MUX_GPIO1_IO03_BASE 是寄存器物理地址，SW_MUX_GPIO1_IO03 是映射后的虚拟地址。对于 I.MX6ULL 来说一个寄存器是 4 字节(32 位)的，因此映射的内存长度为 4。 映射完成以后直接对 SW_MUX_GPIO1_IO03 进行读写操作即可。</p>
+<h4 id="iounmap"><a href="#iounmap" class="headerlink" title="iounmap"></a>iounmap</h4><p>&emsp;&emsp;卸载驱动的时候需要使用 iounmap 函数释放掉 ioremap 函数所做的映射，iounmap 函数原 型如下：</p>
+<pre><code>void iounmap (volatile void __iomem *addr)
+</code></pre>
+<p>&emsp;&emsp;iounmap 只有一个参数 addr，此参数就是要取消映射的虚拟地址空间首地址。假如我们现 在要取消掉 IOMUXC_SW_MUX_CTL_PAD_GPIO1_IO03 寄存器的地址映射，使用如下代码即可：</p>
+<pre><code>iounmap(SW_MUX_GPIO1_IO03);
+</code></pre>
+<h3 id="I-O-内存访问函数"><a href="#I-O-内存访问函数" class="headerlink" title="I&#x2F;O 内存访问函数"></a>I&#x2F;O 内存访问函数</h3><p>&emsp;&emsp;这里说的 I&#x2F;O 指的是输入输出。这里及到两个概念：I&#x2F;O 端口和 I&#x2F;O 内存。当外部寄存器或内存映射到 IO 空间时，称为 I&#x2F;O 端口。 当外部寄存器或内存映射到内存空间时，称为 I&#x2F;O 内存。但是对于 ARM 来说没有 I&#x2F;O 空间这个概念，因此 ARM 体系下只有 I&#x2F;O 内存(可以直接理解为内存)。使用 ioremap 函数将寄存器的物理地址映射到虚拟地址以后，我们就可以直接通过指针访问这些地址，但是 Linux 内核不建议这么做，而是推荐使用一组操作函数来对映射后的内存进行读写操作。</p>
+<h4 id="读操作函数"><a href="#读操作函数" class="headerlink" title="读操作函数"></a>读操作函数</h4><p>&emsp;&emsp;读操作函数有以下几个，分别对应8bit、16bit、32bit的操作</p>
+<pre><code>u8  readb(const volatile void __iomem *addr)
+u16 readw(const volatile void __iomem *addr)
+u32 readl(const volatile void __iomem *addr)
+</code></pre>
+<h4 id="写操作函数"><a href="#写操作函数" class="headerlink" title="写操作函数"></a>写操作函数</h4><p>写操作函数有如下几个，这三个函数分别对应 8bit、16bit 和 32bit 写操作，参数 value 是要 写入的数值，addr 是要写入的地址。</p>
+<pre><code>void writeb(u8 value, volatile void __iomem *addr)
+void writew(u16 value, volatile void __iomem *addr)
+void writel(u32 value, volatile void __iomem *addr)
+</code></pre>
+<h2 id="程序编写"><a href="#程序编写" class="headerlink" title="程序编写"></a>程序编写</h2><h3 id="驱动文件"><a href="#驱动文件" class="headerlink" title="驱动文件"></a>驱动文件</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/delay.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;asm/mach/map.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;asm/uaccess.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;asm/io.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LED_MAJOR   200     <span class="comment">// 设备号</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LED_NAME    <span class="string">&quot;LED&quot;</span>   <span class="comment">// 设备名称</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LED_OFF     0       <span class="comment">// 关灯</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LED_ON      1       <span class="comment">// 开灯</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 寄存器物理地址</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CCM_CCGR1_BASE              (0X020C406C)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SW_MUX_GPIO1_IO03_BASE      (0X020E0068)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SW_PAD_GPIO1_IO03_BASE      (0X020E02F4)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GPIO1_DR_BASE               (0X0209C000)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GPIO1_GDIR_BASE             (0X0209C004)</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __iomem *IMX6U_CCM_CCGR1;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __iomem *SW_MUX_GPIO1_IO03;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __iomem *SW_PAD_GPIO1_IO03;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __iomem *GPIO1_DR;</span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __iomem *GPIO1_GDIR;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">Led_Switch</span><span class="params">(u8 sta)</span></span><br><span class="line">&#123;</span><br><span class="line">    u32 val = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">if</span>(sta == LED_OFF)</span><br><span class="line">    &#123;</span><br><span class="line">        val = readl(GPIO1_DR);</span><br><span class="line">        val &amp;= ~(<span class="number">1</span> &lt;&lt; <span class="number">3</span>);</span><br><span class="line">        writel(val,GPIO1_DR);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(sta == LED_ON)</span><br><span class="line">    &#123;</span><br><span class="line">        val = readl(GPIO1_DR);</span><br><span class="line">        val |= (<span class="number">1</span> &lt;&lt; <span class="number">3</span>);</span><br><span class="line">        writel(val,GPIO1_DR);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">led_open</span><span class="params">(<span class="keyword">struct</span> inode *inode,<span class="keyword">struct</span> file *filp)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">led_read</span><span class="params">(<span class="keyword">struct</span> file *filp, <span class="type">char</span> __user *buf,<span class="type">size_t</span> cnt,<span class="type">loff_t</span> *offt)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">led_write</span><span class="params">(<span class="keyword">struct</span> file *filp, <span class="type">const</span> <span class="type">char</span> __user *buf,<span class="type">size_t</span> cnt,<span class="type">loff_t</span> *offt)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> retvalue;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> databuf[<span class="number">1</span>];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> ledstat;</span><br><span class="line">    retvalue = copy_from_user(databuf,buf,cnt);</span><br><span class="line">    <span class="keyword">if</span>(retvalue &lt; <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        printk(<span class="string">&quot;kernel write failed\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EFAULT; </span><br><span class="line">    &#125;</span><br><span class="line">    ledstat = databuf[<span class="number">0</span>];</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span>(ledstat == LED_ON)</span><br><span class="line">        Led_Switch(LED_ON);</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span>(ledstat == LED_OFF)</span><br><span class="line">        Led_Switch(LED_OFF);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">led_release</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">led_fops</span> =</span> &#123;</span><br><span class="line">    .owner = THIS_MODULE,</span><br><span class="line">    .open = led_open,</span><br><span class="line">    .read = led_read,</span><br><span class="line">    .write = led_write,</span><br><span class="line">    .release = led_release,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">led_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> retvalue = <span class="number">0</span>;</span><br><span class="line">    u32 val = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    IMX6U_CCM_CCGR1 = ioremap(CCM_CCGR1_BASE,<span class="number">4</span>);</span><br><span class="line">    SW_MUX_GPIO1_IO03 = ioremap(SW_MUX_GPIO1_IO03_BASE,<span class="number">4</span>);</span><br><span class="line">    SW_PAD_GPIO1_IO03 = ioremap(SW_PAD_GPIO1_IO03_BASE, <span class="number">4</span>);</span><br><span class="line">    GPIO1_DR = ioremap(GPIO1_DR_BASE, <span class="number">4</span>);</span><br><span class="line">    GPIO1_GDIR = ioremap(GPIO1_GDIR_BASE, <span class="number">4</span>);</span><br><span class="line">    </span><br><span class="line">    val = readl(IMX6U_CCM_CCGR1);</span><br><span class="line">    val &amp;= ~(<span class="number">3</span> &lt;&lt; <span class="number">26</span>);</span><br><span class="line">    val |= (<span class="number">3</span> &lt;&lt; <span class="number">26</span>);</span><br><span class="line">    writel(val,IMX6U_CCM_CCGR1);</span><br><span class="line"></span><br><span class="line">    writel(<span class="number">5</span>, SW_MUX_GPIO1_IO03);</span><br><span class="line"></span><br><span class="line">    val = readl(GPIO1_GDIR);</span><br><span class="line">    val &amp;= ~(<span class="number">1</span> &lt;&lt; <span class="number">3</span>);</span><br><span class="line">    val |= (<span class="number">1</span> &lt;&lt; <span class="number">3</span>);</span><br><span class="line">    writel(val, GPIO1_GDIR);</span><br><span class="line">    </span><br><span class="line">    val = readl(GPIO1_DR);</span><br><span class="line">    val |= (<span class="number">1</span> &lt;&lt; <span class="number">3</span>);</span><br><span class="line">    writel(val, GPIO1_DR);</span><br><span class="line"></span><br><span class="line">    retvalue = register_chrdev(LED_MAJOR, LED_NAME, &amp;led_fops);</span><br><span class="line">    <span class="keyword">if</span>(retvalue &lt; <span class="number">0</span>)&#123;</span><br><span class="line">        printk(<span class="string">&quot;register chrdev failed!\r\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> -EIO;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">led_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    iounmap(IMX6U_CCM_CCGR1);</span><br><span class="line">    iounmap(SW_MUX_GPIO1_IO03);</span><br><span class="line">    iounmap(SW_PAD_GPIO1_IO03);</span><br><span class="line">    iounmap(GPIO1_DR);</span><br><span class="line">    iounmap(GPIO1_GDIR);</span><br><span class="line"></span><br><span class="line">    unregister_chrdev(LED_MAJOR,LED_NAME);</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(led_init);</span><br><span class="line">module_exit(led_exit);</span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="测试文件"><a href="#测试文件" class="headerlink" title="测试文件"></a>测试文件</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;stdio.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;unistd.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;sys/types.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;sys/stat.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;fcntl.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;stdlib.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;string.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">char</span> usrdata[] = &#123;<span class="string">&quot;usr data!&quot;</span>&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc,<span class="type">char</span>* argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">int</span> fd, retvalue;</span><br><span class="line">    <span class="type">char</span> *filename;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> databuf[<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(argc != <span class="number">3</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Error Usage!\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    filename = argv[<span class="number">1</span>];</span><br><span class="line">    fd  = open(filename, O_RDWR);</span><br><span class="line">    <span class="keyword">if</span>(fd &lt; <span class="number">0</span>)&#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Can&#x27;t open file %s\r\n&quot;</span>, filename);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>; </span><br><span class="line">    &#125;</span><br><span class="line">    databuf[<span class="number">0</span>] = atoi(argv[<span class="number">2</span>]); <span class="comment">/* 要执行的操作：打开或关闭 */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 向/dev/led文件写入数据 */</span></span><br><span class="line">    retvalue = write(fd, databuf, <span class="keyword">sizeof</span>(databuf));   </span><br><span class="line"></span><br><span class="line">    retvalue = close(fd);</span><br><span class="line">    <span class="keyword">if</span>(retvalue &lt; <span class="number">0</span>)&#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Can&#x27;t close file %s\r\n&quot;</span>, filename);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="运行测试"><a href="#运行测试" class="headerlink" title="运行测试"></a>运行测试</h2><p>&emsp;&emsp;装载驱动后，运行 .&#x2F;ledtest &#x2F;dev&#x2F;led 0(1) 即可控制LED灯的亮灭。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" rel="tag"># 驱动开发</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/02/03/linux_driver/linux-driver-learn-12/" rel="prev" title="Linux驱动学习日记(12) 字符设备驱动">
+      <i class="fa fa-chevron-left"></i> Linux驱动学习日记(12) 字符设备驱动
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/02/linux_driver/linux-driver-learn-14/" rel="next" title="Linux驱动学习日记(14) pinctrl 和 gpio 子系统实验">
+      Linux驱动学习日记(14) pinctrl 和 gpio 子系统实验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90"><span class="nav-number">1.</span> <span class="nav-text">原理分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%8E%9F%E7%90%86"><span class="nav-number">1.1.</span> <span class="nav-text">硬件原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%B0%E5%9D%80%E6%98%A0%E5%B0%84"><span class="nav-number">1.2.</span> <span class="nav-text">地址映射</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ioremap"><span class="nav-number">1.2.1.</span> <span class="nav-text">ioremap</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#iounmap"><span class="nav-number">1.2.2.</span> <span class="nav-text">iounmap</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#I-O-%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.</span> <span class="nav-text">I&#x2F;O 内存访问函数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AF%BB%E6%93%8D%E4%BD%9C%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.1.</span> <span class="nav-text">读操作函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E6%93%8D%E4%BD%9C%E5%87%BD%E6%95%B0"><span class="nav-number">1.3.2.</span> <span class="nav-text">写操作函数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E7%BC%96%E5%86%99"><span class="nav-number">2.</span> <span class="nav-text">程序编写</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A9%B1%E5%8A%A8%E6%96%87%E4%BB%B6"><span class="nav-number">2.1.</span> <span class="nav-text">驱动文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%96%87%E4%BB%B6"><span class="nav-number">2.2.</span> <span class="nav-text">测试文件</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E6%B5%8B%E8%AF%95"><span class="nav-number">3.</span> <span class="nav-text">运行测试</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">61</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

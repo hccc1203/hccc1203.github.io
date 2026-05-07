@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="将2026年版本Linux内核移植到正点原子开发板">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动学习实战(2) Linux Kernal 移植">
+<meta property="og:url" content="https://hccc1203.github.io/2026/01/26/linux_driver/learn-driver-handson-2/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="将2026年版本Linux内核移植到正点原子开发板">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-2/kernal%E7%AC%AC%E4%B8%80%E6%AC%A1%E8%BF%9B%E5%85%A5%E6%88%90%E5%8A%9F.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-2/kernal%E7%AC%AC%E4%BA%8C%E6%AC%A1%E8%BF%9B%E5%85%A5%E6%88%90%E5%8A%9F.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-2/cpufreq%E6%96%87%E4%BB%B6%E5%A4%B9.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-2/freq%E4%BF%A1%E6%81%AF%E7%A4%BA%E6%84%8F.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-2/timeinstate.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-2/EMMC%E5%8E%9F%E7%90%86%E5%9B%BE.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-2/emmc%E8%AF%86%E5%88%AB%E6%88%90%E5%8A%9F.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-2/%E7%BD%91%E7%BB%9C%E6%88%90%E5%8A%9F.png">
+<meta property="article:published_time" content="2026-01-26T02:50:32.000Z">
+<meta property="article:modified_time" content="2026-03-02T02:44:21.612Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="驱动开发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/hands-on-2/kernal%E7%AC%AC%E4%B8%80%E6%AC%A1%E8%BF%9B%E5%85%A5%E6%88%90%E5%8A%9F.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/01/26/linux_driver/learn-driver-handson-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动学习实战(2) Linux Kernal 移植 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/01/26/linux_driver/learn-driver-handson-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动学习实战(2) Linux Kernal 移植
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-01-26 10:50:32" itemprop="dateCreated datePublished" datetime="2026-01-26T10:50:32+08:00">2026-01-26</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AE%9E%E6%88%98%E7%AF%87/" itemprop="url" rel="index"><span itemprop="name">实战篇</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AE%9E%E6%88%98%E7%AF%87/Linux%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">Linux驱动</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="干什么"><a href="#干什么" class="headerlink" title="干什么"></a>干什么</h2><p>&emsp;&emsp;尝试根据正点原子提供的教程将6.1版本的 Linux Kernal 移植到开发板上。</p>
+<h2 id="怎么干"><a href="#怎么干" class="headerlink" title="怎么干"></a>怎么干</h2><h3 id="NXP-官方开发板-Linux-内核编译"><a href="#NXP-官方开发板-Linux-内核编译" class="headerlink" title="NXP 官方开发板 Linux 内核编译"></a>NXP 官方开发板 Linux 内核编译</h3><p>&emsp;&emsp;NXP 提供的 Linux 源码肯定是可以在自己的 I.MX6ULL EVK 开发板上运行下去的，所以我们肯定是以 I.MX6ULL EVK 开发板为参考，然后将 Linux 内核移植到 I.MX6U-ALPHA 开发板上的。</p>
+<p>&emsp;&emsp;在顶层 Makefile 中合适的地方添加如下语句：</p>
+<pre><code>CROSS_COMPILE = /home/hcw/toolchain/gcc-arm-11.2-2022.02-x86_64-arm-none-linux-gnueabihf/bin/arm-none-linux-gnueabihf-
+ARCH = arm
+</code></pre>
+<p>&emsp;&emsp;在终端中输入如下命令</p>
+<pre><code>make clean
+make imx_v6_v7_defconfig
+make -j16
+</code></pre>
+<p>Linux 内核编译完成以后会在 arch&#x2F;arm&#x2F;boot 目录下生成 zImage 镜像文件，如果使用设备树 的话还会在 arch&#x2F;arm&#x2F;boot&#x2F;dts 目录下开发板对应的.dtb(设备树)文件，比如 imx6ull-14x14-evk.dtb 就是 NXP 官方的 I.MX6ULL EVK 开发板对应的设备树文件。</p>
+<p>&emsp;&emsp;如何将编译好的 linux 的镜像传到开发板中呢，我们在虚拟机上搭建tftp服务器即可，具体操作百度教程。</p>
+<p>&emsp;&emsp;搭建好服务器后，我们将编译好的镜像和设备树复制到服务器传输目录，输入如下命令</p>
+<pre><code>sudo cp arch/arm/boot/zImage /srv/tftp/ -f
+sudo cp arch/arm/boot/dts/imx6ull-14x14-evk.dtb /srv/tftp/ -f
+</code></pre>
+<p>紧接着，串口连接开发板，输入以下命令</p>
+<pre><code>tftp 80800000 zImage
+tftp 83000000 imx6ull-14x14-evk.dtb
+bootz 80800000 - 83000000
+</code></pre>
+<p>出现如下界面就算进入成功了：</p>
+<div align=center><img src="/img/linux驱动开发/hands-on-2/kernal第一次进入成功.png"  width=60%></div>
+<div style="text-align:center;">图 1 进入成功</div>
+
+<h3 id="在-Linux-中添加自己的开发板"><a href="#在-Linux-中添加自己的开发板" class="headerlink" title="在 Linux 中添加自己的开发板"></a>在 Linux 中添加自己的开发板</h3><h4 id="添加默认配置文件"><a href="#添加默认配置文件" class="headerlink" title="添加默认配置文件"></a>添加默认配置文件</h4><p>&emsp;&emsp;将arch&#x2F;arm&#x2F;configs 目录下的 imx_v6_ v7_defconfig 重新复制一份，命名为 imx_hcw_e mmc_defconfig，命令如下</p>
+<pre><code>cd arch/arm/configs
+cp imx_v6_v7_defconfig imx_hcw_emmc_defconfig
+</code></pre>
+<p>打开imx_hcw_emmc_defconfig 文件，找到“CONFIG_ARCH_MULTI_V6&#x3D;y”这一行， 将其屏蔽掉。i.MX6ULL 是 ARMv7-A，只启用 v7 可以避免 v6 平台的旧兼容代码被选入，从而减少 Kconfig 冲突和模块 ABI 差异风险。以后 imx_alientek_emmc_defconfig 就是正点原子的 EMMC 版开发板默认配置文件了。运行make imx_hcw_emmc_defconfig。</p>
+<h4 id="添加开发板对应的设备树文件"><a href="#添加开发板对应的设备树文件" class="headerlink" title="添加开发板对应的设备树文件"></a>添加开发板对应的设备树文件</h4><p>&emsp;&emsp;EMMC 版开发板的设备树文件，进入目录 arch&#x2F;arm&#x2F;boot&#x2F;dts 中，复制一 份 imx6ull-14x14-evk.dts，然后将其重命名为 imx6ull-alientek-emmc.dts，命令如下：</p>
+<pre><code>cd arch/arm/boot/dts 
+cp imx6ull-14x14-evk.dts imx6ull-hcw-emmc.dts
+</code></pre>
+<p>&emsp;&emsp;dts 是设备树源码文件，编译 Linux 的时候会将其编译为.dtb 文件。imx6ull-alientek-emmc.dts 创建好以后我们还需要修改文件 arch&#x2F;arm&#x2F;boot&#x2F;dts&#x2F;Makefile，找到“dtb-$(CONFIG_SOC_IM X6ULL)”配置项，在此配置项中加入“imx6ull-alientek-emmc.dtb” ，如下所示:</p>
+<figure class="highlight dts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dtb-$(CONFIG_SOC_IMX6UL) += \</span><br><span class="line">    imx6ull-hcw-emmc.dtb \</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
+
+<h4 id="编译尝试"><a href="#编译尝试" class="headerlink" title="编译尝试"></a>编译尝试</h4><p>&emsp;&emsp;可以创建如下编译脚本</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">make distclean  </span><br><span class="line">make imx_hcw_emmc_defconfig</span><br><span class="line">make menuconfig</span><br><span class="line">make all -j16</span><br></pre></td></tr></table></figure>
+
+<p>编译完成后，将镜像文件和设备树文件复制到 tftp 文件夹，在开发板上通过网络下载后启动。</p>
+<div align=center><img src="/img/linux驱动开发/hands-on-2/kernal第二次进入成功.png"  width=60%></div>
+<div style="text-align:center;">图 2 添加成功</div>
+Linux 内核启动成功，说明我们已经在 NXP 提供的 Linux 内核源码中添加了正点原子 I.MX6UL-ALPHA 开发板。
+
+<h3 id="CPU-主频"><a href="#CPU-主频" class="headerlink" title="CPU 主频"></a>CPU 主频</h3><p>&emsp;&emsp;进入到目录&#x2F;sys&#x2F;bus&#x2F;cpu&#x2F;devices&#x2F;cpu0&#x2F;cpufreq 中，此目录下会有很多文件，如图 3 所示：</p>
+<div align=center><img src="/img/linux驱动开发/hands-on-2/cpufreq文件夹.png"  width=60%></div>
+<div style="text-align:center;">图 3 文件夹</div>
+此目录中记录了CPU频率等信息，这些文件的含义如下:
+
+<pre><code>cpuinfo_cur_freg:当前cpu工作频率，从CPU寄存器读取到的工作频率。
+cpuinfo_max_freq:处理器所能运行的最高工作频率(单位:KHz)。
+cpuinfo_min_freg:处理器所能运行的最低工作频率(单位:KHz)。
+cpuinfo_transition_latency:处理器切换频率所需要的时间(单位:ns)。
+scaling_available_frequencies:处理器支持的主频率列表(单位:KHz)。
+scaling_available_governors:当前内核中支持的所有goveror(调频)类型。
+scaling_cur_freg:保存着cpufreq模块缓存的当前CPU频率，不会对CPU硬件寄存器进行检查。
+scaling_driver:该文件保存当前CPU所使用的调频驱动。
+scaling_governor:governor(调频)策略,Linux内核一共有5中调频策略：
+    1、Performance，最高性能，直接用最高频率，不考虑耗电。
+    2、Interactive，一开始直接用最高频率，然后根据CPU负载慢慢降低。
+    、Powersave，省电模式，通常以最低频率运行，系统性能会受影响，一般不会用这个!
+    4、Userspace,可以在用户空间手动调节频率。
+    5、Ondemand,定时检查负载，然后根据负载来调节频率。负载低的时候降低CPU频率，这样省电，负载高的时候提高CPU频率，增加性能。
+
+scaling_max_freq:governor(调频)可以调节的最高频率。
+cpuinfo_min_freg:governor(调频)可以调节的最低频率。
+stats目录下给出了CPU各种运行频率的统计情况，比如CPU在各频率下的运行时间以及变频次数。
+</code></pre>
+<div align=center><img src="/img/linux驱动开发/hands-on-2/freq信息示意.png"  width=60%></div>
+<div style="text-align:center;">图 4 几个cpufreq信息</div>
+
+<p>&emsp;&emsp;可以看出，当前CPU支持198MHz、396MHz、528Mhz和792MHz四种频率切换，其中调频策略为ondemand，也就是定期检查负载，然后根据负载情况调节CPU频率。因为当前我们开发板并没有做什么工作，因此CPU频率降低为198MHz以省电。如果开发板做一些高负载的工作，比如播放视频等操作那么CPU频率就会提升上去。查看stats目录下的time instate文件可以看到CPU在各频率下的工作时间，命令如下:</p>
+<pre><code>cat /sys/bus/cpu/devices/cpu0/cpufreq/stats/time_in_state
+</code></pre>
+<div align=center><img src="/img/linux驱动开发/hands-on-2/timeinstate.png"  width=60%></div>
+<div style="text-align:center;">图 5 各个状态运行时间</div>
+
+<p>&emsp;&emsp;在 menuconfig 中可以对 CPU 运行策略进行调整，运行 make menuconfig 命令打开图形化配置，进入如下路径</p>
+<pre><code>CPU Power Management
+-&gt; CPU Frequency scaling
+-&gt; Default CPUFreq governor
+</code></pre>
+<p>然后就可以选择你想要用的电源策略了。</p>
+<h3 id="EMMC驱动修改"><a href="#EMMC驱动修改" class="headerlink" title="EMMC驱动修改"></a>EMMC驱动修改</h3><p>&emsp;&emsp;接下来我们修改 EMMC 驱动，正点原子 EMMC 版本核心板上的EMMC采用8位数据线：</p>
+<div align=center><img src="/img/linux驱动开发/hands-on-2/EMMC原理图.png"  width=60%></div>
+<div style="text-align:center;">图 6 EMMC原理图</div>
+
+<p>&emsp;&emsp;Linux 内核驱动里面 EMMC 默认是 4 线模式的，4 线模式肯定没有 8 线模式的速度快，所 以本节我们将 EMMC 的驱动修改为 8 线模式。修改方法很简单，直接修改设备树即可，打开文件 imx6ull-hcw-emmc.dts，发现其引用了 imx6ul-14x14-evk.dtsi 和 imx6ull.dtsi 两个文件。根据之前移植 U-Boot的经验，我们复制一份 imx6ul-14x14-evk.dtsi 并将其重命名为 imx6ull-hcw-emmc.dtsi，将 imx6ull-hcw-emmc.dts 文件中的路径改掉。然后打开 imx6ull-hcw-emmc.dtsi，在引脚组中添加以下内容</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">pinctrl_usdhc2_8bit: usdhc2grp8bit &#123;</span><br><span class="line">    fsl,pins = &lt;</span><br><span class="line">        MX6UL_PAD_NAND_RE_B__USDHC2_CLK     0x17059</span><br><span class="line">        MX6UL_PAD_NAND_WE_B__USDHC2_CMD     0x17059</span><br><span class="line">        MX6UL_PAD_NAND_DATA00__USDHC2_DATA0 0x17059</span><br><span class="line">        MX6UL_PAD_NAND_DATA01__USDHC2_DATA1 0x17059</span><br><span class="line">        MX6UL_PAD_NAND_DATA02__USDHC2_DATA2 0x17059</span><br><span class="line">        MX6UL_PAD_NAND_DATA03__USDHC2_DATA3 0x17059</span><br><span class="line">        MX6UL_PAD_NAND_DATA04__USDHC2_DATA4 0x17059</span><br><span class="line">        MX6UL_PAD_NAND_DATA05__USDHC2_DATA5 0x17059</span><br><span class="line">        MX6UL_PAD_NAND_DATA06__USDHC2_DATA6 0x17059</span><br><span class="line">        MX6UL_PAD_NAND_DATA07__USDHC2_DATA7 0x17059</span><br><span class="line">    &gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>将 usdhc2 的配置改为以下代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&amp;usdhc2 &#123;</span><br><span class="line">    pinctrl-names = &quot;default&quot;;</span><br><span class="line">    pinctrl-0 = &lt;&amp;pinctrl_usdhc2_8bit&gt;;</span><br><span class="line">    bus-width = &lt;8&gt;;</span><br><span class="line">    non-removable;</span><br><span class="line">    no-1-8-v;</span><br><span class="line">    status = &quot;okay&quot;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>这里说明物理引脚的复用也切换到了8bit。最后是关闭 1.8V 驱动 emmc 的选项。</p>
+<h3 id="网卡驱动修改-这次已失败"><a href="#网卡驱动修改-这次已失败" class="headerlink" title="网卡驱动修改(这次已失败)"></a>网卡驱动修改(这次已失败)</h3><p>&emsp;&emsp;有了 UBoot 移植的经验，直接操作即可</p>
+<p>①、在引脚组中添加以下代码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">pinctrl_enet1_reset: enet1resetgrp &#123;</span><br><span class="line">    fsl,pins = &lt;</span><br><span class="line">        MX6ULL_PAD_SNVS_TAMPER7__GPIO5_IO07 0x00000</span><br><span class="line">    &gt;;</span><br><span class="line">&#125;;</span><br><span class="line">pinctrl_enet2_reset: enet2resetgrp &#123;</span><br><span class="line">    fsl,pins = &lt;</span><br><span class="line">        MX6UL_PAD_SNVS_TAMPER8__GPIO5_IO08 0x00000</span><br><span class="line">    &gt;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>②、修改 fec1 和 fec2 节点的 pinctrl-0 属性<br>先添加 ENET1 网络复位引脚所使用的 IO 为 GPIO5_IO07，低电平有效。复位低电平信号持续时间为 200ms；ENET2 网络复位引脚所使用的 IO 为 GPIO5_IO08，同样低电平有效，持续时间同样为 200ms。smsc,disable-energy-detect 是 SMSC&#x2F;Microchip PHY 的一个可选特性配置，用于关闭能量检测功能，不参与驱动匹配。修改后的代码如下所示</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">&amp;fec1 &#123;</span><br><span class="line"></span><br><span class="line">    status = &quot;disabled&quot;;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">&amp;fec2 &#123;</span><br><span class="line">    pinctrl-names = &quot;default&quot;;</span><br><span class="line">    pinctrl-0 = &lt;&amp;pinctrl_enet2&gt;;</span><br><span class="line">    phy-mode = &quot;rmii&quot;;</span><br><span class="line">    phy-handle = &lt;&amp;ethphy1&gt;;</span><br><span class="line">    phy-reset-gpios = &lt;&amp;gpio5 8 GPIO_ACTIVE_LOW&gt;;</span><br><span class="line">    phy-reset-duration = &lt;200&gt;;</span><br><span class="line">    phy-supply = &lt;&amp;reg_peri_3v3&gt;;</span><br><span class="line">    status = &quot;okay&quot;;</span><br><span class="line"></span><br><span class="line">    mdio &#123;</span><br><span class="line">        #address-cells = &lt;1&gt;;</span><br><span class="line">        #size-cells = &lt;0&gt;;</span><br><span class="line"></span><br><span class="line">        ethphy0: ethernet-phy@2 &#123;</span><br><span class="line">            compatible = &quot;ethernet-phy-ieee802.3-c22&quot;;</span><br><span class="line">            reg = &lt;2&gt;;</span><br><span class="line">            micrel,led-mode = &lt;1&gt;;</span><br><span class="line">            clocks = &lt;&amp;clks IMX6UL_CLK_ENET_REF&gt;;</span><br><span class="line">            clock-names = &quot;rmii-ref&quot;;</span><br><span class="line"></span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        ethphy1: ethernet-phy@1 &#123;</span><br><span class="line">            compatible = &quot;ethernet-phy-id0022.1560&quot;;</span><br><span class="line">            reg = &lt;1&gt;;</span><br><span class="line">            micrel,led-mode = &lt;1&gt;;</span><br><span class="line">            clocks = &lt;&amp;clks IMX6UL_CLK_ENET2_REF&gt;;</span><br><span class="line">            clock-names = &quot;rmii-ref&quot;;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>③、修改 fec_main.c 文件（这是临时验证手段，不推荐长期保留，正确方式应使用设备树 reset 时序。）<br>要在I.MX6ULL 上使用 SR8201F，需要修改一下 Linux 内核源码，打开 drivers&#x2F;net&#x2F;ethernet&#x2F;freescale&#x2F;fec_main.c，找到函数 fec_reset_phy，在 fec_reset_phy 函数的最后中加入如下代码:</p>
+<pre><code>msleep(200);
+</code></pre>
+<h3 id="测试与修复"><a href="#测试与修复" class="headerlink" title="测试与修复"></a>测试与修复</h3><p>&emsp;&emsp;修改好设备树和 Linux 内核以后重新编译一下，得到新的 zImage 镜像文件和 imx6ull-alien tek-emmc.dtb 设备树文件。由图可知EMMC识别成功</p>
+<div align=center><img src="/img/linux驱动开发/hands-on-2/emmc识别成功.png"  width=60%></div>
+<div style="text-align:center;">图 7 EMMC识别成功</div>
+
+<p>但是输入 ifconfig -a 后，eth0显示网卡连接失败，我们来排查问题。</p>
+<p>输入命令 dmesg | grep -E “fec|ethernet|phy|mdio” 查看日志</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">root@ATK-IMX6U:~# dmesg | grep -E &quot;fec|ethernet|phy|mdio&quot;</span><br><span class="line">[ 0.000000] Booting Linux on physical CPU 0x0</span><br><span class="line">[ 4.929905] gpio-505 (eth0-phy): hogged as output/high</span><br><span class="line">[ 4.935809] gpio-506 (eth1-phy): hogged as output/high</span><br><span class="line">[ 5.003515] fec 20b4000.ethernet: failed to get phy-reset-gpios: -16</span><br><span class="line">[ 5.010341] fec: probe of 20b4000.ethernet failed with error -16</span><br><span class="line">[ 5.184764] usbcore: registered new interface driver MOSCHIP usb-ethernet driver</span><br></pre></td></tr></table></figure>
+
+<p>可以看出 phy-reset-gpios 这根 GPIO 已经被别人占用了，FEC 驱动想申请它时失败。-16 在 Linux 里基本就是 EBUSY（资源忙 &#x2F; 已被占用）。于是 FEC 驱动 probe 失败 → eth0 后面要么不出现，要么出现又立刻废掉。找到使用了gpio5 7&#x2F;8 引脚的代码并删除。</p>
+<p>再次编译 烧录，继续查看日志</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@ATK-IMX6U:~# dmesg | grep -E &quot;fec|ethernet|phy|mdio&quot;</span><br><span class="line">[ 0.000000] Booting Linux on physical CPU 0x0</span><br><span class="line">[ 4.956137] gpio-505 (eth0-phy): hogged as output/high</span><br><span class="line">[ 4.962020] gpio-506 (eth1-phy): hogged as output/high</span><br><span class="line">[ 5.287607] mdio_bus 20b4000.ethernet-1: MDIO device at address 2 is missing.</span><br><span class="line">[ 5.338766] fec 20b4000.ethernet eth0: registered PHC device 0</span><br><span class="line">[ 5.504852] usbcore: registered new interface driver MOSCHIP usb-ethernet driver</span><br><span class="line">[22.560239] Micrel KSZ8081 or KSZ8091 20b4000.ethernet-1:01: attached PHY driver (mii_bus:phy_addr=20b4000.ethernet-1:01, irq=POLL)</span><br><span class="line">[   25.714492] fec 20b4000.ethernet eth0: Link is Up - 100Mbps/Full - flow control rx/tx</span><br></pre></td></tr></table></figure>
+
+<p>可以看出 gpio 占用的问题已经解决。第五行表明只有一个phy设备，地址为1，另一个未找到。第 8 行说明已经跑通了。接下来我们设置 ip 地址，将其和电脑处于同一网段下，成功ping通！</p>
+<div align=center><img src="/img/linux驱动开发/hands-on-2/网络成功.png"  width=60%></div>
+<div style="text-align:center;">图 8 网络成功</div>
+
+<p>最终的网口配置代码如下</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">&amp;fec1 &#123;</span><br><span class="line"></span><br><span class="line">    status = &quot;disabled&quot;;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">&amp;fec2 &#123;</span><br><span class="line">    pinctrl-names = &quot;default&quot;;</span><br><span class="line">    pinctrl-0 = &lt;&amp;pinctrl_enet2&gt;;</span><br><span class="line">    phy-mode = &quot;rmii&quot;;</span><br><span class="line">    phy-handle = &lt;&amp;ethphy1&gt;;</span><br><span class="line">    phy-reset-gpios = &lt;&amp;gpio5 8 GPIO_ACTIVE_LOW&gt;;</span><br><span class="line">    phy-reset-duration = &lt;200&gt;;</span><br><span class="line">    phy-supply = &lt;&amp;reg_peri_3v3&gt;;</span><br><span class="line">    status = &quot;okay&quot;;</span><br><span class="line"></span><br><span class="line">    mdio &#123;</span><br><span class="line">        #address-cells = &lt;1&gt;;</span><br><span class="line">        #size-cells = &lt;0&gt;;</span><br><span class="line"></span><br><span class="line">        ethphy1: ethernet-phy@1 &#123;</span><br><span class="line">            compatible = &quot;ethernet-phy-id0022.1560&quot;;</span><br><span class="line">            reg = &lt;1&gt;;</span><br><span class="line">            micrel,led-mode = &lt;1&gt;;</span><br><span class="line">            clocks = &lt;&amp;clks IMX6UL_CLK_ENET2_REF&gt;;</span><br><span class="line">            clock-names = &quot;rmii-ref&quot;;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>&emsp;&emsp;通过本次移植，我认识到了 Linux 内核的启动流程和设备初始化方式，同时学习了一些常用的日志查看命令与分析方法。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" rel="tag"># 驱动开发</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/01/25/linux_driver/linux-driver-learn-10/" rel="prev" title="Linux驱动学习日记(10) Linux Kernal学习">
+      <i class="fa fa-chevron-left"></i> Linux驱动学习日记(10) Linux Kernal学习
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/01/27/linux_driver/learn-driver-handson-3/" rel="next" title="Linux驱动学习实战(3) BusyBox 构建根文件系统">
+      Linux驱动学习实战(3) BusyBox 构建根文件系统 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%B2%E4%BB%80%E4%B9%88"><span class="nav-number">1.</span> <span class="nav-text">干什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%8E%E4%B9%88%E5%B9%B2"><span class="nav-number">2.</span> <span class="nav-text">怎么干</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#NXP-%E5%AE%98%E6%96%B9%E5%BC%80%E5%8F%91%E6%9D%BF-Linux-%E5%86%85%E6%A0%B8%E7%BC%96%E8%AF%91"><span class="nav-number">2.1.</span> <span class="nav-text">NXP 官方开发板 Linux 内核编译</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%A8-Linux-%E4%B8%AD%E6%B7%BB%E5%8A%A0%E8%87%AA%E5%B7%B1%E7%9A%84%E5%BC%80%E5%8F%91%E6%9D%BF"><span class="nav-number">2.2.</span> <span class="nav-text">在 Linux 中添加自己的开发板</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E9%BB%98%E8%AE%A4%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">2.2.1.</span> <span class="nav-text">添加默认配置文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%BC%80%E5%8F%91%E6%9D%BF%E5%AF%B9%E5%BA%94%E7%9A%84%E8%AE%BE%E5%A4%87%E6%A0%91%E6%96%87%E4%BB%B6"><span class="nav-number">2.2.2.</span> <span class="nav-text">添加开发板对应的设备树文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E5%B0%9D%E8%AF%95"><span class="nav-number">2.2.3.</span> <span class="nav-text">编译尝试</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CPU-%E4%B8%BB%E9%A2%91"><span class="nav-number">2.3.</span> <span class="nav-text">CPU 主频</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EMMC%E9%A9%B1%E5%8A%A8%E4%BF%AE%E6%94%B9"><span class="nav-number">2.4.</span> <span class="nav-text">EMMC驱动修改</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BD%91%E5%8D%A1%E9%A9%B1%E5%8A%A8%E4%BF%AE%E6%94%B9-%E8%BF%99%E6%AC%A1%E5%B7%B2%E5%A4%B1%E8%B4%A5"><span class="nav-number">2.5.</span> <span class="nav-text">网卡驱动修改(这次已失败)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E4%B8%8E%E4%BF%AE%E5%A4%8D"><span class="nav-number">2.6.</span> <span class="nav-text">测试与修复</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">3.</span> <span class="nav-text">结语</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">61</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

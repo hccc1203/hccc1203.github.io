@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="我们在之前学习了 GPIO 子系统如何使用，这次我们来学习一下 GPIO 子系统是如何工作的，这对我们学习其他的子系统帮助是非常大的。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动学习日记(28) GPIO 子系统详解">
+<meta property="og:url" content="https://hccc1203.github.io/2026/03/23/linux_driver/linux-driver-learn-28/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="我们在之前学习了 GPIO 子系统如何使用，这次我们来学习一下 GPIO 子系统是如何工作的，这对我们学习其他的子系统帮助是非常大的。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-03-23T06:47:12.000Z">
+<meta property="article:modified_time" content="2026-03-23T08:22:56.684Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="驱动开发">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/03/23/linux_driver/linux-driver-learn-28/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动学习日记(28) GPIO 子系统详解 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/03/23/linux_driver/linux-driver-learn-28/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动学习日记(28) GPIO 子系统详解
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-03-23 14:47:12" itemprop="dateCreated datePublished" datetime="2026-03-23T14:47:12+08:00">2026-03-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/Linux%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">Linux驱动</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简单回顾"><a href="#简单回顾" class="headerlink" title="简单回顾"></a>简单回顾</h2><p>&emsp;&emsp;GPIO 子系统就是用于初始化 GPIO 并提供相应 API 的函数，比如设置 GPIO 为输入输出、读取 GPIO 的值等等。以下十几个 GPIO 子系统常用的 API 函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">gpio_request</span><span class="params">(<span class="type">unsigned</span> gpio,  <span class="type">const</span> <span class="type">char</span> *label)</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">gpio_free</span><span class="params">(<span class="type">unsigned</span> gpio)</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">gpio_direction_input</span><span class="params">(<span class="type">unsigned</span> gpio)</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">gpio_direction_output</span><span class="params">(<span class="type">unsigned</span> gpio)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> gpio_get_value  __gpio_get_value int __gpio_get_value(unsigned gpio)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> gpio_set_value  __gpio_set_value void __gpio_set_value(unsigned gpio, int value)</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">of_gpio_named_count</span><span class="params">(<span class="keyword">struct</span> device_node *np, <span class="type">const</span> <span class="type">char</span>  *propname)</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">of_gpio_count</span><span class="params">(<span class="keyword">struct</span> device_node *np)</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">of_get_named_gpio</span><span class="params">(<span class="keyword">struct</span> device_node <span class="type">const</span> <span class="type">char</span> <span class="type">int</span> *np, *propname, index)</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="gpio-子系统"><a href="#gpio-子系统" class="headerlink" title="gpio 子系统"></a>gpio 子系统</h2><p>&emsp;&emsp;Linux GPIO 的核心思想其实是 <strong>统一接口+不同芯片实现</strong>，其整体架构如下：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">        Device Tree</span><br><span class="line">             │</span><br><span class="line">             │ 解析</span><br><span class="line">             ▼</span><br><span class="line">       platform_driver</span><br><span class="line">             │</span><br><span class="line">             │ 调用</span><br><span class="line">             ▼</span><br><span class="line">          gpiolib</span><br><span class="line">   ┌─────────┴─────────┐</span><br><span class="line">   │                   │</span><br><span class="line">GPIO Descriptor    gpio_chip</span><br><span class="line">   │                   │</span><br><span class="line">   └─────────┬─────────┘</span><br><span class="line">             │</span><br><span class="line">         GPIO Controller</span><br><span class="line">      (例如 imx gpio driver)</span><br><span class="line">             │</span><br><span class="line">          寄存器</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来，我们从源码出发，一步一步拆解 GPIO 子系统，看看它到底是如何运行的。</p>
+<h2 id="gpiod-get"><a href="#gpiod-get" class="headerlink" title="gpiod_get()"></a>gpiod_get()</h2><p>&emsp;&emsp;我们先来看看函数原型</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * gpiod_get - obtain a GPIO for a given GPIO function</span></span><br><span class="line"><span class="comment"> * @dev:    GPIO consumer, can be NULL for system-global GPIOs</span></span><br><span class="line"><span class="comment"> * @con_id: function within the GPIO consumer</span></span><br><span class="line"><span class="comment"> * @flags:  optional GPIO initialization flags</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Return the GPIO descriptor corresponding to the function con_id of device</span></span><br><span class="line"><span class="comment"> * dev, -ENOENT if no GPIO has been assigned to the requested function, or</span></span><br><span class="line"><span class="comment"> * another IS_ERR() code if an error occurred while trying to acquire the GPIO.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">struct</span> gpio_desc *__must_check <span class="title function_">gpiod_get</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *con_id,<span class="keyword">enum</span> gpiod_flags flags)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> gpiod_get_index(dev, con_id, <span class="number">0</span>, flags);</span><br><span class="line">&#125;</span><br><span class="line">EXPORT_SYMBOL_GPL(gpiod_get);</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这个函数的作用是从 设备树&#x2F;ACPI&#x2F;board file 中获取一个 GPIO，并返回 GPIO descriptor。在新版本中，Linux 内核不再以 GPIO 编号作为 ID，而是一个 struct gpio_desc * 的结构体，其原型如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">gpio_desc</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">gpio_chip</span> *<span class="title">chip</span>;</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> flags;</span><br><span class="line">    <span class="comment">/* Connection label */</span></span><br><span class="line">    <span class="type">const</span> <span class="type">char</span>      *label;</span><br><span class="line">    <span class="comment">/* Name of the GPIO */</span></span><br><span class="line">    <span class="type">const</span> <span class="type">char</span>      *name;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这其中保存了这个 gpio 属于哪个 gpio_chip、GPIO 编号、GPIO 状态等等。<br>&emsp;&emsp;gpio_chip 对 GPIO 子系统的作用相当于 file_operations 对 VFS 的作用。gpio_chip 就是某个 GPIO 控制器驱动向 gpiolib 上交的操作表+控制器信息表，包含了一些基本数据和操作函数。比如 IMX6U 里有 GPIO1-6，每一个 GPIO 控制器，在内核里都可以对应一个 gpio_chip，所以可以理解为 gpio_chip 是一组 GPIO 的控制器抽象对象。gpiolib 通过 gpio_chip 中这些函数指针操作底层。<br>&emsp;&emsp;gpio_chip 中包含了多类信息：身份信息字段、GPIO 操作函数、<br>批量操作、高级配置和中断、调试和有效位图、设备树相关字段等等。Linux 内核驱动 GPIO 的顺序如下：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">驱动程序</span><br><span class="line">   ↓</span><br><span class="line">gpiod_get / gpiod_set_value</span><br><span class="line">   ↓</span><br><span class="line">gpiolib</span><br><span class="line">   ↓</span><br><span class="line">gpio_desc</span><br><span class="line">   ↓</span><br><span class="line">gpio_chip</span><br><span class="line">   ├─ direction_input</span><br><span class="line">   ├─ direction_output</span><br><span class="line">   ├─ get</span><br><span class="line">   ├─ set</span><br><span class="line">   ├─ to_irq</span><br><span class="line">   └─ of_xlate</span><br><span class="line">   ↓</span><br><span class="line">SoC GPIO driver</span><br><span class="line">   ↓</span><br><span class="line">GPIO寄存器</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;回到 gpio_get 函数，参数中 dev 就表示使用者设备，Linux 会根据这个设备找到设备树节点。con_id 表示 GPIO 的功能名称，例如 “led”，Linux 就会在刚刚的设备树节点中查找 led-gpios，flags 表示初始化方式，比如常见的 GPIOD_IN、GPIOD_OUT_LOW、GPIOD_OUT_HIGH 等等。<br>&emsp;&emsp;可以看到函数内部只是调用了 gpiod_get_index()，这是一种 Linux 常见的设计模式，这样设计的原因是 Linux 支持多个 GPIO，这样设计省略了 index 参数。当你只有一个 gpio 的时候，可以直接调用 gpiod_get 函数，当你需要多个 GPIO 的时候，就要使用 gpiod_get_index() 来指定 index。</p>
+<h2 id="gpiod-set-value"><a href="#gpiod-set-value" class="headerlink" title="gpiod_set_value"></a>gpiod_set_value</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">gpiod_set_value</span><span class="params">(<span class="keyword">struct</span> gpio_desc *desc, <span class="type">int</span> value)</span></span><br><span class="line">&#123;</span><br><span class="line">    VALIDATE_DESC_VOID(desc);</span><br><span class="line">    <span class="comment">/* Should be using gpiod_set_value_cansleep() */</span></span><br><span class="line">    WARN_ON(desc-&gt;gdev-&gt;chip-&gt;can_sleep);</span><br><span class="line">    gpiod_set_value_nocheck(desc, value);</span><br><span class="line">&#125;</span><br><span class="line">EXPORT_SYMBOL_GPL(gpiod_set_value);</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;函数原型如上，我们先检查 desc 是否有效。在 gpio_chip 中有 bool can_sleep，表示这个 GPIO 操作会不会导致 sleep，所以 Linux 提供了两个 api，不会 sleep 的 gpio 使用 gpiod_set_value，可能 sleep 的 GPIO 使用 gpiod_set_value_cansleep。</p>
+<h2 id="of-get-named-gpiod-flags"><a href="#of-get-named-gpiod-flags" class="headerlink" title="of_get_named_gpiod_flags"></a>of_get_named_gpiod_flags</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">struct</span> gpio_desc *<span class="title function_">of_get_named_gpiod_flags</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> device_node *np,</span></span><br><span class="line"><span class="params">             <span class="type">const</span> <span class="type">char</span> *propname, <span class="type">int</span> index, <span class="keyword">enum</span> of_gpio_flags *flags)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">of_phandle_args</span> <span class="title">gpiospec</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">gpio_chip</span> *<span class="title">chip</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">gpio_desc</span> *<span class="title">desc</span>;</span></span><br><span class="line">    <span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">    ret = of_parse_phandle_with_args_map(np, propname, <span class="string">&quot;gpio&quot;</span>, index,</span><br><span class="line">                         &amp;gpiospec);</span><br><span class="line">    <span class="keyword">if</span> (ret) &#123;</span><br><span class="line">        pr_debug(<span class="string">&quot;%s: can&#x27;t parse &#x27;%s&#x27; property of node &#x27;%pOF[%d]&#x27;\n&quot;</span>,</span><br><span class="line">            __func__, propname, np, index);</span><br><span class="line">        <span class="keyword">return</span> ERR_PTR(ret);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    chip = of_find_gpiochip_by_xlate(&amp;gpiospec);</span><br><span class="line">    <span class="keyword">if</span> (!chip) &#123;</span><br><span class="line">        desc = ERR_PTR(-EPROBE_DEFER);</span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    desc = of_xlate_and_get_gpiod_flags(chip, &amp;gpiospec, flags);</span><br><span class="line">    <span class="keyword">if</span> (IS_ERR(desc))</span><br><span class="line">        <span class="keyword">goto</span> out;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (flags)</span><br><span class="line">        of_gpio_flags_quirks(np, propname, flags, index);</span><br><span class="line"></span><br><span class="line">    pr_debug(<span class="string">&quot;%s: parsed &#x27;%s&#x27; property of node &#x27;%pOF[%d]&#x27; - status (%d)\n&quot;</span>,</span><br><span class="line">         __func__, propname, np, index,</span><br><span class="line">         PTR_ERR_OR_ZERO(desc));</span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line">    of_node_put(gpiospec.np);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> desc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这个函数非常关键，是 Linux 中 GPIO 子系统里设备树到 GPIO descriptor 转换的核心入口之一。<br>&emsp;&emsp;这个函数一般在驱动调用 gpiod_get 时被调用，其负责从设备树解析 GPIO，并找到对应的 gpio_chip 和 gpio_desc。最终返回 gpio_desc。</p>
+<h2 id="gpiod-mxc-c"><a href="#gpiod-mxc-c" class="headerlink" title="gpiod_mxc.c"></a>gpiod_mxc.c</h2><p>&emsp;&emsp;这份文件就是 gpio_chip 的具体实现驱动，操作底层寄存器。这个驱动将 IMX GPIO 控制器注册到了 gpiolib 中，也就是注册 gpio_chip 并提供 GPIO 操作函数。<br>&emsp;&emsp;mxc_gpio_port 结构体为重要结构体，包含了注册给 gpiolib 的控制器等关键信息。在 probe 函数中主要做了以下几件事：创建 GPIO 控制器对象、获取 GPIO 寄存器、初始化 GPIO 操作函数、补充 gpio_chip 信息、最后注册 gpio_chip。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>&emsp;&emsp;整个 Linux GPIO 子系统的框架如下：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line">            设备驱动</span><br><span class="line">               │</span><br><span class="line">               │ gpiod_get(dev,&quot;led&quot;,...)</span><br><span class="line">               ▼</span><br><span class="line">        gpiod_get()</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">        gpiod_get_index()</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">     fwnode_get_named_gpiod()</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">     of_get_named_gpiod_flags()</span><br><span class="line">               │</span><br><span class="line">               │ 解析设备树</span><br><span class="line">               ▼</span><br><span class="line">   of_parse_phandle_with_args()</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">          gpiospec</span><br><span class="line">   (&lt;&amp;gpio1 3 GPIO_ACTIVE_LOW&gt;)</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">  of_find_gpiochip_by_xlate()</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">           gpio_chip</span><br><span class="line">     (GPIO控制器驱动对象)</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">of_xlate_and_get_gpiod_flags()</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">           gpio_desc</span><br><span class="line">      (单个GPIO描述符)</span><br><span class="line">               │</span><br><span class="line">               │ 返回给驱动</span><br><span class="line">               ▼</span><br><span class="line">         驱动程序使用</span><br><span class="line">               │</span><br><span class="line">               │ gpiod_set_value()</span><br><span class="line">               ▼</span><br><span class="line">        gpiod_set_value()</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">   gpiod_set_value_nocheck()</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">      desc-&gt;gdev-&gt;chip</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">         gpio_chip-&gt;set()</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">      SoC GPIO Driver</span><br><span class="line">   (例如 gpio-mxc.c)</span><br><span class="line">               │</span><br><span class="line">               ▼</span><br><span class="line">         写GPIO寄存器</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"># Linux</a>
+              <a href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/" rel="tag"># 驱动开发</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/03/22/linux_driver/linux-driver-learn-26/" rel="prev" title="Linux驱动学习日记(26) Linux SPI 驱动">
+      <i class="fa fa-chevron-left"></i> Linux驱动学习日记(26) Linux SPI 驱动
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/03/23/linux_driver/linux-driver-learn-29/" rel="next" title="Linux驱动学习日记(29) Linux 多点电容触摸">
+      Linux驱动学习日记(29) Linux 多点电容触摸 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E5%8D%95%E5%9B%9E%E9%A1%BE"><span class="nav-number">1.</span> <span class="nav-text">简单回顾</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpio-%E5%AD%90%E7%B3%BB%E7%BB%9F"><span class="nav-number">2.</span> <span class="nav-text">gpio 子系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpiod-get"><span class="nav-number">3.</span> <span class="nav-text">gpiod_get()</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpiod-set-value"><span class="nav-number">4.</span> <span class="nav-text">gpiod_set_value</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#of-get-named-gpiod-flags"><span class="nav-number">5.</span> <span class="nav-text">of_get_named_gpiod_flags</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpiod-mxc-c"><span class="nav-number">6.</span> <span class="nav-text">gpiod_mxc.c</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">61</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
