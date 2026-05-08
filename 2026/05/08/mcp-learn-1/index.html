@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="从原理到实践，掌握 MCP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MCP 学习">
+<meta property="og:url" content="https://hccc1203.github.io/2026/05/08/mcp-learn-1/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="从原理到实践，掌握 MCP">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/mcp/1/1.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/mcp/1/2.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/mcp/1/3.png">
+<meta property="article:published_time" content="2026-05-08T07:13:00.000Z">
+<meta property="article:modified_time" content="2026-05-08T08:00:57.248Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="AGENT">
+<meta property="article:tag" content="MCP">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/mcp/1/1.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/05/08/mcp-learn-1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MCP 学习 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/05/08/mcp-learn-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MCP 学习
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-05-08 15:13:00" itemprop="dateCreated datePublished" datetime="2026-05-08T15:13:00+08:00">2026-05-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="MCP-是什么"><a href="#MCP-是什么" class="headerlink" title="MCP 是什么"></a>MCP 是什么</h2><p>&emsp;&emsp;让我们来回顾一下 MCP 的概念，MCP 是 Model Context Protocol，翻译成中文就是模型上下文协议。简单来说，MCP 就是让大模型能更好地使用各类工具的一个协议。MCP 协议中有 MCP Server 和 MCP Client。</p>
+<p>&emsp;&emsp;MCP Server 只是一个应用程序而已，其执行符合 MCP 协议。MCP Server 中包含多个 Tool，每个 Tool 都可以实现不同的功能。在 Cline 中可以安装不同 MCP Server 来实现模型拥有不同功能。</p>
+<p>&emsp;&emsp;接下来我们来详细看一下 MCP 地交互流程。以获取天气为例，MCP Server 中有两个工具 get_forecast 和 get_alerts。当 Cline 启动时，会启动 MCP Server，并确定工具列表。用户提出问题到 cline，cline 再将问题加上注册好的 MCP_Server、工具列表信息转发给模型，于是模型会让 cline 调用这两个工具获得答案，工具返回答案给 cline，cline 再转发给模型，最后模型生成一份自然语言报告，并发送给 cline，最终 cline 发送给用户。</p>
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/mcp/1/1.png"  width=100%></div>
+<div style="text-align:center;">图 1 完整调用流程</div>
+&emsp;&emsp;
+
+<h2 id="动手写一个-MCP-Server"><a href="#动手写一个-MCP-Server" class="headerlink" title="动手写一个 MCP Server"></a>动手写一个 MCP Server</h2><p>&emsp;&emsp;接下来我们来手动写一个 MCP 实现查询天气的程序。新建文件夹，进入后在终端输入</p>
+<pre><code>uv init weather
+uv venv
+uv add &quot;mcp[cli]&quot; httpx
+</code></pre>
+<p>&emsp;&emsp;再使用 vscode 打开 weather 文件夹就可以进行开发了。新建 weather.py 文件，写入以下代码</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"><span class="keyword">import</span> httpx</span><br><span class="line"><span class="keyword">from</span> mcp.server.fastmcp <span class="keyword">import</span> FastMCP</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建 MCP 服务器对象，weather 是名字，log_level 表示只有错误会被记录在日志中。</span></span><br><span class="line">mcp = FastMCP(<span class="string">&quot;weather&quot;</span>, log_level=<span class="string">&quot;ERROR&quot;</span>) </span><br><span class="line"></span><br><span class="line"><span class="comment"># 美国天气 API </span></span><br><span class="line">NWS_API_BASE = <span class="string">&quot;https://api.weather.gov&quot;</span>‘</span><br><span class="line"><span class="comment"># 表示什么应用在访问 API</span></span><br><span class="line">USER_AGENT = <span class="string">&quot;weather-app/1.0&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来我们实现发送请求函数：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 向 NWS 天气 API 发起请求</span></span><br><span class="line"><span class="comment"># 核心任务：访问 url，得到返回结果，转换为 Python 字典，如果失败就返回 none</span></span><br><span class="line"><span class="comment"># async 表示这是一个异步函数</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">make_nws_request</span>(<span class="params">url: <span class="built_in">str</span></span>) -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>] | <span class="literal">None</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Make a request to the NWS API with proper error handling.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 请求头，告诉服务器身份、想要的数据格式</span></span><br><span class="line">    headers = &#123;</span><br><span class="line">        <span class="string">&quot;User-Agent&quot;</span>: USER_AGENT,</span><br><span class="line">        <span class="string">&quot;Accept&quot;</span>: <span class="string">&quot;application/geo+json&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 创建一个异步 HTTP 客户端，用完后自动关闭连接。</span></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">with</span> httpx.AsyncClient() <span class="keyword">as</span> client:</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            <span class="comment"># 发送请求</span></span><br><span class="line">            response = <span class="keyword">await</span> client.get(url, headers=headers, timeout=<span class="number">30.0</span>)</span><br><span class="line">            <span class="comment"># 检测是否异常</span></span><br><span class="line">            response.raise_for_status()</span><br><span class="line">            <span class="comment"># 将 JSON 字符串转换为字典并返回</span></span><br><span class="line">            <span class="keyword">return</span> response.json()</span><br><span class="line">        <span class="keyword">except</span> Exception:</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来我们实现将预警信息转为字符串的函数。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 天气预警数据转字符串</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">format_alert</span>(<span class="params">feature: <span class="built_in">dict</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    props = feature[<span class="string">&quot;properties&quot;</span>]</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">Event: <span class="subst">&#123;props.get(<span class="string">&#x27;event&#x27;</span>,<span class="string">&#x27;unkown&#x27;</span>)&#125;</span></span></span><br><span class="line"><span class="string">Area: <span class="subst">&#123;props.get(<span class="string">&#x27;areaDesc&#x27;</span>,<span class="string">&#x27;unkown&#x27;</span>)&#125;</span></span></span><br><span class="line"><span class="string">Severity: <span class="subst">&#123;props.get(<span class="string">&#x27;severity&#x27;</span>,<span class="string">&#x27;unkown&#x27;</span>)&#125;</span></span></span><br><span class="line"><span class="string">Description: <span class="subst">&#123;props.get(<span class="string">&#x27;description&#x27;</span>,<span class="string">&#x27;unkown&#x27;</span>)&#125;</span></span></span><br><span class="line"><span class="string">Instructions: <span class="subst">&#123;props.get(<span class="string">&#x27;instruction&#x27;</span>,<span class="string">&#x27;unkown&#x27;</span>)&#125;</span></span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来我们第一个 Tool：get_alerts，其用于获取美国某个州的天气预警信息。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@mcp.tool()</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_alerts</span>(<span class="params">state: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Get weather alerts for a US state.</span></span><br><span class="line"><span class="string">    </span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        state: Two-letter US state code (eg CA,NY)</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    url = <span class="string">f&quot;<span class="subst">&#123;NWS_API_BASE&#125;</span>/alerts/active/area/<span class="subst">&#123;state&#125;</span>&quot;</span></span><br><span class="line">    data = <span class="keyword">await</span> make_nws_request(url)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> data <span class="keyword">or</span> <span class="string">&quot;features&quot;</span> <span class="keyword">not</span> <span class="keyword">in</span> data:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Unable to fetch alerts or no alerts found.&quot;</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> data[<span class="string">&quot;features&quot;</span>]:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;No active alerts for this state.&quot;</span></span><br><span class="line">    </span><br><span class="line">    alerts = [format_alert(feature) <span class="keyword">for</span> feature <span class="keyword">in</span> data[<span class="string">&quot;features&quot;</span>]]</span><br><span class="line">    <span class="comment"># 把结果用 --- 分割</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;\n---\n&quot;</span>.join(alerts)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来我们编写第二个 Tool，获取具体地点的天气信息：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@mcp.tool()</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_forecast</span>(<span class="params">latitude: <span class="built_in">float</span>, longitude: <span class="built_in">float</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Get weather forecast for a location.</span></span><br><span class="line"><span class="string">    </span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        latitude:Latitude of the location</span></span><br><span class="line"><span class="string">        longitude:Longitude of the location</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 首先获取信息</span></span><br><span class="line">    points_url = <span class="string">f&quot;<span class="subst">&#123;NWS_API_BASE&#125;</span>/points/<span class="subst">&#123;latitude&#125;</span>,<span class="subst">&#123;longitude&#125;</span>&quot;</span></span><br><span class="line">    points_data = <span class="keyword">await</span> make_nws_request(points_url)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> points_data:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Unable to fetch data for this location&quot;</span></span><br><span class="line">    </span><br><span class="line">    forecast_url = points_data[<span class="string">&quot;properties&quot;</span>][<span class="string">&quot;forecast&quot;</span>]</span><br><span class="line">    forecast_data = make_nws_request(forecast_url)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> forecast_data:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Unable to fetch data.&quot;</span></span><br><span class="line">    </span><br><span class="line">    periods = forecast_data[<span class="string">&quot;properties&quot;</span>][<span class="string">&quot;periods&quot;</span>]</span><br><span class="line">    forecasts = []</span><br><span class="line">    <span class="keyword">for</span> period <span class="keyword">in</span> periods[:<span class="number">5</span>]:  <span class="comment"># Only show next 5 periods</span></span><br><span class="line">        forecast = <span class="string">f&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"><span class="subst">&#123;period[<span class="string">&#x27;name&#x27;</span>]&#125;</span>:</span></span><br><span class="line"><span class="string">Temperature: <span class="subst">&#123;period[<span class="string">&#x27;temperature&#x27;</span>]&#125;</span>°<span class="subst">&#123;period[<span class="string">&#x27;temperatureUnit&#x27;</span>]&#125;</span></span></span><br><span class="line"><span class="string">Wind: <span class="subst">&#123;period[<span class="string">&#x27;windSpeed&#x27;</span>]&#125;</span> <span class="subst">&#123;period[<span class="string">&#x27;windDirection&#x27;</span>]&#125;</span></span></span><br><span class="line"><span class="string">Forecast: <span class="subst">&#123;period[<span class="string">&#x27;detailedForecast&#x27;</span>]&#125;</span></span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line">        forecasts.append(forecast)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;\n---\n&quot;</span>.join(forecasts)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    mcp.run(transport = <span class="string">&#x27;stdio&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来将工具添加到 Cline 中，这一步就不具体演示了。</p>
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/mcp/1/2.png"  width=100%></div>
+<div style="text-align:center;">图 2 成功添加到 Cline</div>
+&emsp;&emsp;
+
+<p>&emsp;&emsp;接下来询问大模型“明天纽约天气怎么样？”，可以看到大模型调用工具的过程：</p>
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/mcp/1/3.png"  width=100%></div>
+<div style="text-align:center;">图 3 调用工具</div>
+&emsp;&emsp;
+
+<h2 id="Cline-与-MCP-Server-的交互"><a href="#Cline-与-MCP-Server-的交互" class="headerlink" title="Cline 与 MCP Server 的交互"></a>Cline 与 MCP Server 的交互</h2><p>&emsp;&emsp;为了厌旧 MCP Server 和 Cline 的数据交互，我们使用 AI 来写一个中间程序，具体实现如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">MCP Logger - A proxy that sits between Cline and an MCP Server,</span></span><br><span class="line"><span class="string">logging all communication (stdin/stdout) to a file.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Usage:</span></span><br><span class="line"><span class="string">  python mcp_logger.py &lt;command&gt; [args...]</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">Example in MCP settings, replace:</span></span><br><span class="line"><span class="string">  &quot;command&quot;: &quot;uv&quot;, &quot;args&quot;: [&quot;--directory&quot;, &quot;E:/python_learn/MCP/weather/&quot;, &quot;run&quot;, &quot;weather.py&quot;]</span></span><br><span class="line"><span class="string">With:</span></span><br><span class="line"><span class="string">  &quot;command&quot;: &quot;python&quot;, &quot;args&quot;: [&quot;E:/python_learn/MCP/weather/mcp_logger.py&quot;, &quot;uv&quot;, &quot;--directory&quot;, &quot;E:/python_learn/MCP/weather/&quot;, &quot;run&quot;, &quot;weather.py&quot;]</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> subprocess</span><br><span class="line"><span class="keyword">import</span> threading</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime</span><br><span class="line"></span><br><span class="line"><span class="comment"># Log file path</span></span><br><span class="line">LOG_DIR = os.path.dirname(os.path.abspath(__file__))</span><br><span class="line">LOG_FILE = os.path.join(LOG_DIR, <span class="string">&quot;mcp_log.log&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">log</span>(<span class="params">direction: <span class="built_in">str</span>, data: <span class="built_in">bytes</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Write a log entry with timestamp and direction.&quot;&quot;&quot;</span></span><br><span class="line">    timestamp = datetime.now().strftime(<span class="string">&quot;%Y-%m-%d %H:%M:%S.%f&quot;</span>)[:-<span class="number">3</span>]</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        text = data.decode(<span class="string">&quot;utf-8&quot;</span>)</span><br><span class="line">    <span class="keyword">except</span> UnicodeDecodeError:</span><br><span class="line">        text = <span class="built_in">repr</span>(data)</span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(LOG_FILE, <span class="string">&quot;a&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        f.write(<span class="string">f&quot;[<span class="subst">&#123;timestamp&#125;</span>] <span class="subst">&#123;direction&#125;</span>\n<span class="subst">&#123;text&#125;</span>\n<span class="subst">&#123;<span class="string">&#x27;=&#x27;</span>*<span class="number">80</span>&#125;</span>\n&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">forward_stdin</span>(<span class="params">proc</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Read from our stdin (Cline) and forward to the child process (MCP Server).&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">            data = sys.stdin.buffer.read(<span class="number">1</span>)</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> data:</span><br><span class="line">                proc.stdin.close()</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">            <span class="comment"># Buffer: read all available data</span></span><br><span class="line">            remaining = sys.stdin.buffer.read1(<span class="number">65536</span>) <span class="keyword">if</span> <span class="built_in">hasattr</span>(sys.stdin.buffer, <span class="string">&#x27;read1&#x27;</span>) <span class="keyword">else</span> <span class="string">b&quot;&quot;</span></span><br><span class="line">            chunk = data + remaining</span><br><span class="line">            log(<span class="string">&quot;CLIENT -&gt; SERVER&quot;</span>, chunk)</span><br><span class="line">            proc.stdin.write(chunk)</span><br><span class="line">            proc.stdin.flush()</span><br><span class="line">    <span class="keyword">except</span> (OSError, ValueError):</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">forward_stdout</span>(<span class="params">proc</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Read from child process stdout (MCP Server) and forward to our stdout (Cline).&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">            data = proc.stdout.read(<span class="number">1</span>)</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> data:</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">            remaining = proc.stdout.read1(<span class="number">65536</span>) <span class="keyword">if</span> <span class="built_in">hasattr</span>(proc.stdout, <span class="string">&#x27;read1&#x27;</span>) <span class="keyword">else</span> <span class="string">b&quot;&quot;</span></span><br><span class="line">            chunk = data + remaining</span><br><span class="line">            log(<span class="string">&quot;SERVER -&gt; CLIENT&quot;</span>, chunk)</span><br><span class="line">            sys.stdout.buffer.write(chunk)</span><br><span class="line">            sys.stdout.buffer.flush()</span><br><span class="line">    <span class="keyword">except</span> (OSError, ValueError):</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">forward_stderr</span>(<span class="params">proc</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Read from child process stderr and log it.&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">            data = proc.stderr.read(<span class="number">1</span>)</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> data:</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">            remaining = proc.stderr.read1(<span class="number">65536</span>) <span class="keyword">if</span> <span class="built_in">hasattr</span>(proc.stderr, <span class="string">&#x27;read1&#x27;</span>) <span class="keyword">else</span> <span class="string">b&quot;&quot;</span></span><br><span class="line">            chunk = data + remaining</span><br><span class="line">            log(<span class="string">&quot;SERVER STDERR&quot;</span>, chunk)</span><br><span class="line">            sys.stderr.buffer.write(chunk)</span><br><span class="line">            sys.stderr.buffer.flush()</span><br><span class="line">    <span class="keyword">except</span> (OSError, ValueError):</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(sys.argv) &lt; <span class="number">2</span>:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;Usage: python mcp_logger.py &lt;command&gt; [args...]&quot;</span>, file=sys.stderr)</span><br><span class="line">        sys.exit(<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    cmd = sys.argv[<span class="number">1</span>:]</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(LOG_FILE, <span class="string">&quot;w&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        f.write(<span class="string">f&quot;MCP Logger started at <span class="subst">&#123;datetime.now().isoformat()&#125;</span>\n&quot;</span>)</span><br><span class="line">        f.write(<span class="string">f&quot;Command: <span class="subst">&#123;<span class="string">&#x27; &#x27;</span>.join(cmd)&#125;</span>\n&quot;</span>)</span><br><span class="line">        f.write(<span class="string">f&quot;<span class="subst">&#123;<span class="string">&#x27;=&#x27;</span>*<span class="number">80</span>&#125;</span>\n&quot;</span>)</span><br><span class="line"></span><br><span class="line">    proc = subprocess.Popen(</span><br><span class="line">        cmd,</span><br><span class="line">        stdin=subprocess.PIPE,</span><br><span class="line">        stdout=subprocess.PIPE,</span><br><span class="line">        stderr=subprocess.PIPE,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    t_in = threading.Thread(target=forward_stdin, args=(proc,), daemon=<span class="literal">True</span>)</span><br><span class="line">    t_out = threading.Thread(target=forward_stdout, args=(proc,), daemon=<span class="literal">True</span>)</span><br><span class="line">    t_err = threading.Thread(target=forward_stderr, args=(proc,), daemon=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">    t_in.start()</span><br><span class="line">    t_out.start()</span><br><span class="line">    t_err.start()</span><br><span class="line"></span><br><span class="line">    proc.wait()</span><br><span class="line">    <span class="comment"># Give threads time to flush</span></span><br><span class="line">    t_out.join(timeout=<span class="number">2</span>)</span><br><span class="line">    t_err.join(timeout=<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(LOG_FILE, <span class="string">&quot;a&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        f.write(<span class="string">f&quot;\nMCP Logger ended at <span class="subst">&#123;datetime.now().isoformat()&#125;</span>, exit code: <span class="subst">&#123;proc.returncode&#125;</span>\n&quot;</span>)</span><br><span class="line"></span><br><span class="line">    sys.exit(proc.returncode)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来我们再问一遍 “明天纽约天气怎么样”，可以看到 log 文件中出现了完整的数据。其中，Client 表示 Cline，Server 就是本地运行的 weather.py MCP Server。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br></pre></td><td class="code"><pre><span class="line">MCP Logger started at 2026-05-08T14:40:13.330040</span><br><span class="line">Command: uv --directory E:/python_learn/MCP/weather/ run weather.py</span><br><span class="line"></span><br><span class="line"># 平台向服务器发送信息，表明 MCP 协议版本、平台自身信息等等。</span><br><span class="line">[2026-05-08 14:40:13.341] CLIENT -&gt; SERVER</span><br><span class="line">&#123;&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:0,&quot;method&quot;:&quot;initialize&quot;,&quot;params&quot;:&#123;&quot;protocolVersion&quot;:&quot;2025-06-18&quot;,&quot;capabilities&quot;:&#123;&quot;elicitation&quot;:&#123;&#125;&#125;,&quot;clientInfo&quot;:&#123;&quot;name&quot;:&quot;codex-mcp-client&quot;,&quot;title&quot;:&quot;Codex&quot;,&quot;version&quot;:&quot;0.129.0-alpha.15&quot;&#125;&#125;&#125;</span><br><span class="line"></span><br><span class="line"># 服务器向平台发送消息，表明 MCP 协议版本，表明自身不支持的能力，发送服务器的信息。</span><br><span class="line">[2026-05-08 14:40:14.179] SERVER -&gt; CLIENT</span><br><span class="line">&#123;&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:0,&quot;result&quot;:&#123;&quot;protocolVersion&quot;:&quot;2025-06-18&quot;,&quot;capabilities&quot;:&#123;&quot;experimental&quot;:&#123;&#125;,&quot;prompts&quot;:&#123;&quot;listChanged&quot;:false&#125;,&quot;resources&quot;:&#123;&quot;subscribe&quot;:false,&quot;listChanged&quot;:false&#125;,&quot;tools&quot;:&#123;&quot;listChanged&quot;:false&#125;&#125;,&quot;serverInfo&quot;:&#123;&quot;name&quot;:&quot;weather&quot;,&quot;version&quot;:&quot;1.27.0&quot;&#125;&#125;&#125;</span><br><span class="line"></span><br><span class="line"># 平台表明收到</span><br><span class="line">[2026-05-08 14:40:14.179] CLIENT -&gt; SERVER</span><br><span class="line">&#123;&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;method&quot;:&quot;notifications/initialized&quot;&#125;</span><br><span class="line"></span><br><span class="line"># 平台想要进一步获取工具列表</span><br><span class="line">[2026-05-08 14:40:14.179] CLIENT -&gt; SERVER</span><br><span class="line">&#123;&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/list&quot;,&quot;params&quot;:&#123;&quot;_meta&quot;:&#123;&quot;progressToken&quot;:0&#125;&#125;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">[2026-05-08 14:40:14.181] SERVER -&gt; CLIENT</span><br><span class="line">&#123;</span><br><span class="line">    &quot;jsonrpc&quot;: &quot;2.0&quot;,</span><br><span class="line">    &quot;id&quot;: 1,</span><br><span class="line">    &quot;result&quot;: &#123;</span><br><span class="line">        &quot;tools&quot;: [</span><br><span class="line">            &#123;</span><br><span class="line">                # 工具 1</span><br><span class="line">                &quot;name&quot;: &quot;get_alerts&quot;,</span><br><span class="line">                &quot;description&quot;: &quot;Get weather alerts for a US state.\n\nArgs:\n    state: Two-letter US state code (eg CA,NY)\n&quot;,</span><br><span class="line">                # 用于描述 input json 的格式</span><br><span class="line">                &quot;inputSchema&quot;: &#123;</span><br><span class="line">                    &quot;properties&quot;: &#123;</span><br><span class="line">                        &quot;state&quot;: &#123;</span><br><span class="line">                            &quot;title&quot;: &quot;State&quot;,</span><br><span class="line">                            &quot;type&quot;: &quot;string&quot;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;,</span><br><span class="line">                    &quot;required&quot;: [</span><br><span class="line">                        &quot;state&quot;</span><br><span class="line">                    ],</span><br><span class="line">                    &quot;title&quot;: &quot;get_alertsArguments&quot;,</span><br><span class="line">                    &quot;type&quot;: &quot;object&quot;</span><br><span class="line">                &#125;,</span><br><span class="line">                &quot;outputSchema&quot;: &#123;</span><br><span class="line">                    &quot;properties&quot;: &#123;</span><br><span class="line">                        &quot;result&quot;: &#123;</span><br><span class="line">                            &quot;title&quot;: &quot;Result&quot;,</span><br><span class="line">                            &quot;type&quot;: &quot;string&quot;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;,</span><br><span class="line">                    &quot;required&quot;: [</span><br><span class="line">                        &quot;result&quot;</span><br><span class="line">                    ],</span><br><span class="line">                    &quot;title&quot;: &quot;get_alertsOutput&quot;,</span><br><span class="line">                    &quot;type&quot;: &quot;object&quot;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;,</span><br><span class="line">            &#123;</span><br><span class="line">                # 工具 2</span><br><span class="line">                &quot;name&quot;: &quot;get_forecast&quot;,</span><br><span class="line">                &quot;description&quot;: &quot;Get weather forecast for a location.\n\nArgs:\n    latitude:Latitude of the location\n    longitude:Longitude of the location\n&quot;,</span><br><span class="line">                &quot;inputSchema&quot;: &#123;</span><br><span class="line">                    &quot;properties&quot;: &#123;</span><br><span class="line">                        &quot;latitude&quot;: &#123;</span><br><span class="line">                            &quot;title&quot;: &quot;Latitude&quot;,</span><br><span class="line">                            &quot;type&quot;: &quot;number&quot;</span><br><span class="line">                        &#125;,</span><br><span class="line">                        &quot;longitude&quot;: &#123;</span><br><span class="line">                            &quot;title&quot;: &quot;Longitude&quot;,</span><br><span class="line">                            &quot;type&quot;: &quot;number&quot;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;,</span><br><span class="line">                    &quot;required&quot;: [</span><br><span class="line">                        &quot;latitude&quot;,</span><br><span class="line">                        &quot;longitude&quot;</span><br><span class="line">                    ],</span><br><span class="line">                    &quot;title&quot;: &quot;get_forecastArguments&quot;,</span><br><span class="line">                    &quot;type&quot;: &quot;object&quot;</span><br><span class="line">                &#125;,</span><br><span class="line">                &quot;outputSchema&quot;: &#123;</span><br><span class="line">                    &quot;properties&quot;: &#123;</span><br><span class="line">                        &quot;result&quot;: &#123;</span><br><span class="line">                            &quot;title&quot;: &quot;Result&quot;,</span><br><span class="line">                            &quot;type&quot;: &quot;string&quot;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;,</span><br><span class="line">                    &quot;required&quot;: [</span><br><span class="line">                        &quot;result&quot;</span><br><span class="line">                    ],</span><br><span class="line">                    &quot;title&quot;: &quot;get_forecastOutput&quot;,</span><br><span class="line">                    &quot;type&quot;: &quot;object&quot;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># 询问有无资源可以使用</span><br><span class="line">[2026-05-08 14:40:14.973] CLIENT -&gt; SERVER</span><br><span class="line">&#123;&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:2,&quot;method&quot;:&quot;resources/list&quot;,&quot;params&quot;:&#123;&quot;_meta&quot;:&#123;&quot;progressToken&quot;:1&#125;&#125;&#125;</span><br><span class="line"></span><br><span class="line"># 询问有无资源模板可以使用</span><br><span class="line">[2026-05-08 14:40:14.974] CLIENT -&gt; SERVER</span><br><span class="line">&#123;&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:3,&quot;method&quot;:&quot;resources/templates/list&quot;,&quot;params&quot;:&#123;&quot;_meta&quot;:&#123;&quot;progressToken&quot;:2&#125;&#125;&#125;</span><br><span class="line"></span><br><span class="line">[2026-05-08 14:40:14.977] SERVER -&gt; CLIENT</span><br><span class="line">&#123;&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:2,&quot;result&quot;:&#123;&quot;resources&quot;:[]&#125;&#125;</span><br><span class="line"></span><br><span class="line">[2026-05-08 14:40:14.978] SERVER -&gt; CLIENT</span><br><span class="line">&#123;&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:3,&quot;result&quot;:&#123;&quot;resourceTemplates&quot;:[]&#125;&#125;</span><br><span class="line"></span><br><span class="line"># 平台调用 get_forecast 工具并输入经纬度</span><br><span class="line">[2026-05-08 15:02:34.565] CLIENT -&gt; SERVER</span><br><span class="line">&#123;&quot;method&quot;:&quot;tools/call&quot;,&quot;params&quot;:&#123;&quot;name&quot;:&quot;get_forecast&quot;,&quot;arguments&quot;:&#123;&quot;latitude&quot;:40.7128,&quot;longitude&quot;:-74.006&#125;&#125;,&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:5&#125;</span><br><span class="line"></span><br><span class="line">[2026-05-08 15:02:36.344] SERVER -&gt; CLIENT</span><br><span class="line">&#123;&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:5,&quot;result&quot;:&#123;&quot;content&quot;:[&#123;&quot;type&quot;:&quot;text&quot;,&quot;text&quot;:&quot;\nOvernight:\nTemperature: 50°F\nWind: 8 mph N\nForecast: A slight chance of rain showers before 5am. Mostly cloudy, with a low around 50. North wind around 8 mph. Chance of precipitation is 20%.\n\n---\n\nFriday:\nTemperature: 60°F\nWind: 8 to 17 mph W\nForecast: Mostly sunny, with a high near 60. West wind 8 to 17 mph.\n\n---\n\nFriday Night:\nTemperature: 51°F\nWind: 2 to 15 mph S\nForecast: A slight chance of rain showers after 2am. Mostly cloudy. Low around 51, with temperatures rising to around 54 overnight. South wind 2 to 15 mph. Chance of precipitation is 20%.\n\n---\n\nSaturday:\nTemperature: 60°F\nWind: 6 to 13 mph S\nForecast: Rain showers likely before 2pm, then showers and thunderstorms. Cloudy. High near 60, with temperatures falling to around 56 in the afternoon. South wind 6 to 13 mph. Chance of precipitation is 90%. New rainfall amounts between a tenth and quarter of an inch possible.\n\n---\n\nSaturday Night:\nTemperature: 53°F\nWind: 5 to 12 mph SW\nForecast: Showers and thunderstorms likely before 2am. Mostly cloudy, with a low around 53. Southwest wind 5 to 12 mph. Chance of precipitation is 70%. New rainfall amounts between a tenth and quarter of an inch possible.\n&quot;&#125;],&quot;structuredContent&quot;:&#123;&quot;result&quot;:&quot;\nOvernight:\nTemperature: 50°F\nWind: 8 mph N\nForecast: A slight chance of rain showers before 5am. Mostly cloudy, with a low around 50. North wind around 8 mph. Chance of precipitation is 20%.\n\n---\n\nFriday:\nTemperature: 60°F\nWind: 8 to 17 mph W\nForecast: Mostly sunny, with a high near 60. West wind 8 to 17 mph.\n\n---\n\nFriday Night:\nTemperature: 51°F\nWind: 2 to 15 mph S\nForecast: A slight chance of rain showers after 2am. Mostly cloudy. Low around 51, with temperatures rising to around 54 overnight. South wind 2 to 15 mph. Chance of precipitation is 20%.\n\n---\n\nSaturday:\nTemperature: 60°F\nWind: 6 to 13 mph S\nForecast: Rain showers likely before 2pm, then showers and thunderstorms. Cloudy. High near 60, with temperatures falling to around 56 in the afternoon. South wind 6 to 13 mph. Chance of precipitation is 90%. New rainfall amounts between a tenth and quarter of an inch possible.\n\n---\n\nSaturday Night:\nTemperature: 53°F\nWind: 5 to 12 mph SW\nForecast: Showers and thunderstorms likely before 2am. Mostly cloudy, with a low around 53. Southwest wind 5 to 12 mph. Chance of precipitation is 70%. New rainfall amounts between a tenth and quarter of an inch possible.\n&quot;&#125;,&quot;isError&quot;:false&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在最后，Cline 拿到返回结果后与 MCP 的交互就结束了，Cline 会将这个结果发送给大模型，让模型来总结。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>&emsp;&emsp;综上所述，MCP 协议主要规定了以下两个内容。<br>&emsp;&emsp;1、每一个 MCP Server 有哪些函数可以使用。<br>&emsp;&emsp;2、如何调用这些函数。<br>&emsp;&emsp;需要注意的是，MCP 协议只规定了 MCP Server 和 平台如何通信，<strong>与模型无关</strong>。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AGENT/" rel="tag"># AGENT</a>
+              <a href="/tags/MCP/" rel="tag"># MCP</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/05/07/llm-learn-1/" rel="prev" title="LLM 学习(1) 一些基本概念">
+      <i class="fa fa-chevron-left"></i> LLM 学习(1) 一些基本概念
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#MCP-%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">1.</span> <span class="nav-text">MCP 是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A8%E6%89%8B%E5%86%99%E4%B8%80%E4%B8%AA-MCP-Server"><span class="nav-number">2.</span> <span class="nav-text">动手写一个 MCP Server</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cline-%E4%B8%8E-MCP-Server-%E7%9A%84%E4%BA%A4%E4%BA%92"><span class="nav-number">3.</span> <span class="nav-text">Cline 与 MCP Server 的交互</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">4.</span> <span class="nav-text">结语</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">62</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
