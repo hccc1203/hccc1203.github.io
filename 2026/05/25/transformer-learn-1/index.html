@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="初识 transformer 的学习笔记，大致了解 transformer 的基本结构。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="初识 transformer">
+<meta property="og:url" content="https://hccc1203.github.io/2026/05/25/transformer-learn-1/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="初识 transformer 的学习笔记，大致了解 transformer 的基本结构。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/transformer/1/transformer%E6%A1%86%E6%9E%B6.png">
+<meta property="article:published_time" content="2026-05-25T03:09:20.000Z">
+<meta property="article:modified_time" content="2026-05-26T09:56:16.757Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="LLM">
+<meta property="article:tag" content="Transformer">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/transformer/1/transformer%E6%A1%86%E6%9E%B6.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/05/25/transformer-learn-1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>初识 transformer | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/05/25/transformer-learn-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          初识 transformer
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-05-25 11:09:20" itemprop="dateCreated datePublished" datetime="2026-05-25T11:09:20+08:00">2026-05-25</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>&emsp;&emsp;在学习 transformer 之前，我们应该先学习 LLM 中的 Attention 机制。</p>
+<h2 id="Attention"><a href="#Attention" class="headerlink" title="Attention"></a>Attention</h2><p>&emsp;&emsp;Attention 的核心就是<strong>让每个 token 去看句子里的其他 token，并判断哪些 token 对自己更重要，然后把重要信息融合进自己的新表示里。</strong></p>
+<p>&emsp;&emsp;在 Attention 机制下，输入的句子首先被分为 n 个 token，接下来这 n 个词语被 embedding 层向量化为 n 个向量，然后使用 Wq，Wk，Wv 三个矩阵与每一个词向量进行矩阵乘法运算，得到 n 组 Query、Key、Value。可以类比地理解为：Q 包含了“我要找什么信息”，K 包含了 “我有什么信息”，V 包含了 “我能提供的具体内容”。值得注意的是，Wq、Wk、Wv 这三个矩阵不是一开始定好的，而是<strong>通过学习得到的</strong>。</p>
+<p>&emsp;&emsp;接下来 Attention 会将每个 token 的 Q 和每个 token 的 K 做相似度计算，也就是</p>
+<p>$$<br>\text{score} &#x3D; QK^T<br>$$</p>
+<p>&emsp;&emsp;接下来我们还需要除以 Key 向量维度的平方根，防止向量维度过大导致 softmax 结果极端。</p>
+<p>$$<br>\text{Attention}(Q, K, V) &#x3D; \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V<br>$$</p>
+<p>&emsp;&emsp;有了注意力权重后，模型会对所有 token 的 Value 向量加权求和，结果就是某个 token 融合上下文之后的新向量。所以 Attention 的输出不是一个普通词向量，而是：<strong>融合了上下文信息的新 token 表示。</strong></p>
+<p>&emsp;&emsp;其中，Attention 又有 Self-Attention 和 Multi-Head Attention。</p>
+<p>&emsp;&emsp;在 Self-Attention 中，所有的 Q、K、V 都来自同一个输入句子，也就是句子自己内部的 token 互相看，所以 Self-Attention 可以建模句子内部 token 之间的关系。</p>
+<p>&emsp;&emsp;Multi-Head Attention 的想法是用多个 Attention Head 并行学习不同的关注模式。一个 head 本质上就是一套独立的 Wq、Wk、Wv，每个 head 都会独立生成自己的 Q、K、V，然后独立做一次 Attention。最终将多个 head 的输出拼接后再乘一个输出矩阵 Wo，其作用是把多个 head 得到的信息重新融合，变成最终输出。</p>
+<h2 id="Transformer"><a href="#Transformer" class="headerlink" title="Transformer"></a>Transformer</h2><p>&emsp;&emsp;在 Transformer 之前，主流序列转导模型的结构大多数基于 RNN&#x2F;CNN，使用编码器-解码器结构，使用注意力机制来增强。Transformer 完全摒弃 RNN&#x2F;CNN，完全基于注意力机制。</p>
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/transformer/1/transformer框架.png"  width=60%></div>
+<div style="text-align:center;">图 1 transformer 框架</div>
+&emsp;&emsp;
+
+<p>&emsp;&emsp;这张图中，左边是编码器 Encoder，右边是解码器 Decoder。左边 Encoder 负责理解输入句子；右边 Decoder 负责根据已生成内容和 Encoder 的理解结果，逐步生成输出句子。</p>
+<p>&emsp;&emsp;<strong>1、Encoder 编码器</strong><br>&emsp;&emsp;第一步，Input Embedding，输入的句子被分解为 token 后通过 Embedding 层变成向量。</p>
+<p>&emsp;&emsp;第二步，Positional Encoding。因为 Attention 本身不知道词的顺序，因此要加上位置编码，也就是 词向量 + 位置向量。否则模型只知道有这些词，而不知道它们的先后顺序。</p>
+<p>&emsp;&emsp;第三步，Multi-Head Attention。我们先类比为 Self-Attention，这一步给每一个词都编码上其上下文的信息。这个方框下的三个箭头分别代表 Wq、Wk、Wv 三类矩阵。Multi-Head Attention 中会有多个注意力头。假设有 8 个 head，那么每个 head 都有自己的一组 Wq、Wk、Wv。每个 head 只负责把向量投影到较低维度的子空间中，例如原始维度是 512，8 个 head 时，每个 head 常用 64 维。每个 head 单独计算一次 Attention，最后把 8 个 head 的结果拼接起来，再经过一个线性变换得到最终输出。</p>
+<p>&emsp;&emsp;第四步，再经过一个残差连接、归一化，再做一次简单的前馈神经网络，再跑一次残差、归一化。接着就会送到解码器。</p>
+<p>&emsp;&emsp;<strong>2、Decoder 解码器</strong><br>&emsp;&emsp;首先从图中右侧底部可以看到，答案先经过 embedding，然后位置化编码，然后经过掩码多头注意力机制，接着进行残差网络和归一化。带掩码的多头注意力机制是什么呢？<br>&emsp;&emsp;假设我们的目标输出是 I love easy course，训练时，Decoder 会一次性看到完整的答案，但是实际生成时，模型是一个词一个词向外生成的，所以在模型训练时，必须模拟真实的生成过程，也就是当预测 easy 的时候，只能看到 I love。那么具体是怎么实现的呢？和普通的 Multi-Head Attention 一样，但是在 <strong>注意力分数</strong> （即 $\text{score} &#x3D; QK^T$）计算完毕后，会加入一个 mask 矩阵，将未来位置屏蔽。例如原本的注意力分数为</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">          看1   看2   看3   看4</span><br><span class="line">词1       2.1   0.5   1.3   0.7</span><br><span class="line">词2       1.2   2.4   0.8   1.5</span><br><span class="line">词3       0.3   1.7   2.2   0.6</span><br><span class="line">词4       1.1   0.9   1.4   2.0</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;加入 mask 后</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">          看1    看2    看3    看4</span><br><span class="line">词1       2.1    -∞     -∞     -∞</span><br><span class="line">词2       1.2    2.4    -∞     -∞</span><br><span class="line">词3       0.3    1.7    2.2    -∞</span><br><span class="line">词4       1.1    0.9    1.4    2.0</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;再经过 softmax 转换为概率后负无穷的值就会接近于 0。</p>
+<p>&emsp;&emsp;和 Encoder 中的 Self-Attention 不同，Decoder 中的第二个 Multi-Head Attention 是 Encoder-Decoder Attention，也叫 Cross-Attention。它的 Q 来自 Decoder 下方 Masked Multi-Head Attention 的输出，K 和 V 来自 Encoder 的最终输出。<br>&emsp;&emsp;也就是说，Decoder 使用当前已经生成内容形成的 Q，去查询 Encoder 对输入句子的理解结果 K 和 V，从而决定在生成当前 token 时应该关注输入句子的哪些部分。</p>
+<p>&emsp;&emsp;解码器的输出会经过一个线性层，线性层会将 512 维的向量映射到词表大小维度的向量上，某个维度值越大则表示模型越倾向于选择该维度对应的 token，最后经过 Softmax 转化为概率。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>&emsp;&emsp;本次学习只研究了 transformer 的基本架构，在接下来的学习中会做更深的研究。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LLM/" rel="tag"># LLM</a>
+              <a href="/tags/Transformer/" rel="tag"># Transformer</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/05/08/mcp-learn-2/" rel="prev" title="炉石传说 MCP Server 项目">
+      <i class="fa fa-chevron-left"></i> 炉石传说 MCP Server 项目
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Attention"><span class="nav-number">1.</span> <span class="nav-text">Attention</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Transformer"><span class="nav-number">2.</span> <span class="nav-text">Transformer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">3.</span> <span class="nav-text">结语</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

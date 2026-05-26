@@ -1,0 +1,415 @@
+请帮我生成一个完整可运行的 Python 工业视觉检测项目，用于检测固定形状零件上的黄色胶带位置是否贴错。
+
+项目目标：
+使用“模板匹配 + HSV 颜色分割 + ROI 位置判定”的传统视觉方案，判断零件上黄色胶带是否贴在标准位置。要求项目可以从命令行运行，也提供一个简单的图形界面或 Web 页面用于调试图片、配置 ROI、查看检测结果。
+
+背景说明：
+工厂里有一批形状一致的零件，表面会贴多条黄色胶带。每个零件的标准胶带位置固定。现在需要检测：
+1. 胶带是否缺失
+2. 胶带是否贴偏
+3. 胶带是否贴歪
+4. 胶带是否多贴
+5. 胶带是否面积不足
+6. 胶带是否出现在错误区域
+
+请不要使用深度学习，先使用 OpenCV 传统算法实现。
+
+核心算法流程：
+1. 读取输入图片
+2. 读取标准模板图 template.jpg
+3. 使用 cv2.matchTemplate 对当前图片进行模板匹配，找到零件整体位置
+4. 根据模板匹配结果，将当前图像裁剪或映射到标准检测坐标系
+5. 将图像从 BGR 转换到 HSV
+6. 使用 HSV 阈值分割黄色胶带区域
+7. 对黄色 mask 做形态学开运算、闭运算，去噪和填洞
+8. 在配置文件中读取每条胶带的标准 ROI
+9. 对每个 ROI 统计黄色像素比例、黄色区域面积、外接矩形、中心点、角度
+10. 和标准参数比较，输出 OK 或 NG
+11. 如果 NG，需要指出具体原因，例如：缺失、偏移、歪斜、面积不足、多贴、错误区域出现黄色胶带
+12. 保存可视化结果图片，在原图上画出 ROI、检测到的黄色区域、OK/NG 状态和异常原因
+
+请生成完整项目，而不是只给代码片段。
+
+项目名称：
+tape_position_inspection
+
+推荐项目结构：
+tape_position_inspection/
+├── README.md
+├── requirements.txt
+├── config/
+│   ├── default.yaml
+│   └── rois.example.yaml
+├── data/
+│   ├── template.jpg
+│   ├── samples/
+│   └── outputs/
+├── src/
+│   └── tape_inspection/
+│       ├── __init__.py
+│       ├── main.py
+│       ├── config.py
+│       ├── image_io.py
+│       ├── template_matcher.py
+│       ├── color_segmenter.py
+│       ├── roi.py
+│       ├── inspector.py
+│       ├── visualizer.py
+│       ├── cli.py
+│       └── web_app.py
+└── tests/
+    ├── test_color_segmenter.py
+    └── test_roi.py
+
+功能要求：
+
+一、配置文件
+使用 YAML 配置，文件路径为 config/default.yaml。
+
+配置内容至少包括：
+1. template_path：标准模板图片路径
+2. hsv_yellow_lower：黄色 HSV 下限
+3. hsv_yellow_upper：黄色 HSV 上限
+4. morphology_kernel_size：形态学核大小
+5. template_match_threshold：模板匹配最低分数
+6. rois：每条胶带的标准检测区域
+7. allowed_extra_yellow_regions：允许黄色出现的区域
+8. output_dir：检测结果输出目录
+
+ROI 配置格式示例：
+rois:
+  - name: left_vertical_tape
+    x: 120
+    y: 80
+    w: 45
+    h: 280
+    min_yellow_ratio: 0.55
+    max_yellow_ratio: 1.00
+    max_center_offset_px: 15
+    expected_angle_deg: 90
+    max_angle_error_deg: 8
+    min_area_px: 3000
+
+  - name: top_horizontal_tape
+    x: 180
+    y: 60
+    w: 360
+    h: 45
+    min_yellow_ratio: 0.50
+    max_yellow_ratio: 1.00
+    max_center_offset_px: 20
+    expected_angle_deg: 0
+    max_angle_error_deg: 8
+    min_area_px: 3000
+
+二、模板匹配模块 template_matcher.py
+实现类 TemplateMatcher。
+
+要求：
+1. 初始化时读取模板图片
+2. 使用灰度图进行 cv2.matchTemplate
+3. 支持方法 cv2.TM_CCOEFF_NORMED
+4. 返回匹配位置、匹配分数、匹配后的 ROI 坐标
+5. 如果分数低于 template_match_threshold，返回错误状态
+6. 提供 debug 可视化，画出模板匹配框
+
+接口建议：
+class TemplateMatcher:
+    def __init__(self, template_path: str, threshold: float = 0.7):
+        ...
+
+    def match(self, image: np.ndarray) -> dict:
+        ...
+        return {
+            "ok": True,
+            "score": 0.92,
+            "x": 10,
+            "y": 20,
+            "w": 900,
+            "h": 500,
+            "aligned_image": aligned_image
+        }
+
+注意：
+第一版可以只做平移定位，不做旋转校正。
+代码中要预留后续升级为 ORB/SIFT + Homography 的接口，但不要强制实现。
+
+三、颜色分割模块 color_segmenter.py
+实现类 YellowTapeSegmenter。
+
+要求：
+1. 输入 BGR 图像
+2. 转换为 HSV
+3. 使用配置的 lower/upper 阈值生成 mask
+4. 使用 morphology open/close 去噪
+5. 返回 mask 和调试信息
+6. 提供统计黄色像素数量的方法
+
+接口建议：
+class YellowTapeSegmenter:
+    def __init__(self, lower_hsv, upper_hsv, kernel_size=5):
+        ...
+
+    def segment(self, image: np.ndarray) -> np.ndarray:
+        ...
+
+    def count_yellow_pixels(self, mask: np.ndarray) -> int:
+        ...
+
+四、ROI 模块 roi.py
+实现 ROI 数据结构和 ROI 检测逻辑。
+
+要求：
+1. 定义 RoiConfig 数据类
+2. 支持从 YAML 加载 ROI 配置
+3. 对每个 ROI 计算：
+   - yellow_area
+   - yellow_ratio
+   - contour_count
+   - bounding_rect
+   - center_x
+   - center_y
+   - center_offset
+   - angle_deg
+4. 角度计算可使用 cv2.minAreaRect
+5. 如果 ROI 内没有足够黄色像素，判为 missing
+6. 如果黄色面积小于 min_area_px，判为 area_too_small
+7. 如果中心偏移超过 max_center_offset_px，判为 position_offset
+8. 如果角度偏差超过 max_angle_error_deg，判为 angle_error
+9. 如果所有规则通过，判为 OK
+
+输出格式示例：
+{
+  "name": "left_vertical_tape",
+  "ok": false,
+  "reason": "position_offset",
+  "yellow_ratio": 0.43,
+  "yellow_area": 2400,
+  "center_offset": 24.5,
+  "angle_deg": 86.2
+}
+
+五、检测主流程 inspector.py
+实现 TapeInspector。
+
+要求：
+1. 加载配置
+2. 读取图片
+3. 调用 TemplateMatcher 定位零件
+4. 对齐或裁剪零件区域
+5. 调用 YellowTapeSegmenter 提取黄色 mask
+6. 对所有 ROI 进行检测
+7. 检测 ROI 之外是否存在额外黄色胶带
+8. 汇总结果：
+   - overall_ok
+   - template_score
+   - roi_results
+   - extra_yellow_detected
+   - reasons
+9. 返回 JSON 可序列化结果
+
+接口建议：
+class TapeInspector:
+    def __init__(self, config_path: str):
+        ...
+
+    def inspect(self, image_path: str) -> dict:
+        ...
+
+输出格式示例：
+{
+  "image_path": "data/samples/test01.jpg",
+  "overall_ok": false,
+  "template_score": 0.91,
+  "roi_results": [
+    {
+      "name": "left_vertical_tape",
+      "ok": true,
+      "reason": "ok",
+      "yellow_ratio": 0.78
+    },
+    {
+      "name": "right_vertical_tape",
+      "ok": false,
+      "reason": "missing",
+      "yellow_ratio": 0.12
+    }
+  ],
+  "extra_yellow_detected": false,
+  "reasons": ["right_vertical_tape: missing"]
+}
+
+六、额外黄色检测
+要求：
+1. 生成所有标准 ROI 的 union mask
+2. 将黄色 mask 减去标准 ROI 区域
+3. 统计剩余黄色面积
+4. 如果剩余黄色面积超过 extra_yellow_area_threshold，则判定可能存在多贴或贴错区域
+5. 输出 extra_yellow_detected = true
+
+七、可视化模块 visualizer.py
+要求：
+1. 在结果图片上画出所有 ROI
+2. OK 的 ROI 用绿色框，NG 的 ROI 用红色框
+3. 在每个 ROI 附近写入 ROI 名称、OK/NG、reason、yellow_ratio
+4. 将黄色 mask 半透明叠加到原图
+5. 额外黄色区域用紫色或蓝色轮廓标出
+6. 保存到 data/outputs/xxx_result.jpg
+
+八、CLI 命令行
+实现命令：
+python -m tape_inspection.cli inspect --image data/samples/test01.jpg --config config/default.yaml
+
+输出：
+1. 在终端打印 JSON 检测结果
+2. 保存可视化图片
+3. 如果 overall_ok=true，进程退出码为 0
+4. 如果 overall_ok=false，进程退出码为 2
+5. 如果程序异常，退出码为 1
+
+再实现批量检测命令：
+python -m tape_inspection.cli batch --input-dir data/samples --config config/default.yaml
+
+要求：
+1. 遍历 jpg/png/bmp 图片
+2. 每张图片输出结果
+3. 生成 summary.csv
+4. 统计 OK 数量、NG 数量、失败数量
+
+九、Web 调试页面
+用 FastAPI 实现一个简单 Web 页面，不需要复杂前端框架。
+
+文件：
+src/tape_inspection/web_app.py
+
+功能：
+1. GET / 返回上传页面
+2. POST /inspect 上传图片并检测
+3. 页面显示：
+   - 原图
+   - 检测结果图
+   - JSON 结果
+4. 提供 /api/inspect 接口，返回 JSON
+5. 支持配置文件路径参数，默认使用 config/default.yaml
+6. 支持静态访问 data/outputs 下生成的图片
+
+运行命令：
+uvicorn tape_inspection.web_app:app --reload --host 0.0.0.0 --port 8000
+
+十、README.md
+请写完整 README，包含：
+1. 项目介绍
+2. 算法原理
+3. 环境安装
+4. 单图检测命令
+5. 批量检测命令
+6. Web 页面运行命令
+7. 配置文件说明
+8. ROI 如何配置
+9. HSV 阈值如何调参
+10. 常见问题
+11. 后续可升级方向：
+    - ORB/SIFT + Homography 图像对齐
+    - YOLO-seg 胶带分割
+    - 工业相机实时检测
+    - PLC/产线联动
+
+十一、requirements.txt
+至少包含：
+opencv-python
+numpy
+PyYAML
+fastapi
+uvicorn
+python-multipart
+pydantic
+pandas
+
+十二、代码风格
+要求：
+1. 使用 Python 3.10+
+2. 尽量使用类型注解
+3. 函数要有 docstring
+4. 异常处理要清楚
+5. 不要把路径写死
+6. 所有配置从 YAML 读取
+7. 保持模块解耦
+8. 代码要能直接运行
+9. 不要生成伪代码
+10. 不要省略关键实现
+
+十三、测试
+请生成基础单元测试：
+1. test_color_segmenter.py
+   - 测试 HSV 分割是否能检测一块人工黄色矩形
+2. test_roi.py
+   - 构造一个 mask，测试 ROI 内黄色比例计算是否正确
+3. 测试不要求覆盖所有功能，但要能运行 pytest
+
+十四、配置文件默认值
+请在 config/default.yaml 中给出可用默认值：
+template_path: data/template.jpg
+output_dir: data/outputs
+template_match_threshold: 0.65
+hsv_yellow_lower: [15, 50, 50]
+hsv_yellow_upper: [45, 255, 255]
+morphology_kernel_size: 5
+extra_yellow_area_threshold: 1000
+
+rois:
+  - name: tape_1_left_vertical
+    x: 80
+    y: 100
+    w: 60
+    h: 300
+    min_yellow_ratio: 0.45
+    max_yellow_ratio: 1.0
+    max_center_offset_px: 20
+    expected_angle_deg: 90
+    max_angle_error_deg: 10
+    min_area_px: 1000
+
+  - name: tape_2_center_vertical
+    x: 350
+    y: 80
+    w: 60
+    h: 340
+    min_yellow_ratio: 0.45
+    max_yellow_ratio: 1.0
+    max_center_offset_px: 20
+    expected_angle_deg: 90
+    max_angle_error_deg: 10
+    min_area_px: 1000
+
+  - name: tape_3_right_vertical
+    x: 650
+    y: 100
+    w: 60
+    h: 300
+    min_yellow_ratio: 0.45
+    max_yellow_ratio: 1.0
+    max_center_offset_px: 20
+    expected_angle_deg: 90
+    max_angle_error_deg: 10
+    min_area_px: 1000
+
+十五、调试工具
+请额外提供一个 HSV 阈值调试脚本：
+python -m tape_inspection.cli tune-hsv --image data/samples/test01.jpg
+
+功能：
+1. 打开 OpenCV 窗口
+2. 提供 H/S/V lower 和 upper 滑动条
+3. 实时显示黄色 mask
+4. 按 s 保存当前 HSV 阈值到终端输出
+5. 按 q 退出
+
+十六、结果输出
+每次检测除了输出 JSON，也要保存：
+1. result image
+2. yellow mask image
+3. aligned image
+4. 如果批量检测，保存 summary.csv
+
+十七、请先生成完整文件树，然后逐个文件生成内容。
+要求所有代码完整可运行。
