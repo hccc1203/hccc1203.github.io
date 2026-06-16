@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="首次学习 FastAPI 框架。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="初识 FastAPI">
+<meta property="og:url" content="https://hccc1203.github.io/2026/06/16/FastAPI-1/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="首次学习 FastAPI 框架。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/FastAPI/1/%E5%89%8D%E5%90%8E%E7%AB%AF%E4%B8%8D%E5%88%86%E7%A6%BB.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/FastAPI/1/%E5%89%8D%E5%90%8E%E7%AB%AF%E5%88%86%E7%A6%BB.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/FastAPI/1/%E8%BF%94%E5%9B%9Ehw.png">
+<meta property="og:image" content="https://hccc1203.github.io/img/FastAPI/1/API%E6%96%87%E6%A1%A3.png">
+<meta property="article:published_time" content="2026-06-16T03:01:39.000Z">
+<meta property="article:modified_time" content="2026-06-16T11:58:54.154Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="FastAPI">
+<meta property="article:tag" content="vibecoding">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/FastAPI/1/%E5%89%8D%E5%90%8E%E7%AB%AF%E4%B8%8D%E5%88%86%E7%A6%BB.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/06/16/FastAPI-1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>初识 FastAPI | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/06/16/FastAPI-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          初识 FastAPI
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-06-16 11:01:39" itemprop="dateCreated datePublished" datetime="2026-06-16T11:01:39+08:00">2026-06-16</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="是什么"><a href="#是什么" class="headerlink" title="是什么"></a>是什么</h2><p>&emsp;&emsp;FastAPI 是一个基于 Python 的现代 Web 后端框架，用于快速构建 API 服务，让我们快速写出类似这样的接口：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hello</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;Hello FastAPI&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;运行后，别人访问</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://服务器地址/</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;就能得到</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span><span class="attr">&quot;message&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Hello FastAPI&quot;</span><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="前后端分离与前后端不分离"><a href="#前后端分离与前后端不分离" class="headerlink" title="前后端分离与前后端不分离"></a>前后端分离与前后端不分离</h2><p>&emsp;&emsp;前后端不分离时，用户访问 127.0.0.1:8000&#x2F;index.html，经过后端 urls 路由转发到后端函数，再读取数据库，后端直接返回 login.html 页面给用户。也就是：<strong>页面 HTML 是后端生成并返回的。</strong></p>
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/FastAPI/1/前后端不分离.png"  width=100%></div>
+<div style="text-align:center;">图 1 前后端不分离</div>
+&emsp;&emsp;
+
+<p>&emsp;&emsp;前后端分离时，前端只负责页面显示和用户交互，后端只负责提供数据接口。例如前端 vue 调用接口</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">axios.post(<span class="string">&quot;/api/update&quot;</span>, &#123;</span><br><span class="line">  name: <span class="string">&quot;zhangsan&quot;</span>,</span><br><span class="line">  age: <span class="number">123</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;后端 FastAPI 收到请求：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@app.post(<span class="params"><span class="string">&quot;/api/update&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">update_user</span>(<span class="params">data: User</span>):</span><br><span class="line">    <span class="comment"># 修改数据库</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;msg&quot;</span>: <span class="string">&quot;更新成功&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这里的后端不返回完整的 HTML 页面，只返回数据，例如</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;msg&quot;</span><span class="punctuation">:</span> <span class="string">&quot;更新成功&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/FastAPI/1/前后端分离.png"  width=100%></div>
+<div style="text-align:center;">图 2 前后端分离</div>
+&emsp;&emsp;
+
+<h2 id="RESTful-风格的-API"><a href="#RESTful-风格的-API" class="headerlink" title="RESTful 风格的 API"></a>RESTful 风格的 API</h2><p>&emsp;&emsp;普通的 API 接口可能这样写，将所有的动作直接写在 URL 里。</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/getUser?id=1</span><br><span class="line">/addUser</span><br><span class="line">/deleteUser?id=1</span><br><span class="line">/updateUser</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;RESTful API 更推荐这样写</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/users</span><br><span class="line">/users/1</span><br><span class="line">/articles</span><br><span class="line">/articles/10</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;URL 主要表示资源，动作由 HTTP 方法表示，例如</p>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>HTTP 方法</th>
+<th>RESTful 接口</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>获取所有用户</td>
+<td>GET</td>
+<td><code>/users</code></td>
+</tr>
+<tr>
+<td>获取某个用户</td>
+<td>GET</td>
+<td><code>/users/1</code></td>
+</tr>
+<tr>
+<td>新增用户</td>
+<td>POST</td>
+<td><code>/users</code></td>
+</tr>
+<tr>
+<td>修改用户</td>
+<td>PUT &#x2F; PATCH</td>
+<td><code>/users/1</code></td>
+</tr>
+<tr>
+<td>删除用户</td>
+<td>DELETE</td>
+<td><code>/users/1</code></td>
+</tr>
+</tbody></table>
+<p>&emsp;&emsp;FastAPI 就很适合写 RESTful API，例如</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/users&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_users</span>():</span><br><span class="line">    <span class="keyword">return</span> [&#123;<span class="string">&quot;id&quot;</span>: <span class="number">1</span>, <span class="string">&quot;name&quot;</span>: <span class="string">&quot;zhangsan&quot;</span>&#125;]</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/users/&#123;user_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user</span>(<span class="params">user_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;id&quot;</span>: user_id, <span class="string">&quot;name&quot;</span>: <span class="string">&quot;zhangsan&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.post(<span class="params"><span class="string">&quot;/users&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">create_user</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;user created&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.delete(<span class="params"><span class="string">&quot;/users/&#123;user_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">delete_user</span>(<span class="params">user_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">f&quot;user <span class="subst">&#123;user_id&#125;</span> deleted&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="FastAPI-的最小实现"><a href="#FastAPI-的最小实现" class="headerlink" title="FastAPI 的最小实现"></a>FastAPI 的最小实现</h2><p>&emsp;&emsp;创建 conda 新环境，通过 pip 安装 fastapi。新建 main.py 文件，写入以下代码：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> uvicorn</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">root</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;Hello World&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    uvicorn.run(app, host=<span class="string">&quot;127.0.0.1&quot;</span>, port=<span class="number">8080</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这段代码创建一个 FastAPI 后端应用，定义了一个 GET &#x2F; 接口，用 uvicorn 在本机 8080 端口启动服务。</p>
+<p>&emsp;&emsp;async 将函数声明为异步函数，使其可以在执行 I&#x2F;O 操作（如数据库请求、HTTP调用）时使用 await 挂起当前任务，从而不阻塞事件循环，提高并发能力。例如：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/users&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_users</span>():</span><br><span class="line">    data = <span class="keyword">await</span> db.fetch_all()</span><br><span class="line">    <span class="keyword">return</span> data</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;运行上面的代码，访问 <code>http://127.0.0.1:8080/</code> 就可以看到 Hello World 了。</p>
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/FastAPI/1/返回hw.png"  width=100%></div>
+<div style="text-align:center;">图 3 返回 hello world</div>
+&emsp;&emsp;
+
+<h2 id="FastAPI-接口文档"><a href="#FastAPI-接口文档" class="headerlink" title="FastAPI 接口文档"></a>FastAPI 接口文档</h2><p>&emsp;&emsp;我们将刚刚的代码添加几个步骤，如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> uvicorn</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/get&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;This is a GET request&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.post(<span class="params"><span class="string">&quot;/post&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">post</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;This is a POST request&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.put(<span class="params"><span class="string">&quot;/put&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">put</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;This is a PUT request&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.delete(<span class="params"><span class="string">&quot;/delete&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">delete</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;This is a DELETE request&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    uvicorn.run(app, host=<span class="string">&quot;127.0.0.1&quot;</span>, port=<span class="number">8080</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;运行代码，访问 <code>http://127.0.0.1:8080/docs</code>，即可看到一份完整的 API 文档：</p>
+<p>&emsp;&emsp;</p>
+<div align=center><img src="/img/FastAPI/1/API文档.png"  width=100%></div>
+<div style="text-align:center;">图 4 API文档</div>
+&emsp;&emsp;
+
+<p>&emsp;&emsp;我们可以在这个页面查看后端的接口信息。</p>
+<h2 id="路由分发"><a href="#路由分发" class="headerlink" title="路由分发"></a>路由分发</h2><p>&emsp;&emsp;路由分发是指：<strong>用户访问某个 URL 时，后端根据“路径 + 请求方法”，把请求交给对应的函数处理。</strong>，可以理解为：<strong>网址和函数之间的对应关系。</strong></p>
+<p>&emsp;&emsp;新建 api 文件夹，在该文件夹中新建 book.py 文件，写入如下内容：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> APIRouter</span><br><span class="line"></span><br><span class="line">api_book = APIRouter()</span><br><span class="line"></span><br><span class="line"><span class="meta">@api_book.get(<span class="params"><span class="string">&quot;/get&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">book_get</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;This is a GET request&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@api_book.post(<span class="params"><span class="string">&quot;/post&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">book_post</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;This is a POST request&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@api_book.put(<span class="params"><span class="string">&quot;/put&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">book_put</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;This is a PUT request&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@api_book.delete(<span class="params"><span class="string">&quot;/delete&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">book_delete</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;This is a DELETE request&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这就表示创建了一个路由，并定义了路由内部的功能。接下来，我们在 main.py 中写入如下代码:</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> uvicorn</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> api.book <span class="keyword">import</span> api_book</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line">app.include_router(api_book, prefix=<span class="string">&quot;/book&quot;</span>,tags=[<span class="string">&quot;book&quot;</span>])</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    uvicorn.run(app, host=<span class="string">&quot;127.0.0.1&quot;</span>, port=<span class="number">8080</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在 app 对象中添加子路由，并将其前缀设置为 “&#x2F;book”，这样，刚刚 book.py 中定义的请求就可以通过 “&#x2F;book&#x2F;***” 来访问。</p>
+<h2 id="request-对象"><a href="#request-对象" class="headerlink" title="request 对象"></a>request 对象</h2><p>&emsp;&emsp;request 对象指的是客户端发给服务器的这一次请求的完整信息，比如用户访问接口时，浏览器或前端会向 FastAPI 后端发送 HTTP 请求:</p>
+<pre><code>GET /book/get
+</code></pre>
+<p>&emsp;&emsp;这个请求里面可能包含很多信息，例如请求方法、请求路径、请求参数等等，FastAPI 里的 Request 对象就是用来拿这些信息的。我们修改部分代码，如下</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI, Request</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/info&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">info</span>(<span class="params">request: Request</span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;method&quot;</span>: request.method,</span><br><span class="line">        <span class="string">&quot;url&quot;</span>: <span class="built_in">str</span>(request.url),</span><br><span class="line">        <span class="string">&quot;client&quot;</span>: request.client.host</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;request 中包含请求方法，可以通过 request.method 获取，还可以通过 request.url 获取完整的 URL，通过 request.query_params 获取查询参数等等。</p>
+<h2 id="Pydantic"><a href="#Pydantic" class="headerlink" title="Pydantic"></a>Pydantic</h2><p>&emsp;&emsp;Pydantic 是一个基于 Python 类型注解的数据解析与校验库，用于在运行时对数据进行验证、转换和结构化。我可以通过以下代码创建一个类</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    name: <span class="built_in">str</span></span><br><span class="line">    age: <span class="built_in">int</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;它可以帮我检查数据对不对，自动把 JSON 转成 Python 对象，自动生成 API 文档。其真实用例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">User</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    name: <span class="built_in">str</span></span><br><span class="line">    age: <span class="built_in">int</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.post(<span class="params"><span class="string">&quot;/user&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">create_user</span>(<span class="params">user: User</span>):</span><br><span class="line">    <span class="keyword">return</span> user</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在前端发送如下数据后，</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;zhangsan&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;age&quot;</span><span class="punctuation">:</span> <span class="number">18</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;FastAPI + Pydantic 自动解析 JSON，并将其变为 Py 对象，如果前端错传，也会直接报错。</p>
+<h2 id="FastAPI-在-AGENT-中的作用"><a href="#FastAPI-在-AGENT-中的作用" class="headerlink" title="FastAPI 在 AGENT 中的作用"></a>FastAPI 在 AGENT 中的作用</h2><p>&emsp;&emsp;FastAPI 通常作为 Agent 系统的 HTTP 服务层，负责接收用户请求并将其转发给 Agent 核心逻辑，同时返回处理结果。一个典型的 Agent 系统如下：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">用户</span><br><span class="line"> ↓</span><br><span class="line">FastAPI（API层）</span><br><span class="line"> ↓</span><br><span class="line">Agent Orchestrator（调度层）</span><br><span class="line"> ↓</span><br><span class="line">LLM / Tools / Memory / Vector DB</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;所以 FastAPI 在 Agent 中具体作为入口接口、统一 API 层、连接前端，并且还可以作为多 Agent 的路由与调度入口。最关键的是可以作为<strong>工具调用中转站</strong>，FastAPI 将工具能力封装为 API，使 Agent 可以通过 HTTP 或函数调用方式使用这些能力，例如</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@app.post(<span class="params"><span class="string">&quot;/search&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">search</span>(<span class="params">query: <span class="built_in">str</span></span>):</span><br><span class="line">    <span class="keyword">return</span> search_engine.run(query)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;Agent 就可以再调用这个接口。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>&emsp;&emsp;FastAPI 在 Agent 中的作用，就是把“智能体能力”变成一个可以被前端调用的 HTTP 服务入口，同时负责路由、参数、并发和部署。FastAPI 是 Agent 项目中不可或缺的一环，值得更加深入的学习。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/FastAPI/" rel="tag"># FastAPI</a>
+              <a href="/tags/vibecoding/" rel="tag"># vibecoding</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/05/25/transformer-learn-1/" rel="prev" title="初识 transformer">
+      <i class="fa fa-chevron-left"></i> 初识 transformer
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">1.</span> <span class="nav-text">是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E5%90%8E%E7%AB%AF%E5%88%86%E7%A6%BB%E4%B8%8E%E5%89%8D%E5%90%8E%E7%AB%AF%E4%B8%8D%E5%88%86%E7%A6%BB"><span class="nav-number">2.</span> <span class="nav-text">前后端分离与前后端不分离</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RESTful-%E9%A3%8E%E6%A0%BC%E7%9A%84-API"><span class="nav-number">3.</span> <span class="nav-text">RESTful 风格的 API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FastAPI-%E7%9A%84%E6%9C%80%E5%B0%8F%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.</span> <span class="nav-text">FastAPI 的最小实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FastAPI-%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3"><span class="nav-number">5.</span> <span class="nav-text">FastAPI 接口文档</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B7%AF%E7%94%B1%E5%88%86%E5%8F%91"><span class="nav-number">6.</span> <span class="nav-text">路由分发</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#request-%E5%AF%B9%E8%B1%A1"><span class="nav-number">7.</span> <span class="nav-text">request 对象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pydantic"><span class="nav-number">8.</span> <span class="nav-text">Pydantic</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FastAPI-%E5%9C%A8-AGENT-%E4%B8%AD%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="nav-number">9.</span> <span class="nav-text">FastAPI 在 AGENT 中的作用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">10.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">65</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
