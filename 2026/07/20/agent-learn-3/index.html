@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="实现 LLM、信息、工具接口设计">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Agent 学习(3) 自建 Agent 框架">
+<meta property="og:url" content="https://hccc1203.github.io/2026/07/20/agent-learn-3/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="实现 LLM、信息、工具接口设计">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-07-20T12:14:28.000Z">
+<meta property="article:modified_time" content="2026-07-21T12:16:40.398Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="AGENT">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/07/20/agent-learn-3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Agent 学习(3) 自建 Agent 框架 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/07/20/agent-learn-3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Agent 学习(3) 自建 Agent 框架
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-07-20 20:14:28" itemprop="dateCreated datePublished" datetime="2026-07-20T20:14:28+08:00">2026-07-20</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="LLM-根基实现"><a href="#LLM-根基实现" class="headerlink" title="LLM 根基实现"></a>LLM 根基实现</h2><p>&emsp;&emsp;一个 Agent 最重要的能力是能使用 API 调用 LLM，否则一切都是空谈。在之前的学习中我们已经实现了相关功能，现在新建 <code>core</code> 文件夹，并新建 LLM.py 文件，写入以下内容：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span>, <span class="type">Dict</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载 .env 文件中的环境变量</span></span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">LLM_Base</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    该类用于调用任何兼容OpenAI接口的服务，并默认使用流式响应。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, model: <span class="built_in">str</span> = <span class="literal">None</span>, apiKey: <span class="built_in">str</span> = <span class="literal">None</span>, baseUrl: <span class="built_in">str</span> = <span class="literal">None</span>, timeout: <span class="built_in">int</span> = <span class="literal">None</span></span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">        初始化客户端。优先使用传入参数，如果未提供，则从环境变量加载。</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        <span class="variable language_">self</span>.model = model <span class="keyword">or</span> os.getenv(<span class="string">&quot;LLM_MODEL_ID&quot;</span>)</span><br><span class="line">        apiKey = apiKey <span class="keyword">or</span> os.getenv(<span class="string">&quot;LLM_API_KEY&quot;</span>)</span><br><span class="line">        baseUrl = baseUrl <span class="keyword">or</span> os.getenv(<span class="string">&quot;LLM_BASE_URL&quot;</span>)</span><br><span class="line">        timeout = timeout <span class="keyword">or</span> <span class="built_in">int</span>(os.getenv(<span class="string">&quot;LLM_TIMEOUT&quot;</span>, <span class="number">60</span>))</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">all</span>([<span class="variable language_">self</span>.model, apiKey, baseUrl]):</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">&quot;模型ID、API密钥和服务地址必须被提供或在.env文件中定义。&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.client = OpenAI(api_key=apiKey, base_url=baseUrl, timeout=timeout)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">think</span>(<span class="params">self, messages: <span class="type">List</span>[<span class="type">Dict</span>[<span class="built_in">str</span>, <span class="built_in">str</span>]], temperature: <span class="built_in">float</span> = <span class="number">0</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">        调用大语言模型进行思考，并返回其响应。</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;🧠 正在调用 <span class="subst">&#123;self.model&#125;</span> 模型...&quot;</span>)</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            response = <span class="variable language_">self</span>.client.chat.completions.create(</span><br><span class="line">                model=<span class="variable language_">self</span>.model,</span><br><span class="line">                messages=messages,          <span class="comment"># 传入对话消息历史</span></span><br><span class="line">                temperature=temperature,    <span class="comment"># 控制输出随机性，0表示贪心解码（最确定）</span></span><br><span class="line">                stream=<span class="literal">True</span>,                <span class="comment"># 流式传输</span></span><br><span class="line">            )</span><br><span class="line">            </span><br><span class="line">            <span class="comment"># 处理流式响应</span></span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;✅ 大语言模型响应成功:&quot;</span>)</span><br><span class="line">            collected_content = []</span><br><span class="line">            <span class="keyword">for</span> chunk <span class="keyword">in</span> response:</span><br><span class="line">                <span class="keyword">if</span> <span class="keyword">not</span> chunk.choices:</span><br><span class="line">                    <span class="keyword">continue</span></span><br><span class="line">                content = chunk.choices[<span class="number">0</span>].delta.content <span class="keyword">or</span> <span class="string">&quot;&quot;</span></span><br><span class="line">                collected_content.append(content)</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;&quot;</span>.join(collected_content)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;❌ 调用LLM API时发生错误: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="框架接口实现"><a href="#框架接口实现" class="headerlink" title="框架接口实现"></a>框架接口实现</h2><h3 id="Message-类"><a href="#Message-类" class="headerlink" title="Message 类"></a>Message 类</h3><p>&emsp;&emsp;在 Agent 与 LLM 的交互中，对话历史是至关重要的上下文，为了规范地管理这些信息，我们设计了一个简易的 Message 类。在后续上下文工程的学习中还会对其进行进一步扩展。在 <code>core</code> 文件夹中新建 message.py 文件，并写入以下内容：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Optional</span>, <span class="type">Dict</span>, <span class="type">Any</span>, <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel</span><br><span class="line"></span><br><span class="line">MessageRole = <span class="type">Literal</span>[<span class="string">&quot;user&quot;</span>, <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;system&quot;</span>, <span class="string">&quot;tool&quot;</span>]</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Message</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    消息类</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    content: <span class="built_in">str</span></span><br><span class="line">    role: MessageRole</span><br><span class="line">    timestamp: datetime = <span class="literal">None</span></span><br><span class="line">    metadata: <span class="type">Optional</span>[<span class="type">Dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]] = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, content: <span class="built_in">str</span>, role: MessageRole, **kwargs</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__(</span><br><span class="line">            content=content,</span><br><span class="line">            role=role,</span><br><span class="line">            timestamp=kwargs.get(<span class="string">&#x27;timestamp&#x27;</span>, datetime.now()),</span><br><span class="line">            metadata=kwargs.get(<span class="string">&#x27;metadata&#x27;</span>, &#123;&#125;)</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">to_dict</span>(<span class="params">self</span>) -&gt; <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]:</span><br><span class="line">        <span class="keyword">return</span> &#123;</span><br><span class="line">            <span class="string">&quot;role&quot;</span>: <span class="variable language_">self</span>.role,</span><br><span class="line">            <span class="string">&quot;content&quot;</span>: <span class="variable language_">self</span>.content</span><br><span class="line">        &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__str__</span>(<span class="params">self</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;[<span class="subst">&#123;self.role&#125;</span>]<span class="subst">&#123;self.content&#125;</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;首先，我们通过 typing.Literal 将 role 字段的取值严格限制为 “user” ,”assistant” , “system” , “tool” 四种，这直接对应 OpenAI API 的规范，保证了类型安全。除了 content 和 role 这两个核心字段外，我们还增加了 timestamp 和 metadata ，为日志记录和未来功能扩展预留了空间。最后， to_dict() 方法是其核心功能之一，负责将内部使用的 Message 对象转换为与 OpenAI API 兼容的字典格式，体现了“对内丰富，对外兼容”的设计原则。</p>
+<h3 id="Config-类"><a href="#Config-类" class="headerlink" title="Config 类"></a>Config 类</h3><p>&emsp;&emsp;<code>Config</code> 类的职责是将代码中硬编码配置参数集中起来并支持从环境变量中读取。代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Optional</span>, <span class="type">Dict</span>, <span class="type">Any</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Config</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    default_model: <span class="built_in">str</span> = <span class="string">&quot;deepseek-chat&quot;</span></span><br><span class="line">    default_provider: <span class="built_in">str</span> = <span class="string">&quot;deepseek&quot;</span></span><br><span class="line">    temperature: <span class="built_in">float</span> = <span class="number">0.7</span></span><br><span class="line">    max_tokens: <span class="type">Optional</span>[<span class="built_in">int</span>] = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    debug: <span class="built_in">bool</span> = <span class="literal">False</span></span><br><span class="line">    log_level: <span class="built_in">str</span> = <span class="string">&quot;INFO&quot;</span></span><br><span class="line"></span><br><span class="line">    max_history_length: <span class="built_in">int</span> = <span class="number">100</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @classmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">from_env</span>(<span class="params">cls</span>) -&gt; <span class="string">&quot;Config&quot;</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;从环境变量创建配置&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">return</span> cls(</span><br><span class="line">            debug=os.getenv(<span class="string">&quot;DEBUG&quot;</span>, <span class="string">&quot;false&quot;</span>).lower() == <span class="string">&quot;true&quot;</span>,</span><br><span class="line">            log_level=os.getenv(<span class="string">&quot;LOG_LEVEL&quot;</span>, <span class="string">&quot;INFO&quot;</span>),</span><br><span class="line">            temperature=<span class="built_in">float</span>(os.getenv(<span class="string">&quot;TEMPERATURE&quot;</span>, <span class="string">&quot;0.7&quot;</span>)),</span><br><span class="line">            max_tokens=<span class="built_in">int</span>(os.getenv(<span class="string">&quot;MAX_TOKENS&quot;</span>)) <span class="keyword">if</span> os.getenv(<span class="string">&quot;MAX_TOKENS&quot;</span>) <span class="keyword">else</span> <span class="literal">None</span></span><br><span class="line">        )</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">to_dict</span>(<span class="params">self</span>) -&gt; <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]:</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.<span class="built_in">dict</span>()</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;首先，我们将配置项按逻辑划分为 LLM配置、系统配置 等，使结构一目了然。其次，每个配置项都设有合理的默认值，保证了框架在零配置下也能工作。最核心的是 from_env() 类方法，它允许用户通过设置环境变量来覆盖默认配置，无需修改代码，这在部署到不同环境时尤其有用。</p>
+<h2 id="工具系统"><a href="#工具系统" class="headerlink" title="工具系统"></a>工具系统</h2><p>&emsp;&emsp;我们将从基础设施建设开始，逐步深入到自定义开发设计。本节的学习目标围绕以下三个核心方面展开：<br>&emsp;&emsp;1. 统一的工具抽象与管理：建立标准化的Tool基类和ToolRegistry注册机制，为工具的开发、注册、发现和执行提供统一的基础设施。<br>&emsp;&emsp;2. 实战驱动的工具开发：以数学计算工具为案例，展示如何设计和实现自定义工具，让读者掌握工具开发的完整流程。<br>&emsp;&emsp;3. 高级整合与优化策略：通过多源搜索工具的设计，展示如何整合多个外部服务，实现智能后端选择、结果合并和容错处理，体现工具系统在复杂场景下的设计思维。</p>
+<h3 id="工具基类与注册机制"><a href="#工具基类与注册机制" class="headerlink" title="工具基类与注册机制"></a>工具基类与注册机制</h3><p>&emsp;&emsp;在构建可扩展的工具系统时，我们需要首先建立一套标准化的基础设施。这套基础设施包括 Tool 基类、ToolRegistry 注册表，以及工具管理机制。</p>
+<p>&emsp;&emsp;我们先设计 Tool 的基类。它是整个工具系统的核心抽象，它定义了所有工具必须遵循的接口规范：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Dict</span>, <span class="type">Any</span>, <span class="type">List</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Tool</span>(<span class="title class_ inherited__">ABC</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;工具基类&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init</span>(<span class="params">self, name: <span class="built_in">str</span>, description: <span class="built_in">str</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.name = name</span><br><span class="line">        <span class="variable language_">self</span>.description = description</span><br><span class="line"></span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self, parameters: <span class="type">Dict</span>[<span class="built_in">str</span>: <span class="type">Any</span>]</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;执行工具&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get_parameters</span>(<span class="params">self</span>) -&gt; <span class="built_in">list</span>[ToolParameter]:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;获取工具参数定义&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这个设计体现了面向对象设计的核心思想：通过统一的 run 方法接口，所有工具都能以一致的方式执行，接受字典参数并返回字符串结果，确保了框架的一致性。同时，工具具备了自描述能力，通过 get_parameters 方法能够清晰地告诉调用者自己需要什么参数，这种内省机制为自动化文档生成和参数验证提供了基础。而 name 和 description 等元数据的设计，则让工具系统具备了良好的可发现性和可理解性。</p>
+<p>&emsp;&emsp;代码中，ABC 表示抽象基类，该 Tool 类无法被实例化，若有继承 Tool 类的类，必须<strong>重定义 @abstractmethod 装饰词修饰的函数</strong>才可实例化。</p>
+<p>&emsp;&emsp;接下来，我们实现参数定义系统。为了实现复杂的参数验证和文档生成，我们设计一个 ToolParameter 类。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ToolParameter</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    name: <span class="built_in">str</span></span><br><span class="line">    <span class="built_in">type</span>: <span class="built_in">str</span></span><br><span class="line">    description: <span class="built_in">str</span></span><br><span class="line">    required: <span class="built_in">bool</span> = <span class="literal">True</span></span><br><span class="line">    default: <span class="type">Any</span> = <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;然后我们需要实现注册工具，即 ToolRegistry，这是工具系统的管理中枢，提供了工具的注册、发现、执行等核心功能，代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> Tools.base <span class="keyword">import</span> Tool</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span>, <span class="type">Callable</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ToolRegistry</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;工具注册表&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="variable language_">self</span>._tools: <span class="built_in">dict</span>[<span class="built_in">str</span>, Tool] = &#123;&#125;</span><br><span class="line">        <span class="variable language_">self</span>._functions: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]] = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">register_tool</span>(<span class="params">self, tool: Tool</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;注册Tool对象&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">if</span> tool.name <span class="keyword">in</span> <span class="variable language_">self</span>._tools:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;警告，工具 <span class="subst">&#123;tool.name&#125;</span> 已存在，请重新检查&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        <span class="variable language_">self</span>._tools[tool.name] = tool</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;工具 <span class="subst">&#123;tool.name&#125;</span> 已注册。&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">register_function</span>(<span class="params">self, name: <span class="built_in">str</span>, description: <span class="built_in">str</span>, func: <span class="type">Callable</span>[[<span class="built_in">str</span>],<span class="built_in">str</span>]</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">        直接注册函数作为工具(简便方式)</span></span><br><span class="line"><span class="string">        </span></span><br><span class="line"><span class="string">        Args:</span></span><br><span class="line"><span class="string">            name: 工具名称</span></span><br><span class="line"><span class="string">            description: 工具描述</span></span><br><span class="line"><span class="string">            func: 工具函数</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">if</span> name <span class="keyword">in</span> <span class="variable language_">self</span>._functions:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;❌ 错误:工具 &#x27;<span class="subst">&#123;name&#125;</span>&#x27; 已存在，请重新检查。&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        </span><br><span class="line">        <span class="variable language_">self</span>._functions[name] = &#123;</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: description,</span><br><span class="line">            <span class="string">&quot;func&quot;</span>: func</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;工具 <span class="subst">&#123;name&#125;</span> 已注册&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这里的注册表是一个字典类型，键为 Tool 的 name，值为 Tool 类型的变量。接下来实现工具的查询:</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_tool_description</span>(<span class="params">self</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取所有可用工具的格式化描述&quot;&quot;&quot;</span></span><br><span class="line">    description = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> tool <span class="keyword">in</span> <span class="variable language_">self</span>._tools.values():</span><br><span class="line">        description.append(<span class="string">f&quot;- <span class="subst">&#123;tool.name&#125;</span>: <span class="subst">&#123;tool.description&#125;</span>&quot;</span>)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">for</span> name, info <span class="keyword">in</span> <span class="variable language_">self</span>._functions.items():</span><br><span class="line">        description.append(<span class="string">f&quot;- <span class="subst">&#123;name&#125;</span>: <span class="subst">&#123;info[<span class="string">&#x27;description&#x27;</span>]&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;\n&quot;</span>.join(description) <span class="keyword">if</span> description <span class="keyword">else</span> <span class="string">&quot;暂无可用工具&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来，我们实现一个最简单的计算工具，新建 calculate_tool.py 文件，写入如下代码：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> ast, operator, math</span><br><span class="line"><span class="keyword">from</span> Tools.ToolRegistry <span class="keyword">import</span> ToolRegistry</span><br><span class="line"><span class="keyword">from</span> Tools.base <span class="keyword">import</span> Tool</span><br><span class="line"><span class="keyword">from</span> Tools.ToolParameter <span class="keyword">import</span> ToolParameter</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CalculatorTool</span>(<span class="title class_ inherited__">Tool</span>):</span><br><span class="line">    name = <span class="string">&quot;CalculatorTool&quot;</span></span><br><span class="line">    description = <span class="string">&quot;这是一个简单的计算工具，可以实现加减乘除与开根号&quot;</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__(name=<span class="string">&quot;calculator&quot;</span>,</span><br><span class="line">            description=<span class="string">&quot;这是一个简单的计算工具，可以实现加减乘除与开根号&quot;</span>,)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self, parameters</span>):</span><br><span class="line">        expression = parameters.get(<span class="string">&quot;expression&quot;</span>) <span class="keyword">or</span> parameters.get(<span class="string">&quot;input&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> expression:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;缺少 expression 参数&quot;</span></span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>._my_calculate(expression)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">get_parameters</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> [</span><br><span class="line">            ToolParameter(</span><br><span class="line">                name=<span class="string">&quot;expression&quot;</span>,</span><br><span class="line">                <span class="built_in">type</span>=<span class="string">&quot;string&quot;</span>,</span><br><span class="line">                description=<span class="string">&quot;需要计算的数学表达式&quot;</span>,</span><br><span class="line">            )</span><br><span class="line">        ]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">_my_calculate</span>(<span class="params">self, expression: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;简单的数学计算函数&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> expression.strip():</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;计算表达式不能为空&quot;</span></span><br><span class="line">        </span><br><span class="line">        operators = &#123;</span><br><span class="line">            ast.Add: operator.add,</span><br><span class="line">            ast.Sub: operator.sub,</span><br><span class="line">            ast.Mult: operator.mul,</span><br><span class="line">            ast.Div: operator.truediv,</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 支持的基本函数</span></span><br><span class="line">        functions = &#123;</span><br><span class="line">            <span class="string">&#x27;sqrt&#x27;</span>: math.sqrt,</span><br><span class="line">            <span class="string">&#x27;pi&#x27;</span>: math.pi,</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            node = ast.parse(expression, mode=<span class="string">&#x27;eval&#x27;</span>)</span><br><span class="line">            result = <span class="variable language_">self</span>._eval_node(node.body, operators, functions)</span><br><span class="line">            <span class="keyword">return</span> <span class="built_in">str</span>(result)</span><br><span class="line">        <span class="keyword">except</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;计算失败，请检查表达式格式&quot;</span></span><br><span class="line">        </span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">_eval_node</span>(<span class="params">self, node ,operators, functions</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;简化的表达式求值&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">isinstance</span>(node, ast.Constant):</span><br><span class="line">            <span class="keyword">return</span> node.value</span><br><span class="line">        <span class="keyword">elif</span> <span class="built_in">isinstance</span>(node, ast.BinOp):</span><br><span class="line">            left = <span class="variable language_">self</span>._eval_node(node.left, operators, functions)</span><br><span class="line">            right = <span class="variable language_">self</span>._eval_node(node.right, operators, functions)</span><br><span class="line">            op = operators.get(<span class="built_in">type</span>(node.op))</span><br><span class="line">            <span class="keyword">return</span> op(left, right)</span><br><span class="line">        <span class="keyword">elif</span> <span class="built_in">isinstance</span>(node, ast.Call):</span><br><span class="line">            func_name = node.func.<span class="built_in">id</span></span><br><span class="line">            <span class="keyword">if</span> func_name <span class="keyword">in</span> functions:</span><br><span class="line">                args = [<span class="variable language_">self</span>._eval_node(arg, operators, functions) <span class="keyword">for</span> arg <span class="keyword">in</span> node.args]</span><br><span class="line">                <span class="keyword">return</span> functions[func_name](*args)</span><br><span class="line">        <span class="keyword">elif</span> <span class="built_in">isinstance</span>(node, ast.Name):</span><br><span class="line">            <span class="keyword">if</span> node.<span class="built_in">id</span> <span class="keyword">in</span> functions:</span><br><span class="line">                <span class="keyword">return</span> functions[node.<span class="built_in">id</span>]</span><br></pre></td></tr></table></figure>
+
+<h2 id="Agent-范式的框架化实现"><a href="#Agent-范式的框架化实现" class="headerlink" title="Agent 范式的框架化实现"></a>Agent 范式的框架化实现</h2><p>&emsp;&emsp;SimpleAgent 是最基础的 Agent 实现，它展示了如何在框架基础上构建一个完整的对话智能体。我们将通过继承框架基类来重写 SimpleAgent。首先在 agents 文件中创建 MySimpleAgent.py，并写入如下内容：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> re</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Optional</span>, Iterator</span><br><span class="line"><span class="keyword">from</span> core.config <span class="keyword">import</span> Config</span><br><span class="line"><span class="keyword">from</span> core.LLM <span class="keyword">import</span> LLM_Base</span><br><span class="line"><span class="keyword">from</span> core.message <span class="keyword">import</span> Message</span><br><span class="line"><span class="keyword">from</span> Tools.ToolRegistry <span class="keyword">import</span> ToolRegistry</span><br><span class="line"><span class="keyword">from</span> agents.simple_agent <span class="keyword">import</span> SimpleAgent</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MySimpleAgent</span>(simple_agent.SimpleAgent):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, </span></span><br><span class="line"><span class="params">        name: <span class="built_in">str</span>, </span></span><br><span class="line"><span class="params">        llm_client,</span></span><br><span class="line"><span class="params">        system_prompt: <span class="type">Optional</span>[<span class="built_in">str</span>] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">        config: <span class="type">Optional</span>[Config] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">        tool_registry: <span class="type">Optional</span>[<span class="string">&#x27;ToolRegistry&#x27;</span>] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">        enable_tool_calling: <span class="built_in">bool</span> = <span class="literal">True</span></span></span><br><span class="line"><span class="params">    </span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__(name, llm_client, system_prompt, config)</span><br><span class="line">        <span class="variable language_">self</span>.tool_registry = tool_registry</span><br><span class="line">        <span class="variable language_">self</span>.enable_tool_calling = enable_tool_calling <span class="keyword">and</span> tool_registry <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;✅ <span class="subst">&#123;name&#125;</span> 初始化完成，工具调用: <span class="subst">&#123;<span class="string">&#x27;启用&#x27;</span> <span class="keyword">if</span> self.enable_tool_calling <span class="keyword">else</span><span class="string">&#x27;禁用&#x27;</span>&#125;</span>&quot;</span>)</span><br><span class="line">        </span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self, input_text: <span class="built_in">str</span>,  max_tool_iterations:<span class="built_in">int</span> = <span class="number">3</span>,**kwargs</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;实现简单对话逻辑，支持可选工具调用&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;self.name&#125;</span> 正在处理: <span class="subst">&#123;input_text&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 构建消息列表</span></span><br><span class="line">        messages = []</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 添加系统信息</span></span><br><span class="line">        enhanced_system_prompt = <span class="variable language_">self</span>._get_enhanced_system_prompt()</span><br><span class="line">        messages.append(&#123;<span class="string">&quot;role&quot;</span>:<span class="string">&quot;system&quot;</span>, <span class="string">&quot;content&quot;</span>: enhanced_system_prompt&#125;)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 添加历史消息</span></span><br><span class="line">        <span class="keyword">for</span> msg <span class="keyword">in</span> <span class="variable language_">self</span>._history:</span><br><span class="line">            messages.append(&#123;<span class="string">&quot;role&quot;</span>:msg.role, <span class="string">&quot;content&quot;</span>: msg.content&#125;)</span><br><span class="line"></span><br><span class="line">        messages.append(&#123;<span class="string">&quot;role&quot;</span>:<span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>:input_text&#125;)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> <span class="variable language_">self</span>.enable_tool_calling:</span><br><span class="line">            response = <span class="variable language_">self</span>.llm_client.think(messages, **kwargs)</span><br><span class="line">            <span class="variable language_">self</span>.add_history(Message(input_text, <span class="string">&quot;user&quot;</span>))</span><br><span class="line">            <span class="variable language_">self</span>.add_history(Message(response, <span class="string">&quot;assistant&quot;</span>))</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;self.name&#125;</span> 响应完成&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span> response</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>._run_with_tools(messages, input_text, max_tool_iterations, **kwargs)</span><br><span class="line">        </span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">_get_enhanced_system_prompt</span>(<span class="params">self</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        base_prompt = <span class="variable language_">self</span>.system_prompt <span class="keyword">or</span> <span class="string">&quot;你是一个有用的 AI 助手&quot;</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> <span class="variable language_">self</span>.enable_tool_calling <span class="keyword">or</span> <span class="keyword">not</span> <span class="variable language_">self</span>.tool_registry:</span><br><span class="line">            <span class="keyword">return</span> base_prompt</span><br><span class="line">        </span><br><span class="line">        <span class="comment"># 获取工具描述</span></span><br><span class="line">        tools_description = <span class="variable language_">self</span>.tool_registry.get_tool_description()</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> tools_description <span class="keyword">or</span> tools_description == <span class="string">&quot;暂无可用工具&quot;</span>:</span><br><span class="line">            <span class="keyword">return</span> base_prompt</span><br><span class="line">        </span><br><span class="line">        tools_description = <span class="variable language_">self</span>.tool_registry.get_tool_description()</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> tools_description <span class="keyword">or</span> tools_description == <span class="string">&quot;暂无可用工具&quot;</span>:</span><br><span class="line">            <span class="keyword">return</span> base_prompt</span><br><span class="line">        tools_section = <span class="string">&quot;\n\n## 可用工具\n&quot;</span></span><br><span class="line">        tools_section += <span class="string">&quot;你可以使用以下工具来帮助回答问题:\n&quot;</span></span><br><span class="line">        tools_section += tools_description + <span class="string">&quot;\n&quot;</span></span><br><span class="line">        tools_section += <span class="string">&quot;\n## 工具调用格式\n&quot;</span></span><br><span class="line">        tools_section += <span class="string">&quot;当需要使用工具时，请使用以下格式:\n&quot;</span></span><br><span class="line">        tools_section += <span class="string">&quot;`[TOOL_CALL:&#123;tool_name&#125;:&#123;parameters&#125;]`\n&quot;</span></span><br><span class="line">        tools_section += <span class="string">&quot;例如:`[TOOL_CALL:search:Python编程]` 或`[TOOL_CALL:memory:recall=用户信息]`\n\n&quot;</span></span><br><span class="line">        tools_section += <span class="string">&quot;工具调用结果会自动插入到对话中，然后你可以基于结果继续回答。\n&quot;</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> base_prompt + tools_section</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在这里我们实现了系统提示词的构建：基础 + 工具列表（取决于是否启动工具用法）然后调用大模型进行回答。</p>
+<p>&emsp;&emsp;接下来我们实现工具的多轮调用，紧接着编写如下代码：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_run_with_tools</span>(<span class="params">self, messages: <span class="built_in">list</span>, input_text: <span class="built_in">str</span>, max_tool_iterations: <span class="built_in">int</span>, **kwargs</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;支持工具调用的运行逻辑&quot;&quot;&quot;</span></span><br><span class="line">    current_iteration = <span class="number">0</span></span><br><span class="line">    final_response = <span class="string">&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> current_iteration &lt; max_tool_iterations:</span><br><span class="line">        response = <span class="variable language_">self</span>.llm_client.think(messages)</span><br><span class="line"></span><br><span class="line">        tool_calls = <span class="variable language_">self</span>._parse_tool_calls(response)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> tool_calls:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;检测到 <span class="subst">&#123;<span class="built_in">len</span>(tool_calls)&#125;</span> 个工具调用&quot;</span>)</span><br><span class="line">            <span class="comment"># 执行所有工具调用并收集结果</span></span><br><span class="line">            tool_results = []</span><br><span class="line">            clean_response = response</span><br><span class="line"></span><br><span class="line">            <span class="keyword">for</span> call <span class="keyword">in</span> tool_calls:</span><br><span class="line">                result = <span class="variable language_">self</span>._execute_tool_call(call[<span class="string">&#x27;tool_name&#x27;</span>], call[<span class="string">&#x27;parameters&#x27;</span>])</span><br><span class="line">                <span class="built_in">print</span>(result)</span><br><span class="line">                tool_results.append(result)</span><br><span class="line"></span><br><span class="line">                clean_response = clean_response.replace(call[<span class="string">&#x27;original&#x27;</span>], <span class="string">&quot;&quot;</span>)</span><br><span class="line"></span><br><span class="line">            messages.append(&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: clean_response&#125;)</span><br><span class="line">            <span class="comment"># 添加工具结果</span></span><br><span class="line">            tool_results_text = <span class="string">&quot;\n\n&quot;</span>.join(tool_results)</span><br><span class="line">            messages.append(&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">f&quot;工具执行结果:\n<span class="subst">&#123;tool_results_text&#125;</span>\n\n请基于这些结果给出完整的回答。&quot;</span>&#125;)</span><br><span class="line">            current_iteration += <span class="number">1</span></span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        <span class="comment"># 没有工具调用，这是最终回答</span></span><br><span class="line">        final_response = response</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">    <span class="comment"># 如果超过最大迭代次数，获取最后一次回答</span></span><br><span class="line">    <span class="keyword">if</span> current_iteration &gt;= max_tool_iterations <span class="keyword">and</span> <span class="keyword">not</span> final_response:</span><br><span class="line">        final_response = <span class="variable language_">self</span>.llm_client.think(messages, **kwargs)</span><br><span class="line">    <span class="comment"># 保存到历史记录</span></span><br><span class="line">    <span class="variable language_">self</span>.add_history(Message(input_text, <span class="string">&quot;user&quot;</span>))</span><br><span class="line">    <span class="variable language_">self</span>.add_history(Message(final_response, <span class="string">&quot;assistant&quot;</span>))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;✅ <span class="subst">&#123;self.name&#125;</span> 响应完成&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> final_response</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">_parse_tool_calls</span>(<span class="params">self, text: <span class="built_in">str</span></span>) -&gt; <span class="built_in">list</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;解析文本中的工具调用&quot;&quot;&quot;</span></span><br><span class="line">    pattern = <span class="string">r&#x27;\[TOOL_CALL:([^:]+):([^\]]+)\]&#x27;</span></span><br><span class="line">    matches = re.findall(pattern, text)</span><br><span class="line"></span><br><span class="line">    tool_calls = []</span><br><span class="line">    <span class="keyword">for</span> tool_name, parameters <span class="keyword">in</span> matches:</span><br><span class="line">        tool_calls.append(&#123;</span><br><span class="line">            <span class="string">&#x27;tool_name&#x27;</span>:tool_name,</span><br><span class="line">            <span class="string">&#x27;parameters&#x27;</span>:parameters,</span><br><span class="line">            <span class="string">&#x27;original&#x27;</span>: <span class="string">f&#x27;[TOOL_CALL:<span class="subst">&#123;tool_name&#125;</span>:<span class="subst">&#123;parameters&#125;</span>]&#x27;</span></span><br><span class="line">        &#125;)</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> tool_calls</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">_execute_tool_call</span>(<span class="params">self, tool_name:<span class="built_in">str</span>, parameters: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;执行工具调用&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> <span class="variable language_">self</span>.tool_registry:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;错误：未配置工具注册表&quot;</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&#x27;CalculatorTool&#x27;</span>:</span><br><span class="line">            result = <span class="variable language_">self</span>.tool_registry.execute_tool(tool_name, parameters)</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            param_dict = <span class="variable language_">self</span>._parse_tool_parameters(tool_name, parameters)</span><br><span class="line">            tool = <span class="variable language_">self</span>.tool_registry.get_tool(tool_name)</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> tool:</span><br><span class="line">                <span class="keyword">return</span> <span class="string">f&quot;❌ 错误:未找到工具 &#x27;<span class="subst">&#123;tool_name&#125;</span>&#x27;&quot;</span></span><br><span class="line">            result = tool.run(param_dict)</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;工具 <span class="subst">&#123;tool_name&#125;</span> 执行结果:\n<span class="subst">&#123;result&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;工具调用失败:<span class="subst">&#123;<span class="built_in">str</span>(e)&#125;</span>&quot;</span></span><br><span class="line">    </span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">_parse_tool_parameters</span>(<span class="params">self, tool_name: <span class="built_in">str</span>, parameters: <span class="built_in">str</span></span>) -&gt; <span class="built_in">dict</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;智能解析工具参数&quot;&quot;&quot;</span></span><br><span class="line">    param_dict = &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&#x27;=&#x27;</span> <span class="keyword">in</span> parameters:</span><br><span class="line">        <span class="keyword">if</span> <span class="string">&#x27;,&#x27;</span> <span class="keyword">in</span> parameters:</span><br><span class="line">            pairs = parameters.split(<span class="string">&#x27;,&#x27;</span>)</span><br><span class="line">            <span class="keyword">for</span> pair <span class="keyword">in</span> pairs:</span><br><span class="line">                <span class="keyword">if</span> <span class="string">&#x27;=&#x27;</span> <span class="keyword">in</span> pair:</span><br><span class="line">                    key, value = pair.split(<span class="string">&#x27;=&#x27;</span>, <span class="number">1</span>)</span><br><span class="line">                    param_dict[key.strip()] = value.strip()</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            key, value = parameters.split(<span class="string">&#x27;=&#x27;</span>, <span class="number">1</span>)</span><br><span class="line">            param_dict[key.strip()] = value.strip()</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">if</span> tool_name == <span class="string">&#x27;search&#x27;</span>:</span><br><span class="line">            param_dict = &#123;<span class="string">&#x27;query&#x27;</span>: parameters&#125;</span><br><span class="line">        <span class="keyword">elif</span> tool_name == <span class="string">&#x27;memory&#x27;</span>:</span><br><span class="line">            param_dict = &#123;<span class="string">&#x27;action&#x27;</span>: <span class="string">&#x27;search&#x27;</span>, <span class="string">&#x27;query&#x27;</span>: parameters&#125;</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            param_dict = &#123;<span class="string">&#x27;expression&#x27;</span>: parameters&#125;</span><br><span class="line">    <span class="keyword">return</span> param_dict</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这里我们实现了工具的调用。接下来写一个测试程序，测试该 Agent 能否正常使用。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> core.config <span class="keyword">import</span> Config</span><br><span class="line"><span class="keyword">from</span> core.LLM <span class="keyword">import</span> LLM_Base</span><br><span class="line"><span class="keyword">from</span> agents.MySimpleAgent <span class="keyword">import</span> MySimpleAgent</span><br><span class="line"><span class="keyword">from</span> Tools.ToolRegistry <span class="keyword">import</span> ToolRegistry</span><br><span class="line"><span class="keyword">from</span> Tools.calculate_tool <span class="keyword">import</span> CalculatorTool</span><br><span class="line"><span class="comment"># 加载环境变量</span></span><br><span class="line">load_dotenv()</span><br><span class="line"><span class="comment"># 创建LLM实例</span></span><br><span class="line">llm_client = LLM_Base()</span><br><span class="line">测试<span class="number">1</span>:基础对话Agent（无工具）</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== 测试1:基础对话 ===&quot;</span>)</span><br><span class="line">basic_agent = MySimpleAgent(</span><br><span class="line">    name=<span class="string">&quot;基础助手&quot;</span>,</span><br><span class="line">    llm_client=llm_client,</span><br><span class="line">    system_prompt=<span class="string">&quot;你是一个友好的AI助手，请用简洁明了的方式回答问题。&quot;</span></span><br><span class="line">)</span><br><span class="line">response1 = basic_agent.run(<span class="string">&quot;你好，请介绍一下自己&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;基础对话响应: <span class="subst">&#123;response1&#125;</span>\n&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== 测试2:工具调用 ===&quot;</span>)</span><br><span class="line">tool_registry = ToolRegistry()</span><br><span class="line">calculator = CalculatorTool()</span><br><span class="line">tool_registry.register_tool(calculator)</span><br><span class="line">cal_agent = MySimpleAgent(</span><br><span class="line">    name = <span class="string">&quot;计算助手&quot;</span>,</span><br><span class="line">    llm_client=llm_client,</span><br><span class="line">    system_prompt=<span class="string">&quot;你是一个友好的AI计算助手，请用简洁明了的方式回答问题。&quot;</span>,</span><br><span class="line">    tool_registry = tool_registry,</span><br><span class="line">    enable_tool_calling=<span class="literal">True</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">response1 = cal_agent.run(<span class="string">&quot;你好，请帮我使用工具计算 3 + 5 * 8&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;计算对话响应: <span class="subst">&#123;response1&#125;</span>\n&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;运行 agent.py，终于成功运行，大模型成功给出回应，并调用工具计算式子。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>&emsp;&emsp;在本次学习中，我们实现了一个最小 Agent 框架，在接下来的学习中我们会进一步学习 Agent 的记忆系统。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AGENT/" rel="tag"># AGENT</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/07/18/agent-learn-2/" rel="prev" title="Agent 学习(2) 智能体经典范式构建">
+      <i class="fa fa-chevron-left"></i> Agent 学习(2) 智能体经典范式构建
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#LLM-%E6%A0%B9%E5%9F%BA%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.</span> <span class="nav-text">LLM 根基实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6%E6%8E%A5%E5%8F%A3%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">框架接口实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Message-%E7%B1%BB"><span class="nav-number">2.1.</span> <span class="nav-text">Message 类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Config-%E7%B1%BB"><span class="nav-number">2.2.</span> <span class="nav-text">Config 类</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E7%B3%BB%E7%BB%9F"><span class="nav-number">3.</span> <span class="nav-text">工具系统</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E5%9F%BA%E7%B1%BB%E4%B8%8E%E6%B3%A8%E5%86%8C%E6%9C%BA%E5%88%B6"><span class="nav-number">3.1.</span> <span class="nav-text">工具基类与注册机制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Agent-%E8%8C%83%E5%BC%8F%E7%9A%84%E6%A1%86%E6%9E%B6%E5%8C%96%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.</span> <span class="nav-text">Agent 范式的框架化实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">70</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
