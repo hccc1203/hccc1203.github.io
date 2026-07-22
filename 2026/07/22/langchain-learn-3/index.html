@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="学习 LangChain 中 Agent 的工作流程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain 学习(3) Agent 工作流程">
+<meta property="og:url" content="https://hccc1203.github.io/2026/07/22/langchain-learn-3/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="学习 LangChain 中 Agent 的工作流程">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-07-22T11:59:43.000Z">
+<meta property="article:modified_time" content="2026-07-22T12:01:21.589Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/07/22/langchain-learn-3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain 学习(3) Agent 工作流程 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/07/22/langchain-learn-3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain 学习(3) Agent 工作流程
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-07-22 19:59:43" itemprop="dateCreated datePublished" datetime="2026-07-22T19:59:43+08:00">2026-07-22</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="create-agent-函数"><a href="#create-agent-函数" class="headerlink" title="create_agent() 函数"></a>create_agent() 函数</h2><p>&emsp;&emsp;create_agent() 是 LangChain 最核心的函数，它会创建一个完整的 Agent 图（StateGraph），包含模型调用、工具执行、循环控制等全部逻辑。</p>
+<p>&emsp;&emsp;creat_agent() 函数的语法格式如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model,                     <span class="comment"># str | BaseChatModel：语言模型</span></span><br><span class="line">    tools=<span class="literal">None</span>,                <span class="comment"># Sequence：工具列表</span></span><br><span class="line">    *,</span><br><span class="line">    system_prompt=<span class="literal">None</span>,        <span class="comment"># str | SystemMessage：系统提示</span></span><br><span class="line">    middleware=(),             <span class="comment"># Sequence[AgentMiddleware]：中间件列表</span></span><br><span class="line">    response_format=<span class="literal">None</span>,      <span class="comment"># ResponseFormat | type：结构化输出配置</span></span><br><span class="line">    state_schema=<span class="literal">None</span>,         <span class="comment"># type[AgentState]：自定义状态结构</span></span><br><span class="line">    context_schema=<span class="literal">None</span>,       <span class="comment"># type：运行时上下文结构</span></span><br><span class="line">    checkpointer=<span class="literal">None</span>,         <span class="comment"># Checkpointer：对话持久化</span></span><br><span class="line">    store=<span class="literal">None</span>,                <span class="comment"># BaseStore：跨会话存储</span></span><br><span class="line">    interrupt_before=<span class="literal">None</span>,     <span class="comment"># list[str]：在哪些节点前暂停</span></span><br><span class="line">    interrupt_after=<span class="literal">None</span>,      <span class="comment"># list[str]：在哪些节点后暂停</span></span><br><span class="line">    debug=<span class="literal">False</span>,               <span class="comment"># bool：是否输出详细日志</span></span><br><span class="line">    name=<span class="literal">None</span>,                 <span class="comment"># str：Agent 名称</span></span><br><span class="line">    cache=<span class="literal">None</span>,                <span class="comment"># BaseCache：缓存配置</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中，tools 参数代表工具列表，它可以接受三种格式的工具：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"></span><br><span class="line"><span class="comment"># 格式 1：@tool 装饰的函数（最常用）</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_course</span>(<span class="params">keyword: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;搜索菜鸟教程课程&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;搜索结果：<span class="subst">&#123;keyword&#125;</span> 相关课程&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 格式 2：Pydantic BaseModel 类</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">WeatherQuery</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询天气&quot;&quot;&quot;</span></span><br><span class="line">    city: <span class="built_in">str</span> = Field(description=<span class="string">&quot;城市名称&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 格式 3：字典（描述远程工具或内置工具）</span></span><br><span class="line">mcp_tool = &#123;</span><br><span class="line">    <span class="string">&quot;type&quot;</span>: <span class="string">&quot;mcp&quot;</span>,</span><br><span class="line">    <span class="string">&quot;server_label&quot;</span>: <span class="string">&quot;weather_server&quot;</span>,</span><br><span class="line">    <span class="string">&quot;server_url&quot;</span>: <span class="string">&quot;https://weather.example.com/sse&quot;</span>,</span><br><span class="line">    <span class="string">&quot;allowed_tools&quot;</span>: [<span class="string">&quot;get_forecast&quot;</span>],</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 混合使用</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>,</span><br><span class="line">    tools=[search_course, WeatherQuery, mcp_tool],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<code>create_agent()</code> 函数返回一个 <code>CompiledStateGraph</code> 对象，这是 LangGraph 的编译后的图，提供了多种运行方式：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>说明</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>invoke(input, config)</td>
+<td>同步运行，等待完整结果</td>
+<td>脚本、简单接口</td>
+</tr>
+<tr>
+<td>aincoke(input, config)</td>
+<td>异步运行，等待完整结果</td>
+<td>Web 服务</td>
+</tr>
+<tr>
+<td>stream(input, config, stream_mode)</td>
+<td>同步流式运行</td>
+<td>实时展示中间步骤</td>
+</tr>
+<tr>
+<td>astream(input, config, stream_mode)</td>
+<td>异步流式运行</td>
+<td>WebSocket、SSE</td>
+</tr>
+<tr>
+<td>get_state(config)</td>
+<td>获取当前状态</td>
+<td>查看&#x2F;恢复对话状态</td>
+</tr>
+<tr>
+<td>update_state(config, values)</td>
+<td>更新状态</td>
+<td>手动修改对话状态</td>
+</tr>
+</tbody></table>
+<h2 id="LangChain-Agent-工作流程"><a href="#LangChain-Agent-工作流程" class="headerlink" title="LangChain Agent 工作流程"></a>LangChain Agent 工作流程</h2><p>&emsp;&emsp;Agent 的核心是一个简单的循环：<strong>调用模型 → 检查是否需要工具 → 执行工具 → 重复</strong>。直到模型不再请求工具调用，Agent 停止并返回最终结果。下面我们通过追踪 Agent 的每一步来理解这个过程。新建 py 文件，写入如下代码</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"><span class="keyword">from</span> model_init <span class="keyword">import</span> model_init</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">city: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询指定城市的天气。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        city: 城市名称</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    weather_data = &#123;</span><br><span class="line">        <span class="string">&quot;杭州&quot;</span>: <span class="string">&quot;晴，25°C&quot;</span>,</span><br><span class="line">        <span class="string">&quot;北京&quot;</span>: <span class="string">&quot;多云，18°C&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> weather_data.get(city, <span class="string">f&quot;未找到 <span class="subst">&#123;city&#125;</span> 的天气数据&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_time</span>(<span class="params">city: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询指定城市的当前时间。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        city: 城市名称</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    time_data = &#123;</span><br><span class="line">        <span class="string">&quot;杭州&quot;</span>: <span class="string">&quot;14:30&quot;</span>,</span><br><span class="line">        <span class="string">&quot;北京&quot;</span>: <span class="string">&quot;14:30&quot;</span>,</span><br><span class="line">        <span class="string">&quot;纽约&quot;</span>: <span class="string">&quot;02:30&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> time_data.get(city, <span class="string">f&quot;未找到 <span class="subst">&#123;city&#125;</span> 的时间数据&quot;</span>)</span><br><span class="line"></span><br><span class="line">model = model_init()</span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[get_weather, get_time],</span><br><span class="line">    system_prompt=<span class="string">&quot;你是一个乐于助人的助手。&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用 stream_mode=&quot;updates&quot; 可以看到每一个步骤</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== Agent 执行过程追踪 ===\n&quot;</span>)</span><br><span class="line">step = <span class="number">0</span></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;杭州现在天气怎么样？几点了？&quot;</span>)]&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;updates&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    step += <span class="number">1</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;--- 步骤 <span class="subst">&#123;step&#125;</span> ---&quot;</span>)</span><br><span class="line">    <span class="keyword">for</span> node_name, update <span class="keyword">in</span> chunk.items():</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;节点: <span class="subst">&#123;node_name&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> <span class="string">&quot;messages&quot;</span> <span class="keyword">in</span> update:</span><br><span class="line">            <span class="keyword">for</span> msg <span class="keyword">in</span> update[<span class="string">&quot;messages&quot;</span>]:</span><br><span class="line">                <span class="keyword">if</span> <span class="built_in">hasattr</span>(msg, <span class="string">&#x27;tool_calls&#x27;</span>) <span class="keyword">and</span> msg.tool_calls:</span><br><span class="line">                    <span class="comment"># AI 消息包含工具调用</span></span><br><span class="line">                    <span class="keyword">for</span> tc <span class="keyword">in</span> msg.tool_calls:</span><br><span class="line">                        <span class="built_in">print</span>(<span class="string">f&quot;  → 请求调用工具: <span class="subst">&#123;tc[<span class="string">&#x27;name&#x27;</span>]&#125;</span>(<span class="subst">&#123;tc[<span class="string">&#x27;args&#x27;</span>]&#125;</span>)&quot;</span>)</span><br><span class="line">                <span class="keyword">elif</span> msg.<span class="built_in">type</span> == <span class="string">&quot;tool&quot;</span>:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">f&quot;  → 工具结果 [<span class="subst">&#123;msg.name&#125;</span>]: <span class="subst">&#123;msg.content&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="keyword">elif</span> msg.<span class="built_in">type</span> == <span class="string">&quot;ai&quot;</span> <span class="keyword">and</span> msg.content:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">f&quot;  → AI 回复: <span class="subst">&#123;msg.content[:<span class="number">100</span>]&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;运行后，程序输出如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">=== Agent 执行过程追踪 ===</span><br><span class="line"></span><br><span class="line">--- 步骤 1 ---</span><br><span class="line">节点: model</span><br><span class="line">  → 请求调用工具: get_weather(&#123;&#x27;city&#x27;: &#x27;杭州&#x27;&#125;)</span><br><span class="line">  → 请求调用工具: get_time(&#123;&#x27;city&#x27;: &#x27;杭州&#x27;&#125;)</span><br><span class="line">--- 步骤 2 ---</span><br><span class="line">节点: tools</span><br><span class="line">  → 工具结果 [get_weather]: 晴，25°C</span><br><span class="line">--- 步骤 3 ---</span><br><span class="line">节点: tools</span><br><span class="line">  → 工具结果 [get_time]: 14:30</span><br><span class="line">--- 步骤 4 ---</span><br><span class="line">节点: model</span><br><span class="line">  → AI 回复: 杭州现在的天气是晴天，气温为25°C，非常舒适。现在的时间是14:30（下午两点半）。</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;从这个追踪中可以看到 Agent 执行了 <code>3 个步骤</code>：<br>&emsp;&emsp;1、Model 节点：模型收到问题，判断出需要调用 get_weather 和 get_time 两个工具，返回两个 tool_call<br>&emsp;&emsp;2、tools 节点：执行两个工具，获取天气和时间结果<br>&emsp;&emsp;3、Model 节点：模型收到工具结果，判断信息足够，生成最终回复。</p>
+<p>&emsp;&emsp;这里是如何实现 Agent 状态追踪的呢？在 agent 开启流式传输后agent.stream(…) 会返回一个 生成器（generator）。每当你用 for chunk in agent.stream(…) 去遍历时：图里每执行完一个节点（例如模型节点完成一次推理、工具节点完成一次工具调用），生成器就会“吐出”一个新的 chunk。这个 chunk 里包含 该节点造成的状态更新（在 updates 模式下）或 当前完整状态（在 values 模式下）。你的 for 循环会逐块接收这些 chunk，直到整个图运行结束。</p>
+<p>&emsp;&emsp;需要注意的是：这里的“流式”和 LLM 生成 Token 级别的流式（stream_mode&#x3D;”messages”）不太一样：<br>&emsp;&emsp;updates 模式：以 节点完成 为单位，适合追踪逻辑步骤（调用工具 → 返回结果 → 再推理）。<br>&emsp;&emsp;messages 模式：以 LLM 生成的 Token 为单位，适合做逐字打字效果。</p>
+<p>&emsp;&emsp;stream() 支持多种 stream_mode，每种都提供不同粒度的信息：</p>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>返回内容</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>updates</td>
+<td>每个节点执行后的状态更新</td>
+<td>追踪 Agent 执行步骤，显示中间结果</td>
+</tr>
+<tr>
+<td>values</td>
+<td>每个节点执行后的完整状态</td>
+<td>需要在每一步看到完整消息历史</td>
+</tr>
+<tr>
+<td>messages</td>
+<td>逐 token 的信息流</td>
+<td>前端展示 AI 打字效果</td>
+</tr>
+<tr>
+<td>custom</td>
+<td>自定义事件</td>
+<td>Middleware 通过 stream_writer 发送自定义事件</td>
+</tr>
+</tbody></table>
+<p>&emsp;&emsp;那么 Agent 什么时候停止呢？主要有以下几种情况：<br>&emsp;&emsp;1、无工具调用。当模型返回的 AIMessage 中 tool_calls 为空的时候，模型认为任务完成，直接回复。<br>&emsp;&emsp;2、return_direct &#x3D; True。工具标记为直接返回，执行后立即结束，例如查询类工具，结果就是答案。<br>&emsp;&emsp;3、structured_response，模型产生了结构化输出，response_format 指定的结构化输出完成。<br>&emsp;&emsp;4、jump_to&#x3D;”end”，Middleware 通过状态控制主动结束，例如检测到问题越权，提前终止。</p>
+<h2 id="LangChain-AgentState-状态管理"><a href="#LangChain-AgentState-状态管理" class="headerlink" title="LangChain AgentState 状态管理"></a>LangChain AgentState 状态管理</h2><p>&emsp;&emsp;Agent 在执行过程中需要维护状态——消息历史、结构化响应、流程控制等。理解 AgentState 的结构和用法，是自定义 Agent 行为的关键。</p>
+<h3 id="AgentState-结构"><a href="#AgentState-结构" class="headerlink" title="AgentState 结构"></a>AgentState 结构</h3><p>&emsp;&emsp;AgentState 是一个 TypedDict，默认包含三个字段</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> Required, NotRequired</span><br><span class="line"><span class="keyword">from</span> langgraph.graph.message <span class="keyword">import</span> add_messages</span><br><span class="line"><span class="keyword">from</span> langgraph.channels.ephemeral_value <span class="keyword">import</span> EphemeralValue</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> AnyMessage</span><br><span class="line"></span><br><span class="line"><span class="comment"># AgentState 的实际定义（简化版）</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AgentState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    <span class="comment"># messages：消息历史，使用 add_messages 作为 reducer</span></span><br><span class="line">    <span class="comment"># Required 表示调用时必须提供</span></span><br><span class="line">    messages: Required[Annotated[<span class="built_in">list</span>[AnyMessage], add_messages]]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># jump_to：流程跳转控制，ephemeral（使用后自动清除）</span></span><br><span class="line">    <span class="comment"># NotRequired 表示可选</span></span><br><span class="line">    jump_to: NotRequired[Annotated[<span class="built_in">str</span> | <span class="literal">None</span>, EphemeralValue]]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># structured_response：结构化输出结果</span></span><br><span class="line">    <span class="comment"># NotRequired 表示可选，仅在 response_format 设置时出现</span></span><br><span class="line">    structured_response: NotRequired[<span class="type">Any</span>]</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中包含如下字段<br>&emsp;&emsp;messages，类型为 list[AnyMessage]，为必填项，是消息历史，可以通过 add_messages reducer 追加。<br>&emsp;&emsp;jump_to，类型为 str 或 None，非必填项，是流程跳转控制。<br>&emsp;&emsp;structured_response，类型为 Any，非必填项，作用为结构化输出结果，不在 input schema 中暴露。</p>
+<h2 id="LangChain-提示词"><a href="#LangChain-提示词" class="headerlink" title="LangChain 提示词"></a>LangChain 提示词</h2><p>&emsp;&emsp;LangChain 中的提示词有 System Prompt 与 Dynamic Prompt 两种。</p>
+<h3 id="system-prompt"><a href="#system-prompt" class="headerlink" title="system_prompt"></a>system_prompt</h3><p>&emsp;&emsp;System Prompt 是系统提示词，是控制 Agent 行为的核心手段。create_agent() 的 system_prompt 参数接受两种形式：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> SystemMessage</span><br><span class="line"></span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 方式 1：字符串（最简单）</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    system_prompt=<span class="string">&quot;你是菜鸟教程 RUNOOB 的学习顾问，回答要简洁专业。&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 方式 2：SystemMessage 对象（可复用）</span></span><br><span class="line">system_msg = SystemMessage(</span><br><span class="line">    content=<span class="string">&quot;你是菜鸟教程 RUNOOB 的学习顾问，回答要简洁专业。&quot;</span></span><br><span class="line">)</span><br><span class="line">agent = create_agent(model=model, system_prompt=system_msg)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;一个好的 system_prompt 应该如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_course</span>(<span class="params">keyword: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在菜鸟教程搜索课程&quot;&quot;&quot;</span></span><br><span class="line">    courses = &#123;</span><br><span class="line">        <span class="string">&quot;python&quot;</span>: <span class="string">&quot;Python3 基础教程（免费）&quot;</span>,</span><br><span class="line">        <span class="string">&quot;html&quot;</span>: <span class="string">&quot;HTML 基础教程（免费）&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> courses.get(keyword.lower(), <span class="string">&quot;未找到相关课程&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 一个设计良好的 system_prompt</span></span><br><span class="line">GOOD_PROMPT = <span class="string">&quot;&quot;&quot;你是菜鸟教程 RUNOOB 的学习顾问。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">## 你的职责</span></span><br><span class="line"><span class="string">- 帮助用户找到合适的编程课程</span></span><br><span class="line"><span class="string">- 回答编程学习相关的问题</span></span><br><span class="line"><span class="string">- 根据用户水平推荐学习路径</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">## 行为准则</span></span><br><span class="line"><span class="string">- 回答要简洁，每次不超过 3 句话</span></span><br><span class="line"><span class="string">- 优先使用 search_course 工具查询课程信息</span></span><br><span class="line"><span class="string">- 如果用户是零基础，优先推荐入门课程</span></span><br><span class="line"><span class="string">- 不使用 emoji 表情</span></span><br><span class="line"><span class="string">- 不知道的就说不知道，不要编造&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[search_course],</span><br><span class="line">    system_prompt=GOOD_PROMPT,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;我零基础，想学编程，推荐什么？&quot;</span>)]</span><br><span class="line">&#125;)</span><br><span class="line"><span class="built_in">print</span>(result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+
+<h3 id="dynamic-prompt-————-动态生成提示词"><a href="#dynamic-prompt-————-动态生成提示词" class="headerlink" title="@dynamic_prompt ———— 动态生成提示词"></a>@dynamic_prompt ———— 动态生成提示词</h3><p>&emsp;&emsp;静态 system_prompt 对所有用户一视同仁，但在实际应用中，你可能需要根据用户信息、对话上下文、时间等动态调整提示词。<br>&emsp;&emsp;@dynamic_prompt 装饰器让你在每次模型调用前动态生成 system_prompt。示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># @dynamic_prompt 装饰器：接收 ModelRequest，返回新的 system_prompt</span></span><br><span class="line"><span class="meta">@dynamic_prompt</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">personalized_prompt</span>(<span class="params">request: ModelRequest</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;根据对话上下文动态生成个性化提示词&quot;&quot;&quot;</span></span><br><span class="line">    messages = request.state.get(<span class="string">&quot;messages&quot;</span>, [])</span><br><span class="line">    message_count = <span class="built_in">len</span>(messages)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 可以根据不同的条件动态调整提示词</span></span><br><span class="line">    base_prompt = <span class="string">&quot;你是菜鸟教程 RUNOOB 的学习顾问。&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> message_count &lt;= <span class="number">2</span>:</span><br><span class="line">        <span class="comment"># 对话刚开始，耐心引导</span></span><br><span class="line">        <span class="keyword">return</span> base_prompt + (</span><br><span class="line">            <span class="string">&quot;用户刚开始对话，请先热情问候，&quot;</span></span><br><span class="line">            <span class="string">&quot;然后询问他们的学习目标和当前水平。&quot;</span></span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">elif</span> message_count &gt; <span class="number">10</span>:</span><br><span class="line">        <span class="comment"># 长对话，提醒保持简洁</span></span><br><span class="line">        <span class="keyword">return</span> base_prompt + (</span><br><span class="line">            <span class="string">&quot;对话已经比较长了，回答要尽量简洁，&quot;</span></span><br><span class="line">            <span class="string">&quot;每次不超过 2 句话。&quot;</span></span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="comment"># 正常对话阶段</span></span><br><span class="line">        <span class="keyword">return</span> base_prompt + (</span><br><span class="line">            <span class="string">&quot;根据用户之前的问题推荐合适的课程，&quot;</span></span><br><span class="line">            <span class="string">&quot;使用 search_course 工具查询课程信息。&quot;</span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[search_course],</span><br><span class="line">    middleware=[personalized_prompt],  <span class="comment"># 通过 middleware 注入</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;@dynamic_prompt 的 request 参数提供了丰富的信息，我们可以通过这些信息来获得更好的动态提示词：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> dynamic_prompt</span><br><span class="line"><span class="keyword">from</span> langchain.agents.middleware.types <span class="keyword">import</span> ModelRequest</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dynamic_prompt</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">context_aware_prompt</span>(<span class="params">request: ModelRequest</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;根据用户信息、时间和对话阶段动态生成提示词&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 从 runtime.context 获取用户信息</span></span><br><span class="line">    context = request.runtime.context</span><br><span class="line">    user_name = context.get(<span class="string">&quot;user_name&quot;</span>, <span class="string">&quot;同学&quot;</span>) <span class="keyword">if</span> context <span class="keyword">else</span> <span class="string">&quot;同学&quot;</span></span><br><span class="line">    user_level = context.get(<span class="string">&quot;user_level&quot;</span>, <span class="string">&quot;入门&quot;</span>) <span class="keyword">if</span> context <span class="keyword">else</span> <span class="string">&quot;入门&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 获取当前时间</span></span><br><span class="line">    now = datetime.now()</span><br><span class="line">    greeting = <span class="string">&quot;早上好&quot;</span> <span class="keyword">if</span> now.hour &lt; <span class="number">12</span> <span class="keyword">else</span> <span class="string">&quot;下午好&quot;</span> <span class="keyword">if</span> now.hour &lt; <span class="number">18</span> <span class="keyword">else</span> <span class="string">&quot;晚上好&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 获取当前消息数</span></span><br><span class="line">    messages = request.state.get(<span class="string">&quot;messages&quot;</span>, [])</span><br><span class="line"></span><br><span class="line">    prompt = <span class="string">f&quot;&quot;&quot;你是菜鸟教程 RUNOOB 的学习顾问。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">当前时间：<span class="subst">&#123;now.strftime(<span class="string">&#x27;%Y年%m月%d日 %H:%M&#x27;</span>)&#125;</span></span></span><br><span class="line"><span class="string">用户信息：<span class="subst">&#123;user_name&#125;</span>，<span class="subst">&#123;user_level&#125;</span> 级别</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">## 行为准则</span></span><br><span class="line"><span class="string">- 称呼用户为&quot;<span class="subst">&#123;user_name&#125;</span>&quot;</span></span><br><span class="line"><span class="string">- 根据用户级别（<span class="subst">&#123;user_level&#125;</span>）推荐合适难度的课程</span></span><br><span class="line"><span class="string">- 回答要友好但不啰嗦&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 长对话时追加简化提示</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(messages) &gt; <span class="number">20</span>:</span><br><span class="line">        prompt += <span class="string">&quot;\n- 对话很长了，回答尽量精简&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> prompt</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;值得注意的是，@dynamic_prompt 在<strong>每次模型调用前都会执行</strong>，所以提示词可以随对话推进而变化，但不要在里面做太重的计算，否则会影响响应速度。</p>
+<p>&emsp;&emsp;System Prompt 必须包含以下内容：<br>&emsp;&emsp;角色定义：明确 AI 的身份和职责。<br>&emsp;&emsp;行为准则：约束回复的风格和边界。<br>&emsp;&emsp;工具使用指引：告诉模型何时使用哪些工具。<br>&emsp;&emsp;边界约束：明确什么能做、什么不能做。<br>&emsp;&emsp;格式要求：指定回复的格式。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/07/21/langchain-learn-2/" rel="prev" title="LangChain 学习(2) 消息类型与 @tool">
+      <i class="fa fa-chevron-left"></i> LangChain 学习(2) 消息类型与 @tool
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#create-agent-%E5%87%BD%E6%95%B0"><span class="nav-number">1.</span> <span class="nav-text">create_agent() 函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-Agent-%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">LangChain Agent 工作流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-AgentState-%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">LangChain AgentState 状态管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#AgentState-%E7%BB%93%E6%9E%84"><span class="nav-number">3.1.</span> <span class="nav-text">AgentState 结构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-%E6%8F%90%E7%A4%BA%E8%AF%8D"><span class="nav-number">4.</span> <span class="nav-text">LangChain 提示词</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#system-prompt"><span class="nav-number">4.1.</span> <span class="nav-text">system_prompt</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dynamic-prompt-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E5%8A%A8%E6%80%81%E7%94%9F%E6%88%90%E6%8F%90%E7%A4%BA%E8%AF%8D"><span class="nav-number">4.2.</span> <span class="nav-text">@dynamic_prompt ———— 动态生成提示词</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

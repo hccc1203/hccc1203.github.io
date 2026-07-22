@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="学习 LangChain 中的消息与 Tool 机制">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain 学习(2) 消息类型与 @tool">
+<meta property="og:url" content="https://hccc1203.github.io/2026/07/21/langchain-learn-2/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="学习 LangChain 中的消息与 Tool 机制">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-07-21T11:59:41.000Z">
+<meta property="article:modified_time" content="2026-07-22T12:00:31.767Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/07/21/langchain-learn-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain 学习(2) 消息类型与 @tool | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/07/21/langchain-learn-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain 学习(2) 消息类型与 @tool
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-07-21 19:59:41" itemprop="dateCreated datePublished" datetime="2026-07-21T19:59:41+08:00">2026-07-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="LangChain-消息类型"><a href="#LangChain-消息类型" class="headerlink" title="LangChain 消息类型"></a>LangChain 消息类型</h2><p>&emsp;&emsp;在 LangChain 中，所有的对话都通过消息(Message)对象传递。理解各类消息类型的用途是编写 Agent 的基础。</p>
+<p>&emsp;&emsp;LangChain 定义了四种核心消息类型，分别对应对话中的不同角色:</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>角色</th>
+<th>说明</th>
+<th>典型内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>HumanMessage</td>
+<td>用户</td>
+<td>用户发送的消息</td>
+<td>“今天天气怎么样”</td>
+</tr>
+<tr>
+<td>AIMessage</td>
+<td>AI 助手</td>
+<td>模型的回复，可能包含 tool_calls</td>
+<td>“今天杭州晴天，25°C”</td>
+</tr>
+<tr>
+<td>SystemMessage</td>
+<td>系统</td>
+<td>系统指令，定义 AI 的角色和行为规则</td>
+<td>你是一个专业的天气助手</td>
+</tr>
+<tr>
+<td>ToolMessage</td>
+<td>工具</td>
+<td>工具执行后的返回结果</td>
+<td>“晴，25°C，湿度 60%”</td>
+</tr>
+</tbody></table>
+<h3 id="HumanMessage-————-用户消息"><a href="#HumanMessage-————-用户消息" class="headerlink" title="HumanMessage ———— 用户消息"></a>HumanMessage ———— 用户消息</h3><p>&emsp;&emsp;HumanMessage 代表用户发送给 AI 的消息，这是最常见的消息类型，也是对话的起点。示例代码如下:</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> model_init <span class="keyword">import</span> model_init</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line">message = HumanMessage(content=<span class="string">&quot;你好&quot;</span>)</span><br><span class="line"></span><br><span class="line">messages = [</span><br><span class="line">    HumanMessage(content=<span class="string">&quot;你好&quot;</span>),</span><br><span class="line">    HumanMessage(content=<span class="string">&quot;今天天气怎么样&quot;</span>)</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">model = model_init()</span><br><span class="line"></span><br><span class="line">response = model.invoke(messages)</span><br><span class="line"><span class="built_in">print</span>(response.content)</span><br></pre></td></tr></table></figure>
+
+<h3 id="AIMessage-————-AI回复"><a href="#AIMessage-————-AI回复" class="headerlink" title="AIMessage ———— AI回复"></a>AIMessage ———— AI回复</h3><p>&emsp;&emsp;AIMessage 代表模型的回复。与普通文本不同，AIMessage 可能包含 tool_calls（工具调用请求）,示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> AIMessage</span><br><span class="line"></span><br><span class="line">ai_msg = AIMessage(content = <span class="string">&quot;菜鸟教程是一个编程学习平台&quot;</span>)</span><br><span class="line"></span><br><span class="line">ai_msg_with_tools = AIMessage(</span><br><span class="line">    content=<span class="string">&quot;&quot;</span>,</span><br><span class="line">    tool_calls=[</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;name&quot;</span>: <span class="string">&quot;get_weather&quot;</span>,</span><br><span class="line">            <span class="string">&quot;args&quot;</span>: &#123;<span class="string">&quot;city&quot;</span>: <span class="string">&quot;杭州&quot;</span>&#125;,</span><br><span class="line">            <span class="string">&quot;id&quot;</span>: <span class="string">&quot;call_abc123&quot;</span>,</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;tool_call&quot;</span>,</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== 普通 AI 消息 ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;content: <span class="subst">&#123;ai_msg.content&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;tool_calls: <span class="subst">&#123;ai_msg.tool_calls&#125;</span>&quot;</span>)   <span class="comment"># []</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;\n=== 含工具调用的 AI 消息 ===&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;content: <span class="subst">&#123;ai_msg_with_tools.content&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;tool_calls: <span class="subst">&#123;ai_msg_with_tools.tool_calls&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;一般来说，模型返回的 AIMessage 中还包含了其他信息，如输入 Tokens、输出 Tokens、总计 Tokens 等信息。调用示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> model_init <span class="keyword">import</span> model_init</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line">message = HumanMessage(content=<span class="string">&quot;你好&quot;</span>)</span><br><span class="line"></span><br><span class="line">model = model_init()</span><br><span class="line"></span><br><span class="line">response = model.invoke([message])</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;内容: <span class="subst">&#123;response.content&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;消息ID: <span class="subst">&#123;response.<span class="built_in">id</span>&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;模型名: <span class="subst">&#123;response.response_metadata.get(<span class="string">&#x27;model_name&#x27;</span>)&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;完成原因: <span class="subst">&#123;response.response_metadata.get(<span class="string">&#x27;finish_reason&#x27;</span>)&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># usage_metadata 包含 Token 用量信息</span></span><br><span class="line"><span class="keyword">if</span> response.usage_metadata:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;输入 tokens: <span class="subst">&#123;response.usage_metadata.get(<span class="string">&#x27;input_tokens&#x27;</span>)&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;输出 tokens: <span class="subst">&#123;response.usage_metadata.get(<span class="string">&#x27;output_tokens&#x27;</span>)&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;总计 tokens: <span class="subst">&#123;response.usage_metadata.get(<span class="string">&#x27;total_tokens&#x27;</span>)&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="SystemMessage-————-系统指令"><a href="#SystemMessage-————-系统指令" class="headerlink" title="SystemMessage ———— 系统指令"></a>SystemMessage ———— 系统指令</h3><p>&emsp;&emsp;SystemMessage 用于设定 AI 的行为、角色和约束，它会被放在消息列表的最前面，指导模型如何回复，示例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> model_init <span class="keyword">import</span> model_init</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage, SystemMessage</span><br><span class="line"></span><br><span class="line">model = model_init()</span><br><span class="line"></span><br><span class="line">messages_with_system = [</span><br><span class="line">    SystemMessage(content=<span class="string">&quot;你是一个小红书风格的博主，回复要活泼、使用 emoji、带话题标签&quot;</span>),</span><br><span class="line">    HumanMessage(content=<span class="string">&quot;介绍菜鸟教程&quot;</span>)</span><br><span class="line">]</span><br><span class="line">response = model.invoke(messages_with_system)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;\n有系统指令: <span class="subst">&#123;response.content&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="ToolMessage-————-工具返回结果"><a href="#ToolMessage-————-工具返回结果" class="headerlink" title="ToolMessage ———— 工具返回结果"></a>ToolMessage ———— 工具返回结果</h3><p>&emsp;&emsp;ToolMessage 包含工具执行后的返回结果。它必须与对应的 tool_call 关联。示例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage, AIMessage, ToolMessage</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"></span><br><span class="line"><span class="comment"># 模拟一轮完整的工具调用对话</span></span><br><span class="line">messages = [</span><br><span class="line">    HumanMessage(content=<span class="string">&quot;杭州天气怎么样？&quot;</span>),</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 模型请求调用工具</span></span><br><span class="line">    AIMessage(</span><br><span class="line">        content=<span class="string">&quot;&quot;</span>,</span><br><span class="line">        tool_calls=[</span><br><span class="line">            &#123;<span class="string">&quot;name&quot;</span>: <span class="string">&quot;get_weather&quot;</span>, <span class="string">&quot;args&quot;</span>: &#123;<span class="string">&quot;city&quot;</span>: <span class="string">&quot;杭州&quot;</span>&#125;,</span><br><span class="line">             <span class="string">&quot;id&quot;</span>: <span class="string">&quot;call_abc&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;tool_call&quot;</span>&#125;</span><br><span class="line">        ]</span><br><span class="line">    ),</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 工具返回结果（必须包含 tool_call_id 与上面的 id 对应）</span></span><br><span class="line">    ToolMessage(</span><br><span class="line">        content=<span class="string">&quot;晴，25°C，湿度 60%&quot;</span>,</span><br><span class="line">        tool_call_id=<span class="string">&quot;call_abc&quot;</span>,   <span class="comment"># 与 tool_call 的 id 对应</span></span><br><span class="line">        name=<span class="string">&quot;get_weather&quot;</span>,        <span class="comment"># 工具名称</span></span><br><span class="line">    ),</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>)</span><br><span class="line">response = model.invoke(messages)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;模型基于工具结果的回复: <span class="subst">&#123;response.content&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;ToolMessage 的 tool_call_id 必须与 AIMessage 中 tool_call 的 id 精确匹配。如果不匹配，模型可能会忽略这个工具结果，或者产生混乱的行为。</p>
+<h3 id="AIMessageChunk-————-流式输出的消息片段"><a href="#AIMessageChunk-————-流式输出的消息片段" class="headerlink" title="AIMessageChunk ———— 流式输出的消息片段"></a>AIMessageChunk ———— 流式输出的消息片段</h3><p>&emsp;&emsp;当使用 stream() 流式输出时，每个到达的片段是 AIMessageChunk，而非完整的 AIMessage：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"></span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;流式输出过程：&quot;</span>)</span><br><span class="line"><span class="comment"># stream() 返回的是 AIMessageChunk 迭代器</span></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> model.stream(<span class="string">&quot;用一句话介绍菜鸟教程 RUNOOB&quot;</span>):</span><br><span class="line">    <span class="comment"># 每个 chunk 是一小段文本</span></span><br><span class="line">    <span class="built_in">print</span>(chunk.content, end=<span class="string">&quot;&quot;</span>, flush=<span class="literal">True</span>)</span><br><span class="line"><span class="built_in">print</span>()  <span class="comment"># 换行</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="多模态消息"><a href="#多模态消息" class="headerlink" title="多模态消息"></a>多模态消息</h3><p>&emsp;&emsp;如果模型支持多模态输入，可以让其分析图片内容，示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> model_init <span class="keyword">import</span> model_init</span><br><span class="line"><span class="keyword">from</span> pathlib <span class="keyword">import</span> Path</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage, SystemMessage</span><br><span class="line"></span><br><span class="line">model = model_init()</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">encode_img</span>(<span class="params">image_path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;将图片转为 Base64 编码&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(image_path, <span class="string">&quot;rb&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        <span class="keyword">return</span> base64.b64encode(f.read()).decode(<span class="string">&quot;utf-8&quot;</span>)</span><br><span class="line"></span><br><span class="line">image_data = encode_img(<span class="string">&quot;1.png&quot;</span>)</span><br><span class="line">messages = [</span><br><span class="line">    HumanMessage(content=[</span><br><span class="line">        &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;text&quot;</span>, <span class="string">&quot;text&quot;</span>: <span class="string">&quot;请描述这张截图&quot;</span>&#125;,</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;image_url&quot;</span>,</span><br><span class="line">            <span class="string">&quot;image_url&quot;</span>: &#123;</span><br><span class="line">                <span class="string">&quot;url&quot;</span>: <span class="string">f&quot;data:image/png;base64,<span class="subst">&#123;image_data&#125;</span>&quot;</span>,</span><br><span class="line">                <span class="string">&quot;detail&quot;</span>: <span class="string">&quot;auto&quot;</span>  <span class="comment"># 可选：low, high, auto</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    ])</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line">response = model.invoke(messages)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;图片分析结果: <span class="subst">&#123;response.content&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="裁剪消息历史"><a href="#裁剪消息历史" class="headerlink" title="裁剪消息历史"></a>裁剪消息历史</h3><p>&emsp;&emsp;当对话越来越长时，消息列表可能超出模型的上下文窗口。<code>trim_messages()</code> 函数可以帮助你智能地裁剪消息历史。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">trimmed = trim_messages(</span><br><span class="line">    messages,</span><br><span class="line">    max_tokens=<span class="number">1000</span>,           <span class="comment"># 最多保留 1000 tokens</span></span><br><span class="line">    strategy=<span class="string">&quot;last&quot;</span>,           <span class="comment"># 保留最后的系统消息 + 最近的对话</span></span><br><span class="line">    token_counter=model,       <span class="comment"># 使用模型的 token 计数方式</span></span><br><span class="line">    include_system=<span class="literal">True</span>,       <span class="comment"># 始终保留 SystemMessage</span></span><br><span class="line">    start_on=<span class="string">&quot;human&quot;</span>,          <span class="comment"># 裁剪后以 human 消息开头</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h3 id="删除特定消息"><a href="#删除特定消息" class="headerlink" title="删除特定消息"></a>删除特定消息</h3><p>&emsp;&emsp;在某些场景中，我们可以使用 <code>RemoveMessage()</code> 从消息历史中删除特定消息，使用示例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage, AIMessage, RemoveMessage</span><br><span class="line"></span><br><span class="line"><span class="comment"># 假设有一段对话</span></span><br><span class="line">messages = [</span><br><span class="line">    HumanMessage(content=<span class="string">&quot;你好&quot;</span>, <span class="built_in">id</span>=<span class="string">&quot;msg_1&quot;</span>),</span><br><span class="line">    AIMessage(content=<span class="string">&quot;你好！有什么可以帮你的？&quot;</span>, <span class="built_in">id</span>=<span class="string">&quot;msg_2&quot;</span>),</span><br><span class="line">    HumanMessage(content=<span class="string">&quot;帮我查天气&quot;</span>, <span class="built_in">id</span>=<span class="string">&quot;msg_3&quot;</span>),</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用 RemoveMessage 删除特定消息（通过 ID）</span></span><br><span class="line"><span class="comment"># RemoveMessage 配合 add_messages reducer 使用</span></span><br><span class="line"><span class="comment"># 在更新 Agent 状态时，RemoveMessage 会从列表中移除对应 ID 的消息</span></span><br><span class="line">removal = RemoveMessage(<span class="built_in">id</span>=<span class="string">&quot;msg_3&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;要删除的消息 ID: <span class="subst">&#123;removal.<span class="built_in">id</span>&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;类型: <span class="subst">&#123;removal.<span class="built_in">type</span>&#125;</span>&quot;</span>)  <span class="comment"># remove</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="LangChain-tool-装饰器"><a href="#LangChain-tool-装饰器" class="headerlink" title="LangChain @tool 装饰器"></a>LangChain @tool 装饰器</h2><p>&emsp;&emsp;工具(Tool)是 Agent 与外部世界交互的桥梁，通过 @tool 装饰器，可以将任何 Python 函数快速转换为 Agent 可以调用的工具。</p>
+<h3 id="tool-基本语法"><a href="#tool-基本语法" class="headerlink" title="@tool 基本语法"></a>@tool 基本语法</h3><p>&emsp;&emsp;@tool 是 LangChain 提供的装饰器，用法很简单，在函数上加上 @tool 装饰器，函数就变成了一个工具，示例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="comment"># 最简单的工具：一个普通函数 + @tool 装饰器</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hello_tool</span>(<span class="params">name: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;向指定的人打招呼。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        name: 要打招呼的人的名字</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;你好，<span class="subst">&#123;name&#125;</span>！欢迎来到菜鸟教程 RUNOOB。&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 工具也是普通的 Python 函数，可以直接调用</span></span><br><span class="line">result = hello_tool.invoke(&#123;<span class="string">&quot;name&quot;</span>: <span class="string">&quot;小明&quot;</span>&#125;)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 工具包含自动生成的描述信息</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;\n工具名称: <span class="subst">&#123;hello_tool.name&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;工具描述: <span class="subst">&#123;hello_tool.description&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;函数的文档字符串（docstring）会自动成为工具的描述。Agent 依赖这个描述来判断”这个工具能做什么”和”什么情况下应该调用它”。文档字符串写得越清晰，Agent 使用工具就越准确。在描述中说明参数含义、函数功能和使用场景。</p>
+<p>&emsp;&emsp;在创建 Agent 时将定义好的工具传给 create_agent() 的 tools 参数，Agent 就能使用它了：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[search_courses, get_course_detail],</span><br><span class="line">    system_prompt=<span class="string">&quot;你是菜鸟教程 RUNOOB 的学习顾问，帮助用户找到合适的课程。&quot;</span>,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;一个 Agent 可以注册多个工具，模型会自动判断何时使用哪个工具。我们还可以为工具参数设置默认值，让 Agent 在调用工具时不用每次都指定所有参数。但注意：如果某个参数没有默认值且 Agent 没有提供，调用会失败。关键参数不要设默认值。</p>
+<h3 id="一些工具的高级特性"><a href="#一些工具的高级特性" class="headerlink" title="一些工具的高级特性"></a>一些工具的高级特性</h3><h3 id="return-direct-————-直接返回最终结果"><a href="#return-direct-————-直接返回最终结果" class="headerlink" title="return_direct ———— 直接返回最终结果"></a>return_direct ———— 直接返回最终结果</h3><p>&emsp;&emsp;默认情况下，工具执行后结果会返回给模型，模型再基于工具结果生成最终回复。但有时工具结果本身就是你想要的最终答案。设置 return_direct&#x3D;True 后，工具执行完就立即结束 Agent 循环，工具返回内容直接作为最终输出。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># return_direct 工具：结果直接作为最终输出</span></span><br><span class="line"><span class="meta">@tool(<span class="params">return_direct=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_direct</span>(<span class="params">keyword: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;搜索菜鸟教程 RUNOOB 的课程（直接返回模式）。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    当用户只需要搜索结果，不需要额外分析时使用此工具。</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;搜索结果：Python3 基础教程、Python 数据分析、Python 爬虫入门&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;当你设置 return_direct&#x3D;True 时，Agent 会跳过后续的模型思考步骤，直接返回工具结果。这在节省 Token 和降低时延方面非常有价值，但也意味着模型不会对工具结果做任何二次加工。如果一个 Agent 同时挂载了多个工具，其中既有 return_direct&#x3D;True 的工具，也有普通工具，那么只要模型在这一轮调用中触发了任意一个 return_direct 工具，Agent 循环就会立即结束——即使同一轮还并行调用了其他普通工具，它们的结果也不会再被模型加工总结。设计包含多个工具的 Agent 时要留意这一点，避免”该总结的内容被跳过”。</p>
+<h3 id="InjectedToolCalled-————-获取工具调用-ID"><a href="#InjectedToolCalled-————-获取工具调用-ID" class="headerlink" title="InjectedToolCalled ———— 获取工具调用 ID"></a>InjectedToolCalled ———— 获取工具调用 ID</h3><p>&emsp;&emsp;有时工具需要知道”是谁调用了它”——InjectedToolCallId 可以在工具函数中注入当前的 tool_call_id，示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> ToolCall</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, InjectedToolCallId</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">log_user_action</span>(<span class="params"></span></span><br><span class="line"><span class="params">    action: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    tool_call_id: Annotated[<span class="built_in">str</span>, InjectedToolCallId],</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;记录用户操作到日志系统。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        action: 用户操作描述</span></span><br><span class="line"><span class="string">        tool_call_id: 系统自动注入的工具调用 ID</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 实际项目中这里会写入数据库或发送到日志服务</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;操作已记录 (调用ID: <span class="subst">&#123;tool_call_id&#125;</span>): <span class="subst">&#123;action&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 手动模拟模型产生的 ToolCall</span></span><br><span class="line">tool_call: ToolCall = &#123;</span><br><span class="line">    <span class="string">&quot;name&quot;</span>: <span class="string">&quot;log_user_action&quot;</span>,</span><br><span class="line">    <span class="string">&quot;args&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;action&quot;</span>: <span class="string">&quot;用户查询了 Python 课程&quot;</span></span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;id&quot;</span>: <span class="string">&quot;call_log_001&quot;</span>,</span><br><span class="line">    <span class="string">&quot;type&quot;</span>: <span class="string">&quot;tool_call&quot;</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># InjectedToolCallId 会从 tool_call.id 中自动注入</span></span><br><span class="line">result = log_user_action.invoke(tool_call)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(result)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;带有 InjectedToolArg 标记的参数不需要由 Agent（模型）提供， 这些参数会由 LangChain 运行时在执行工具时自动注入。 由于这些参数不会出现在工具的 schema 中，模型无法看到它们， 因此不应该把它们作为用户需要填写的工具参数进行描述。<br>&emsp;&emsp;在 Agent 工作流中， InjectedToolCallId 更常用于需要关联当前调用上下文的场景， 例如配合 Command 对象在工具内部更新 Agent 状态， 向 messages 列表追加关联当前调用的 ToolMessage， 或者实现工具调用追踪、审计、日志关联等功能。这也是它被设计为”注入参数”而不是普通参数的原因： 它代表的是 LangChain Runtime 当前正在执行的这一次 ToolCall 上下文， 而不是用户输入的一部分。</p>
+<h3 id="ToolException-————-工具异常处理"><a href="#ToolException-————-工具异常处理" class="headerlink" title="ToolException ———— 工具异常处理"></a>ToolException ———— 工具异常处理</h3><p>&emsp;&emsp;工具执行过程中可能会出错。使用 ToolException 抛出明确的工具异常，让 Agent 知道出了问题。示例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, ToolException</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">user_id: <span class="built_in">int</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;根据用户 ID 查询用户信息。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        user_id: 用户 ID，必须是正整数</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 数据校验</span></span><br><span class="line">    <span class="keyword">if</span> user_id &lt;= <span class="number">0</span>:</span><br><span class="line">        <span class="comment"># 抛出 ToolException，而不是普通 Exception</span></span><br><span class="line">        <span class="comment"># ToolException 会被 Agent 捕获并告知模型</span></span><br><span class="line">        <span class="keyword">raise</span> ToolException(<span class="string">f&quot;用户 ID 必须为正整数，收到了: <span class="subst">&#123;user_id&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 模拟数据库查询</span></span><br><span class="line">    users = &#123;</span><br><span class="line">        <span class="number">1</span>: <span class="string">&quot;张三（VIP 会员，注册于 2024-01-15）&quot;</span>,</span><br><span class="line">        <span class="number">2</span>: <span class="string">&quot;李四（普通用户，注册于 2024-03-20）&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> user_id <span class="keyword">not</span> <span class="keyword">in</span> users:</span><br><span class="line">        <span class="keyword">raise</span> ToolException(<span class="string">f&quot;未找到 ID 为 <span class="subst">&#123;user_id&#125;</span> 的用户&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> users[user_id]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 正常调用</span></span><br><span class="line"><span class="built_in">print</span>(get_user_info.invoke(&#123;<span class="string">&quot;user_id&quot;</span>: <span class="number">1</span>&#125;))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 异常调用 1：无效 ID</span></span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    get_user_info.invoke(&#123;<span class="string">&quot;user_id&quot;</span>: -<span class="number">1</span>&#125;)</span><br><span class="line"><span class="keyword">except</span> ToolException <span class="keyword">as</span> e:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;工具异常: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 异常调用 2：用户不存在</span></span><br><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    get_user_info.invoke(&#123;<span class="string">&quot;user_id&quot;</span>: <span class="number">999</span>&#125;)</span><br><span class="line"><span class="keyword">except</span> ToolException <span class="keyword">as</span> e:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;工具异常: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这里之所以能在 .invoke() 外层用 try&#x2F;except 捕获到 ToolException，是因为工具默认的 handle_tool_error 为 False——异常不会被工具自己吞掉，而是照常向上抛出。</p>
+<h3 id="handle-tool-error-————-让工具自己处理错误"><a href="#handle-tool-error-————-让工具自己处理错误" class="headerlink" title="handle_tool_error ———— 让工具自己处理错误"></a>handle_tool_error ———— 让工具自己处理错误</h3><p>&emsp;&emsp;当希望某个工具出错时不中断程序，而是把错误信息转成一段文本、当作正常返回值交给模型自己去理解和修正时，可以在定义工具时设置 handle_tool_error（注意是单数，没有 s）。这是 BaseTool 上的一个属性，最简单的设置方式是直接写在 @tool 装饰器里：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool(<span class="params">handle_tool_error=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">city: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询指定城市的天气。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        city: 城市名称，必须是中文全称，如 &quot;杭州&quot;、&quot;北京&quot;</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    weather_data = &#123;</span><br><span class="line">        <span class="string">&quot;杭州&quot;</span>: <span class="string">&quot;晴，25°C&quot;</span>,</span><br><span class="line">        <span class="string">&quot;北京&quot;</span>: <span class="string">&quot;多云，18°C&quot;</span>,</span><br><span class="line">        <span class="string">&quot;上海&quot;</span>: <span class="string">&quot;小雨，22°C&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> city <span class="keyword">not</span> <span class="keyword">in</span> weather_data:</span><br><span class="line">        <span class="comment"># 城市不在数据中时抛出 ToolException</span></span><br><span class="line">        <span class="keyword">raise</span> ToolException(</span><br><span class="line">            <span class="string">f&quot;未收录城市 &#x27;<span class="subst">&#123;city&#125;</span>&#x27;。&quot;</span></span><br><span class="line">            <span class="string">f&quot;可使用城市：<span class="subst">&#123;<span class="string">&#x27;, &#x27;</span>.join(weather_data.keys())&#125;</span>。&quot;</span></span><br><span class="line">            <span class="string">f&quot;请使用中文城市全称。&quot;</span></span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;city&#125;</span>天气：<span class="subst">&#123;weather_data[city]&#125;</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这样工具给出的报错就会直接返回给大模型，让模型生成处理。</p>
+<h2 id="LangChain-工具访问-————-InjectedState-与-InjectedStore"><a href="#LangChain-工具访问-————-InjectedState-与-InjectedStore" class="headerlink" title="LangChain 工具访问 ———— InjectedState 与 InjectedStore"></a>LangChain 工具访问 ———— InjectedState 与 InjectedStore</h2><p>&emsp;&emsp;有时工具需要访问更多的上下文信息，比如当前对话的状态、用户的持久化数据等。LangChain 通过依赖注入机制，让工具函数能够自动获取这些信息。</p>
+<h3 id="InjectedState-————-在工具中访问-Agent-状态"><a href="#InjectedState-————-在工具中访问-Agent-状态" class="headerlink" title="InjectedState ———— 在工具中访问 Agent 状态"></a>InjectedState ———— 在工具中访问 Agent 状态</h3><p>&emsp;&emsp;默认情况下，工具只能通过参数接收模型传来的数据，但有时工具需要知道当前对话的上下文，比如之前对话的历史、用户已确认的信息等等，而 <code>InjectedState</code> 让工具可以直接读取 Agent 的完整状态，示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated, <span class="type">Any</span>, TypedDict</span><br><span class="line"><span class="keyword">from</span> model_init <span class="keyword">import</span> model_init</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, InjectedState</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"><span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> MessagesState  <span class="comment"># 内置消息状态</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 1. 定义状态，继承 MessagesState 并添加自定义字段</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">AgentState</span>(<span class="title class_ inherited__">MessagesState</span>):</span><br><span class="line">    user_preferences: <span class="built_in">str</span>  <span class="comment"># 自定义字段</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">remember_preference</span>(<span class="params"></span></span><br><span class="line"><span class="params">    preference: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    state: Annotated[<span class="built_in">dict</span>, InjectedState],</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;记住用户的偏好设置。&quot;&quot;&quot;</span></span><br><span class="line">    messages = state.get(<span class="string">&quot;messages&quot;</span>, [])</span><br><span class="line">    message_count = <span class="built_in">len</span>(messages)</span><br><span class="line">    previous_prefs = state.get(<span class="string">&quot;user_preferences&quot;</span>, <span class="string">&quot;无&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> (</span><br><span class="line">        <span class="string">f&quot;已记住偏好: <span class="subst">&#123;preference&#125;</span>。&quot;</span></span><br><span class="line">        <span class="string">f&quot;(当前对话共 <span class="subst">&#123;message_count&#125;</span> 条消息，&quot;</span></span><br><span class="line">        <span class="string">f&quot;之前偏好: <span class="subst">&#123;previous_prefs&#125;</span>)&quot;</span></span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 初始化模型</span></span><br><span class="line">model = model_init()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 创建 Agent，使用自定义的状态类型</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[remember_preference],</span><br><span class="line">    state_schema=AgentState,  </span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. 初始化状态</span></span><br><span class="line">initial_state = &#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;我喜欢暗色主题&quot;</span>)],</span><br><span class="line">    <span class="string">&quot;user_preferences&quot;</span>: <span class="string">&quot;浅色主题&quot;</span>,  <span class="comment"># 旧偏好</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 5. 调用 Agent</span></span><br><span class="line">result = agent.invoke(initial_state)</span><br><span class="line"><span class="built_in">print</span>(result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+
+<h3 id="InjectedStore-————-在工具中访问永久化存储"><a href="#InjectedStore-————-在工具中访问永久化存储" class="headerlink" title="InjectedStore ———— 在工具中访问永久化存储"></a>InjectedStore ———— 在工具中访问永久化存储</h3><p>&emsp;&emsp;Agent 状态（state）是对话级别的，对话结束就没了。而 Store 是跨会话的持久化存储，可以用来保存用户偏好、学习进度等长期信息。示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"><span class="keyword">from</span> langgraph.store.base <span class="keyword">import</span> BaseStore</span><br><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool, InjectedStore, InjectedState</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"><span class="keyword">from</span> model_init <span class="keyword">import</span> model_init</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建 Store 并预置数据</span></span><br><span class="line">store = InMemoryStore()</span><br><span class="line">store.put((<span class="string">&quot;runoob&quot;</span>, <span class="string">&quot;courses&quot;</span>), <span class="string">&quot;catalog&quot;</span>, &#123;</span><br><span class="line">    <span class="string">&quot;data&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;Python3 基础教程&quot;</span>: &#123;<span class="string">&quot;price&quot;</span>: <span class="string">&quot;免费&quot;</span>, <span class="string">&quot;duration&quot;</span>: <span class="string">&quot;20小时&quot;</span>&#125;,</span><br><span class="line">        <span class="string">&quot;Python 数据分析&quot;</span>: &#123;<span class="string">&quot;price&quot;</span>: <span class="string">&quot;会员&quot;</span>, <span class="string">&quot;duration&quot;</span>: <span class="string">&quot;30小时&quot;</span>&#125;,</span><br><span class="line">        <span class="string">&quot;HTML 基础教程&quot;</span>: &#123;<span class="string">&quot;price&quot;</span>: <span class="string">&quot;免费&quot;</span>, <span class="string">&quot;duration&quot;</span>: <span class="string">&quot;15小时&quot;</span>&#125;,</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">query_course_price</span>(<span class="params"></span></span><br><span class="line"><span class="params">    course_name: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    store: Annotated[BaseStore, InjectedStore(<span class="params"></span>)],</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询菜鸟教程 RUNOOB 中指定课程的价格信息。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        course_name: 课程名称</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    item = store.get((<span class="string">&quot;runoob&quot;</span>, <span class="string">&quot;courses&quot;</span>), <span class="string">&quot;catalog&quot;</span>)</span><br><span class="line">    catalog = item.value[<span class="string">&quot;data&quot;</span>] <span class="keyword">if</span> item <span class="keyword">else</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> course_name <span class="keyword">in</span> catalog:</span><br><span class="line">        info = catalog[course_name]</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;《<span class="subst">&#123;course_name&#125;</span>》- 价格：<span class="subst">&#123;info[<span class="string">&#x27;price&#x27;</span>]&#125;</span>，学习时长：<span class="subst">&#123;info[<span class="string">&#x27;duration&#x27;</span>]&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;未找到课程《<span class="subst">&#123;course_name&#125;</span>》&quot;</span></span><br><span class="line"></span><br><span class="line">model = model_init()</span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[query_course_price],</span><br><span class="line">    store=store,</span><br><span class="line">    system_prompt=<span class="string">&quot;你是一位课程顾问,请不要使用 markdown 语法输出&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;Python3 基础教程和 Python 数据分析分别多少钱？&quot;</span>)]</span><br><span class="line">&#125;)</span><br><span class="line"><span class="built_in">print</span>(result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在运行过程中，LangChain 会自动注入 store 给工具。写入如下工具，可以实现录入课程信息：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">add_course_price</span>(<span class="params">    </span></span><br><span class="line"><span class="params">    course_name: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    price: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    duration: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    store: Annotated[BaseStore, InjectedStore],</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;给 store 中加入课程、定价、时长信息&quot;&quot;&quot;</span></span><br><span class="line">    item = store.get((<span class="string">&quot;runoob&quot;</span>, <span class="string">&quot;courses&quot;</span>), <span class="string">&quot;catalog&quot;</span>)  <span class="comment"># ← 统一 namespace</span></span><br><span class="line">    catalog = item.value[<span class="string">&quot;data&quot;</span>] <span class="keyword">if</span> item <span class="keyword">else</span> &#123;&#125;</span><br><span class="line">    catalog[course_name] = &#123;<span class="string">&quot;price&quot;</span>: price, <span class="string">&quot;duration&quot;</span>: duration&#125;</span><br><span class="line">    store.put((<span class="string">&quot;runoob&quot;</span>, <span class="string">&quot;courses&quot;</span>), <span class="string">&quot;catalog&quot;</span>, &#123;<span class="string">&quot;data&quot;</span>: catalog&#125;)  <span class="comment"># ← 写回完整数据</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;已成功添加课程《<span class="subst">&#123;course_name&#125;</span>》，价格：<span class="subst">&#123;price&#125;</span>，时长：<span class="subst">&#123;duration&#125;</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/07/20/agent-learn-3/" rel="prev" title="Agent 学习(3) 自建 Agent 框架">
+      <i class="fa fa-chevron-left"></i> Agent 学习(3) 自建 Agent 框架
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/07/22/langchain-learn-3/" rel="next" title="LangChain 学习(3) Agent 工作流程">
+      LangChain 学习(3) Agent 工作流程 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-%E6%B6%88%E6%81%AF%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">LangChain 消息类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#HumanMessage-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E7%94%A8%E6%88%B7%E6%B6%88%E6%81%AF"><span class="nav-number">1.1.</span> <span class="nav-text">HumanMessage ———— 用户消息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AIMessage-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-AI%E5%9B%9E%E5%A4%8D"><span class="nav-number">1.2.</span> <span class="nav-text">AIMessage ———— AI回复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SystemMessage-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E7%B3%BB%E7%BB%9F%E6%8C%87%E4%BB%A4"><span class="nav-number">1.3.</span> <span class="nav-text">SystemMessage ———— 系统指令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ToolMessage-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E5%B7%A5%E5%85%B7%E8%BF%94%E5%9B%9E%E7%BB%93%E6%9E%9C"><span class="nav-number">1.4.</span> <span class="nav-text">ToolMessage ———— 工具返回结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AIMessageChunk-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA%E7%9A%84%E6%B6%88%E6%81%AF%E7%89%87%E6%AE%B5"><span class="nav-number">1.5.</span> <span class="nav-text">AIMessageChunk ———— 流式输出的消息片段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E6%A8%A1%E6%80%81%E6%B6%88%E6%81%AF"><span class="nav-number">1.6.</span> <span class="nav-text">多模态消息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A3%81%E5%89%AA%E6%B6%88%E6%81%AF%E5%8E%86%E5%8F%B2"><span class="nav-number">1.7.</span> <span class="nav-text">裁剪消息历史</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E7%89%B9%E5%AE%9A%E6%B6%88%E6%81%AF"><span class="nav-number">1.8.</span> <span class="nav-text">删除特定消息</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-tool-%E8%A3%85%E9%A5%B0%E5%99%A8"><span class="nav-number">2.</span> <span class="nav-text">LangChain @tool 装饰器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#tool-%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95"><span class="nav-number">2.1.</span> <span class="nav-text">@tool 基本语法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E5%B7%A5%E5%85%B7%E7%9A%84%E9%AB%98%E7%BA%A7%E7%89%B9%E6%80%A7"><span class="nav-number">2.2.</span> <span class="nav-text">一些工具的高级特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#return-direct-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E7%9B%B4%E6%8E%A5%E8%BF%94%E5%9B%9E%E6%9C%80%E7%BB%88%E7%BB%93%E6%9E%9C"><span class="nav-number">2.3.</span> <span class="nav-text">return_direct ———— 直接返回最终结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#InjectedToolCalled-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E8%8E%B7%E5%8F%96%E5%B7%A5%E5%85%B7%E8%B0%83%E7%94%A8-ID"><span class="nav-number">2.4.</span> <span class="nav-text">InjectedToolCalled ———— 获取工具调用 ID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ToolException-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E5%B7%A5%E5%85%B7%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86"><span class="nav-number">2.5.</span> <span class="nav-text">ToolException ———— 工具异常处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#handle-tool-error-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E8%AE%A9%E5%B7%A5%E5%85%B7%E8%87%AA%E5%B7%B1%E5%A4%84%E7%90%86%E9%94%99%E8%AF%AF"><span class="nav-number">2.6.</span> <span class="nav-text">handle_tool_error ———— 让工具自己处理错误</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-%E5%B7%A5%E5%85%B7%E8%AE%BF%E9%97%AE-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-InjectedState-%E4%B8%8E-InjectedStore"><span class="nav-number">3.</span> <span class="nav-text">LangChain 工具访问 ———— InjectedState 与 InjectedStore</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#InjectedState-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E5%9C%A8%E5%B7%A5%E5%85%B7%E4%B8%AD%E8%AE%BF%E9%97%AE-Agent-%E7%8A%B6%E6%80%81"><span class="nav-number">3.1.</span> <span class="nav-text">InjectedState ———— 在工具中访问 Agent 状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#InjectedStore-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E5%9C%A8%E5%B7%A5%E5%85%B7%E4%B8%AD%E8%AE%BF%E9%97%AE%E6%B0%B8%E4%B9%85%E5%8C%96%E5%AD%98%E5%82%A8"><span class="nav-number">3.2.</span> <span class="nav-text">InjectedStore ———— 在工具中访问永久化存储</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">73</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
