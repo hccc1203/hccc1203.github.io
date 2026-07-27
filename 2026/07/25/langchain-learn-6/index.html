@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="LangChain 实现简易 RAG 以及 LangSmith">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain 学习(6) LangChain 实现简易 RAG 以及 LangSmith">
+<meta property="og:url" content="https://hccc1203.github.io/2026/07/25/langchain-learn-6/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="LangChain 实现简易 RAG 以及 LangSmith">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/img/langchain/6-1.png">
+<meta property="article:published_time" content="2026-07-25T11:59:43.000Z">
+<meta property="article:modified_time" content="2026-07-27T12:18:30.386Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/img/langchain/6-1.png">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/07/25/langchain-learn-6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain 学习(6) LangChain 实现简易 RAG 以及 LangSmith | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/07/25/langchain-learn-6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain 学习(6) LangChain 实现简易 RAG 以及 LangSmith
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-07-25 19:59:43" itemprop="dateCreated datePublished" datetime="2026-07-25T19:59:43+08:00">2026-07-25</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="LangChain-RAG"><a href="#LangChain-RAG" class="headerlink" title="LangChain RAG"></a>LangChain RAG</h2><p>&emsp;&emsp;RAG（Retrieval-Augmented Generation，检索增强生成）让 AI 能够基于你的私有文档回答问题，不需要微调模型，只需将文档向量化存储，Agent 就能检索相关内容来回答。普通的大模型智能回答训练数据中有的内容，如果你的文档是私有的（公司内部文档、个人笔记），模型就不知道。RAG 解决了这个问题，其工作流程如下：</p>
+<ul>
+<li>离线阶段：将文档切分成小块 -&gt; 用 Embedding 模型转换为向量 -&gt; 存入向量数据库。</li>
+<li>在线阶段：用户提问 -&gt; 将问题转为向量 -&gt; 在向量数据库中搜索最相似内容 -&gt; 将检索到的内容作为上下文发给模型 -&gt; 模型基于检索内容回答</li>
+</ul>
+<p>&emsp;&emsp;环境准备，打开终端输入如下命令</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install langchain-deepseek langchain-chroma chromadb</span><br></pre></td></tr></table></figure>
+
+<h3 id="接入-Embedding-模型"><a href="#接入-Embedding-模型" class="headerlink" title="接入 Embedding 模型"></a>接入 Embedding 模型</h3><p>&emsp;&emsp;我们使用百炼的 API，初始化代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> langchain_community.embeddings <span class="keyword">import</span> DashScopeEmbeddings</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">embedding_init</span>():</span><br><span class="line">    api_key = os.getenv(<span class="string">&quot;BAILIAN_API_KEY&quot;</span>)   <span class="comment"># 百炼的 API Key</span></span><br><span class="line">    embeddings = DashScopeEmbeddings(</span><br><span class="line">        model=<span class="string">&quot;qwen3.7-text-embedding&quot;</span>,</span><br><span class="line">        dashscope_api_key=api_key,</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> embeddings</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在主文件中写下如下代码：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> model_init <span class="keyword">import</span> embedding_init</span><br><span class="line"><span class="comment"># OpenAI 的文本嵌入模型</span></span><br><span class="line"><span class="comment"># 将文本转换为向量（一组浮点数）</span></span><br><span class="line"></span><br><span class="line">embeddings = embedding_init()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试：将一段文本转为向量</span></span><br><span class="line">text = <span class="string">&quot;菜鸟教程 RUNOOB 是一个编程学习平台&quot;</span></span><br><span class="line"><span class="built_in">input</span> = &#123;<span class="string">&quot;input&quot;</span>:<span class="string">f&quot;<span class="subst">&#123;text&#125;</span>&quot;</span>&#125;</span><br><span class="line">vector = embeddings.embed_query(text)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;文本: <span class="subst">&#123;text&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;向量维度: <span class="subst">&#123;<span class="built_in">len</span>(vector)&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;向量前 5 个值: <span class="subst">&#123;vector[:<span class="number">5</span>]&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="使用-ChromaDB-创建持久化存储"><a href="#使用-ChromaDB-创建持久化存储" class="headerlink" title="使用 ChromaDB 创建持久化存储"></a>使用 ChromaDB 创建持久化存储</h3><p>&emsp;&emsp;示例代码如下</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> model_init <span class="keyword">import</span> embedding_init</span><br><span class="line"><span class="keyword">from</span> langchain_chroma <span class="keyword">import</span> Chroma</span><br><span class="line"><span class="comment"># OpenAI 的文本嵌入模型</span></span><br><span class="line"><span class="comment"># 将文本转换为向量（一组浮点数）</span></span><br><span class="line"></span><br><span class="line">embeddings = embedding_init()</span><br><span class="line"></span><br><span class="line">vector_store = Chroma(</span><br><span class="line">    collection_name=<span class="string">&quot;runoob_docs&quot;</span>,</span><br><span class="line">    embedding_function=embeddings,</span><br><span class="line">    persist_directory=<span class="string">&quot;./chroma_db&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 添加文档（最简单的形式：文本列表）</span></span><br><span class="line">texts = [</span><br><span class="line">    <span class="string">&quot;菜鸟教程（RUNOOB）是一个免费的编程学习网站，提供 HTML、CSS、JavaScript、Python 等教程。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;Python3 基础教程共 30 章，适合零基础入门，包含环境搭建、语法基础、面向对象等内容。&quot;</span>,</span><br><span class="line">    <span class="string">&quot;HTML 基础教程共 25 章，覆盖 HTML 标签、表单、多媒体等基础知识。&quot;</span>,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"><span class="comment"># add_texts 自动将文本转为向量并存储</span></span><br><span class="line">vector_store.add_texts(texts)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;已添加 <span class="subst">&#123;<span class="built_in">len</span>(texts)&#125;</span> 个文档到向量存储&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="语义检索"><a href="#语义检索" class="headerlink" title="语义检索"></a>语义检索</h3><p>&emsp;&emsp;使用 similarity_search 进行语义相近搜索：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">results = vector_store.similarity_search(</span><br><span class="line">    <span class="string">&quot;我想学 Python，有什么教程推荐？&quot;</span>,</span><br><span class="line">    k=<span class="number">2</span>,  <span class="comment"># 返回最相似的 2 个结果</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h3 id="创建-Retriever-检索器"><a href="#创建-Retriever-检索器" class="headerlink" title="创建 Retriever 检索器"></a>创建 Retriever 检索器</h3><p>&emsp;&emsp;Retriever 是 Vector Store 的标准化接口：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 从 vector_store 创建 retriever</span></span><br><span class="line">retriever = vector_store.as_retriever(</span><br><span class="line">    search_type=<span class="string">&quot;similarity&quot;</span>,  <span class="comment"># 相似度搜索</span></span><br><span class="line">    search_kwargs=&#123;<span class="string">&quot;k&quot;</span>: <span class="number">3</span>&#125;,    <span class="comment"># 返回前 3 个结果</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用 retriever</span></span><br><span class="line">docs = retriever.invoke(<span class="string">&quot;Python 学习路线&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> doc <span class="keyword">in</span> docs:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;- <span class="subst">&#123;doc.page_content[:<span class="number">60</span>]&#125;</span>...&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="LangChain-文本加载与切分"><a href="#LangChain-文本加载与切分" class="headerlink" title="LangChain 文本加载与切分"></a>LangChain 文本加载与切分</h2><p>&emsp;&emsp;LangChain 提供了多种文档加载器，覆盖了常见的文件格式，如下：</p>
+<table>
+<thead>
+<tr>
+<th>Loader</th>
+<th>来源</th>
+<th>安装包</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TextLoader</td>
+<td>.txt</td>
+<td>langchain</td>
+</tr>
+<tr>
+<td>PyPDFLoader</td>
+<td>PDF 文件</td>
+<td>langchain-community + pypdf</td>
+</tr>
+<tr>
+<td>WebBase</td>
+<td>网页 URL</td>
+<td>langchain-community + beautifulsoup4</td>
+</tr>
+<tr>
+<td>CSVLoader</td>
+<td>CSV 文件</td>
+<td>langchain-community</td>
+</tr>
+<tr>
+<td>UnstructuredMarkdownLoader</td>
+<td>Markdown 文件</td>
+<td>langchain-community + unstructured</td>
+</tr>
+</tbody></table>
+<p>&emsp;&emsp;示例代码如下</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 加载文本文件（内置，无需额外安装）</span></span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> TextLoader</span><br><span class="line"></span><br><span class="line">loader = TextLoader(<span class="string">&quot;knowledge.txt&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>)</span><br><span class="line">docs = loader.load()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;加载了 <span class="subst">&#123;<span class="built_in">len</span>(docs)&#125;</span> 个文档&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;内容预览: <span class="subst">&#123;docs[<span class="number">0</span>].page_content[:<span class="number">150</span>]&#125;</span>...&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载网页</span></span><br><span class="line"><span class="comment"># pip install langchain-community beautifulsoup4</span></span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> WebBaseLoader</span><br><span class="line"></span><br><span class="line">loader = WebBaseLoader(<span class="string">&quot;https://www.runoob.com/python/python-tutorial.html&quot;</span>)</span><br><span class="line">docs = loader.load()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;\n网页内容: <span class="subst">&#123;docs[<span class="number">0</span>].page_content[:<span class="number">150</span>]&#125;</span>...&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;文档通常太长，需要切分成小块（chunk）才能有效检索。切分策略将直接影响 RAG 效果：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> RecursiveCharacterTextSplitter</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建切分器</span></span><br><span class="line">text_splitter = RecursiveCharacterTextSplitter(</span><br><span class="line">    chunk_size=<span class="number">500</span>,         <span class="comment"># 每块最多 500 个字符</span></span><br><span class="line">    chunk_overlap=<span class="number">50</span>,       <span class="comment"># 块之间重叠 50 个字符</span></span><br><span class="line">    separators=[<span class="string">&quot;\n\n&quot;</span>, <span class="string">&quot;\n&quot;</span>, <span class="string">&quot;。&quot;</span>, <span class="string">&quot;！&quot;</span>, <span class="string">&quot;？&quot;</span>, <span class="string">&quot;；&quot;</span>, <span class="string">&quot;，&quot;</span>, <span class="string">&quot; &quot;</span>, <span class="string">&quot;&quot;</span>],</span><br><span class="line">    <span class="comment"># 优先按段落分割，然后是句子，最后是字符</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 示例文档</span></span><br><span class="line">long_text = <span class="string">&quot;&quot;&quot;菜鸟教程（RUNOOB）是一个免费的编程学习平台。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">平台提供了丰富的编程语言教程，包括但不限于：</span></span><br><span class="line"><span class="string">- Python 教程：从基础语法到数据分析</span></span><br><span class="line"><span class="string">- Java 教程：面向对象编程到 Spring 框架</span></span><br><span class="line"><span class="string">- 前端教程：HTML、CSS、JavaScript 及其框架</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">所有教程都配有详细的代码示例和在线运行环境。</span></span><br><span class="line"><span class="string">学习者可以通过边学边练的方式快速掌握编程技能。&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 切分文档</span></span><br><span class="line">chunks = text_splitter.split_text(long_text)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;原文长度: <span class="subst">&#123;<span class="built_in">len</span>(long_text)&#125;</span> 字&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;切分后: <span class="subst">&#123;<span class="built_in">len</span>(chunks)&#125;</span> 块\n&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i, chunk <span class="keyword">in</span> <span class="built_in">enumerate</span>(chunks):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;--- 块 <span class="subst">&#123;i+<span class="number">1</span>&#125;</span> (<span class="subst">&#123;<span class="built_in">len</span>(chunk)&#125;</span> 字) ---&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br><span class="line">    <span class="built_in">print</span>()</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;chunk_overlap 很重要。如果块之间没有重叠，一个完整的句子可能被切成两半，导致检索时遗漏关键信息。50-100 字符的重叠是常见的设置。</p>
+<h2 id="LangSmith"><a href="#LangSmith" class="headerlink" title="LangSmith"></a>LangSmith</h2><p>&emsp;&emsp;LangSmith 是 LangChain 官方的可观测性平台，可以帮我我们追踪 Agent 的执行过程、监控性能以及调试问题。当 Agent 在后台运行时，我们看不到它内部发生了什么 ———— 调用了哪些模型、执行了哪些工具、每一步消耗了多少 Token。LangSmith 解决了这个”黑盒”问题。我们现在 .env 中写下如下内容：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># .env 文件</span><br><span class="line">LANGCHAIN_TRACING_V2=true</span><br><span class="line">LANGCHAIN_API_KEY=lsv2_pt_your_key_here</span><br><span class="line">LANGCHAIN_PROJECT=my-agent-project</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;示例代码如下。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line">load_dotenv()  <span class="comment"># LangSmith 配置会自动加载</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置环境变量后，所有 Agent 执行都会自动追踪</span></span><br><span class="line"><span class="comment"># 无需额外代码！</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_course</span>(<span class="params">keyword: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;搜索课程&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;搜索结果：<span class="subst">&#123;keyword&#125;</span> 相关课程&quot;</span></span><br><span class="line"></span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[search_course],</span><br><span class="line">    system_prompt=<span class="string">&quot;你是菜鸟教程 RUNOOB 的助手。&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 这次执行会被自动记录到 LangSmith</span></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;搜索 Python 课程&quot;</span>)]</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打开 https://smith.langchain.com 查看追踪记录</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;已完成，请到 LangSmith 控制台查看追踪详情&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;运行完成后，我们在 LangSmith 控制台中，可以看到每次 Agent 执行的完整轨迹：</p>
+<ul>
+<li>执行时间线：模型调用 → 工具调用 → 模型再调用的完整时间线</li>
+<li>输入&#x2F;输出：每一步的输入消息和模型返回结果</li>
+<li>Token 用量：每次模型调用的 Token 消耗和费用估算</li>
+<li>延迟分析：每一步的耗时分布</li>
+<li>错误信息：如果某步出错，可以看到完整的错误堆栈</li>
+</ul>
+<p>&emsp;&emsp;如下图所示<br>&emsp;&emsp;</p>
+<div align=center><img src="/img/langchain/6-1.png"  width=60%></div>
+<div style="text-align:center;">图 1 层级图及追踪效果</div>
+&emsp;&emsp;
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/07/24/langchain-learn-5/" rel="prev" title="LangChain 学习(5) LangChain 的对话记忆、跨会话存储、人工介入以及多 Agent 的实现">
+      <i class="fa fa-chevron-left"></i> LangChain 学习(5) LangChain 的对话记忆、跨会话存储、人工介入以及多 Agent 的实现
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/07/27/langgraph-learn-1/" rel="next" title="LangGraph 学习(6) 核心概念及一些基本模型">
+      LangGraph 学习(6) 核心概念及一些基本模型 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-RAG"><span class="nav-number">1.</span> <span class="nav-text">LangChain RAG</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A5%E5%85%A5-Embedding-%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.1.</span> <span class="nav-text">接入 Embedding 模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-ChromaDB-%E5%88%9B%E5%BB%BA%E6%8C%81%E4%B9%85%E5%8C%96%E5%AD%98%E5%82%A8"><span class="nav-number">1.2.</span> <span class="nav-text">使用 ChromaDB 创建持久化存储</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%AD%E4%B9%89%E6%A3%80%E7%B4%A2"><span class="nav-number">1.3.</span> <span class="nav-text">语义检索</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA-Retriever-%E6%A3%80%E7%B4%A2%E5%99%A8"><span class="nav-number">1.4.</span> <span class="nav-text">创建 Retriever 检索器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-%E6%96%87%E6%9C%AC%E5%8A%A0%E8%BD%BD%E4%B8%8E%E5%88%87%E5%88%86"><span class="nav-number">2.</span> <span class="nav-text">LangChain 文本加载与切分</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangSmith"><span class="nav-number">3.</span> <span class="nav-text">LangSmith</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">77</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

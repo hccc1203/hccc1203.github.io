@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="LangChain 的对话记忆、跨会话存储、人工介入以及多 Agent 的实现">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain 学习(5) LangChain 的对话记忆、跨会话存储、人工介入以及多 Agent 的实现">
+<meta property="og:url" content="https://hccc1203.github.io/2026/07/24/langchain-learn-5/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="LangChain 的对话记忆、跨会话存储、人工介入以及多 Agent 的实现">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-07-24T11:59:43.000Z">
+<meta property="article:modified_time" content="2026-07-27T12:15:29.668Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/07/24/langchain-learn-5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain 学习(5) LangChain 的对话记忆、跨会话存储、人工介入以及多 Agent 的实现 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/07/24/langchain-learn-5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain 学习(5) LangChain 的对话记忆、跨会话存储、人工介入以及多 Agent 的实现
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-07-24 19:59:43" itemprop="dateCreated datePublished" datetime="2026-07-24T19:59:43+08:00">2026-07-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="LangChain-对话记忆-————-Checkpointer"><a href="#LangChain-对话记忆-————-Checkpointer" class="headerlink" title="LangChain 对话记忆 ———— Checkpointer"></a>LangChain 对话记忆 ———— Checkpointer</h2><p>&emsp;&emsp;在默认情况下，每次 <code>agent.invoke()</code> 都是独立的，Agent 不记得之前聊过什么。Checkpointer 让 Agent 能够记住对话历史，实现真正的多轮对话。<br>&emsp;&emsp;在没有 Checkpinter 的时候，第二轮调用 agent 回答时，不会记住第一轮说过的话。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    system_prompt=<span class="string">&quot;你是菜鸟教程 RUNOOB 的助手。&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第一轮</span></span><br><span class="line">result1 = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;我叫小明&quot;</span>)]</span><br><span class="line">&#125;)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;第一轮: <span class="subst">&#123;result1[<span class="string">&#x27;messages&#x27;</span>][-<span class="number">1</span>].content&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第二轮——Agent 不记得第一轮的内容！</span></span><br><span class="line">result2 = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;我叫什么名字？&quot;</span>)]</span><br><span class="line">&#125;)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;第二轮: <span class="subst">&#123;result2[<span class="string">&#x27;messages&#x27;</span>][-<span class="number">1</span>].content&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这时候我们可以使用 Checkpointer 来记住对话内容，示例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个内存 Checkpointer</span></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line"></span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    checkpointer=checkpointer,  <span class="comment"># 传入 Checkpointer</span></span><br><span class="line">    system_prompt=<span class="string">&quot;你是菜鸟教程 RUNOOB 的助手。&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用 thread_id 来标识对话线程</span></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;user-001&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第一轮</span></span><br><span class="line">result1 = agent.invoke(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;我叫小明，我在学 Python&quot;</span>)]&#125;,</span><br><span class="line">    config=config,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;第一轮: <span class="subst">&#123;result1[<span class="string">&#x27;messages&#x27;</span>][-<span class="number">1</span>].content&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第二轮——使用相同的 thread_id，Agent 记住了！</span></span><br><span class="line">result2 = agent.invoke(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;我叫什么名字？我在学什么？&quot;</span>)]&#125;,</span><br><span class="line">    config=config,</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;第二轮: <span class="subst">&#123;result2[<span class="string">&#x27;messages&#x27;</span>][-<span class="number">1</span>].content&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;我们先创建一个内存，在 Agent 创建的时候传入该内存，然后在 config 中使用 thread_id 来标记对话线程，这样 Agent 就会知道哪些话是同一对话里的，可以做到自动关联。</p>
+<p>&emsp;&emsp;Checkpointer 的工作原理是这样的，它在每次 Agent 执行后自动保存状态快照（checkpoint）。下一次使用相同 thread_id 调用时，自动从最近的 checkpoint 恢复状态。具体工作流程：调用 agent.invoke()，传入 config（含 thread_id），Agent 检查是否有该 thread_id 的 checkpoint，如果有，加载历史消息，追加新消息后继续，执行完成后，自动保存新的 checkpoint。</p>
+<p>&emsp;&emsp;Checkpointer 一般有三种类型如下：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>存储位置</th>
+<th>持久化</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>InMemorySaver</td>
+<td>内存</td>
+<td>否</td>
+<td>开发调试、测试</td>
+</tr>
+<tr>
+<td>SqliteSaver</td>
+<td>SQLite 文件</td>
+<td>是</td>
+<td>单机部署、小规模应用</td>
+</tr>
+<tr>
+<td>PostgresSaver</td>
+<td>PostgreSQL</td>
+<td>是</td>
+<td>生产环境、多实例共享</td>
+</tr>
+</tbody></table>
+<h2 id="LangChain-跨会话存储-————-store"><a href="#LangChain-跨会话存储-————-store" class="headerlink" title="LangChain 跨会话存储 ———— store"></a>LangChain 跨会话存储 ———— store</h2><p>&emsp;&emsp;Checkpointer 解决了”单个对话内记忆”的问题。但如果你需要在不同对话之间共享数据——比如用户偏好、学习进度——就需要用到 Store。</p>
+<p>&emsp;&emsp;Store 使用 <strong>命名空间 + 键</strong> 的层级结构来组织数据，其基本操作如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line"></span><br><span class="line">store = InMemoryStore()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 写入数据：put(namespace, key, value)</span></span><br><span class="line"><span class="comment"># namespace 是元组，key 是字符串，value 是字典</span></span><br><span class="line">store.put(</span><br><span class="line">    (<span class="string">&quot;users&quot;</span>, <span class="string">&quot;user_001&quot;</span>),           <span class="comment"># 命名空间</span></span><br><span class="line">    <span class="string">&quot;preferences&quot;</span>,                    <span class="comment"># 键</span></span><br><span class="line">    &#123;                                 <span class="comment"># 值</span></span><br><span class="line">        <span class="string">&quot;theme&quot;</span>: <span class="string">&quot;dark&quot;</span>,</span><br><span class="line">        <span class="string">&quot;language&quot;</span>: <span class="string">&quot;zh-CN&quot;</span>,</span><br><span class="line">        <span class="string">&quot;level&quot;</span>: <span class="string">&quot;入门&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">store.put(</span><br><span class="line">    (<span class="string">&quot;users&quot;</span>, <span class="string">&quot;user_001&quot;</span>),</span><br><span class="line">    <span class="string">&quot;progress&quot;</span>,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;completed_courses&quot;</span>: [<span class="string">&quot;HTML 基础&quot;</span>, <span class="string">&quot;Python 基础&quot;</span>],</span><br><span class="line">        <span class="string">&quot;total_hours&quot;</span>: <span class="number">35</span>,</span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 读取数据：get(namespace, key)</span></span><br><span class="line">prefs = store.get((<span class="string">&quot;users&quot;</span>, <span class="string">&quot;user_001&quot;</span>), <span class="string">&quot;preferences&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;偏好设置: <span class="subst">&#123;prefs.value&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">progress = store.get((<span class="string">&quot;users&quot;</span>, <span class="string">&quot;user_001&quot;</span>), <span class="string">&quot;progress&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;学习进度: <span class="subst">&#123;progress.value&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 搜索数据：search(namespace)</span></span><br><span class="line">all_user_data = store.search((<span class="string">&quot;users&quot;</span>, <span class="string">&quot;user_001&quot;</span>))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;\n用户的所有数据 (<span class="subst">&#123;<span class="built_in">len</span>(all_user_data)&#125;</span> 项):&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> item <span class="keyword">in</span> all_user_data:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;  <span class="subst">&#123;item.key&#125;</span>: <span class="subst">&#123;item.value&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 删除数据：delete(namespace, key)</span></span><br><span class="line">store.delete((<span class="string">&quot;users&quot;</span>, <span class="string">&quot;user_001&quot;</span>), <span class="string">&quot;preferences&quot;</span>)</span><br><span class="line">deleted = store.get((<span class="string">&quot;users&quot;</span>, <span class="string">&quot;user_001&quot;</span>), <span class="string">&quot;preferences&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;\n删除后: <span class="subst">&#123;deleted&#125;</span>&quot;</span>)  <span class="comment"># None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;将 Store 传给 create_agent()，Agent 中的所有工具都能通过 InjectedStore 访问它：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">query_course_info</span>(<span class="params"></span></span><br><span class="line"><span class="params">    course_name: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    store: Annotated[BaseStore, InjectedStore(<span class="params"></span>)],</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询菜鸟教程 RUNOOB 中课程的详细信息。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        course_name: 课程名称</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    item = store.get((<span class="string">&quot;runoob&quot;</span>, <span class="string">&quot;courses&quot;</span>), <span class="string">&quot;catalog&quot;</span>)</span><br><span class="line">    catalog = item.value <span class="keyword">if</span> item <span class="keyword">else</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> course_name <span class="keyword">in</span> catalog:</span><br><span class="line">        info = catalog[course_name]</span><br><span class="line">        <span class="keyword">return</span> (</span><br><span class="line">            <span class="string">f&quot;《<span class="subst">&#123;course_name&#125;</span>》- 价格：<span class="subst">&#123;info[<span class="string">&#x27;price&#x27;</span>]&#125;</span>，&quot;</span></span><br><span class="line">            <span class="string">f&quot;时长：<span class="subst">&#123;info[<span class="string">&#x27;hours&#x27;</span>]&#125;</span>小时，难度：<span class="subst">&#123;info[<span class="string">&#x27;level&#x27;</span>]&#125;</span>&quot;</span></span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;未找到课程《<span class="subst">&#123;course_name&#125;</span>》&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;InMemoryStore 的数据在程序重启后丢失。生产环境可以使用 PostgresStore 等持久化方案：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 开发阶段</span></span><br><span class="line"><span class="keyword">from</span> langgraph.store.memory <span class="keyword">import</span> InMemoryStore</span><br><span class="line">store = InMemoryStore()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生产环境（需要 PostgreSQL）</span></span><br><span class="line"><span class="comment"># from langgraph.store.postgres import PostgresStore</span></span><br><span class="line"><span class="comment"># store = PostgresStore.from_conn_string(&quot;postgresql://...&quot;)</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="人工介入"><a href="#人工介入" class="headerlink" title="人工介入"></a>人工介入</h2><p>&emsp;&emsp;在生产环境中，有些操作需要人工确认，例如发送邮件、执行删除、处理支付等等。人工介入（HITL，Human-in-the-Loop）让 Agent 在关键时刻暂停，等待人工审批后继续。</p>
+<h3 id="interrupt-——-在工具中暂停执行"><a href="#interrupt-——-在工具中暂停执行" class="headerlink" title="interrupt() —— 在工具中暂停执行"></a>interrupt() —— 在工具中暂停执行</h3><p>&emsp;&emsp;interrupt() 函数可以让工具执行到一半时暂停，等待外部输入后再继续，示例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> interrupt</span><br><span class="line"></span><br><span class="line"><span class="comment"># 在工具中使用 interrupt() 暂停</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">send_email</span>(<span class="params">to: <span class="built_in">str</span>, subject: <span class="built_in">str</span>, body: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;发送邮件（需要人工审批）&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 暂停执行，向外部发送审批请求</span></span><br><span class="line">    approval = interrupt(&#123;</span><br><span class="line">        <span class="string">&quot;action&quot;</span>: <span class="string">&quot;send_email&quot;</span>,</span><br><span class="line">        <span class="string">&quot;to&quot;</span>: to,</span><br><span class="line">        <span class="string">&quot;subject&quot;</span>: subject,</span><br><span class="line">        <span class="string">&quot;body&quot;</span>: body,</span><br><span class="line">        <span class="string">&quot;message&quot;</span>: <span class="string">&quot;请确认是否发送此邮件？&quot;</span></span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 等待外部传入 approval 后继续</span></span><br><span class="line">    <span class="keyword">if</span> approval.get(<span class="string">&quot;approved&quot;</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;邮件已发送给 <span class="subst">&#123;to&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;邮件发送已被拒绝：<span class="subst">&#123;approval.get(<span class="string">&#x27;reason&#x27;</span>, <span class="string">&#x27;用户取消&#x27;</span>)&#125;</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;interrupt() 的工作流程如下：</p>
+<ul>
+<li>工具调用 interrupt()，Agent 暂停执行。</li>
+<li>外部系统获取中断信息，展示给用户</li>
+<li>用户做出决定后，通过 Command(resume&#x3D;…) 恢复执行</li>
+<li>interrupt() 返回用户传入的值，工具继续执行</li>
+</ul>
+<p>&emsp;&emsp;审批流程的完整示例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langgraph.types <span class="keyword">import</span> interrupt, Command</span><br><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">delete_course</span>(<span class="params">course_name: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;删除课程（需要审批）。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        course_name: 要删除的课程名称</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 暂停并等待审批</span></span><br><span class="line">    approval = interrupt(&#123;</span><br><span class="line">        <span class="string">&quot;action&quot;</span>: <span class="string">&quot;delete_course&quot;</span>,</span><br><span class="line">        <span class="string">&quot;course&quot;</span>: course_name,</span><br><span class="line">        <span class="string">&quot;message&quot;</span>: <span class="string">f&quot;确认删除课程《<span class="subst">&#123;course_name&#125;</span>》？此操作不可撤销。&quot;</span></span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> approval.get(<span class="string">&quot;confirmed&quot;</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;课程《<span class="subst">&#123;course_name&#125;</span>》已删除&quot;</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;删除操作已取消&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[delete_course],</span><br><span class="line">    checkpointer=checkpointer,</span><br><span class="line">    system_prompt=<span class="string">&quot;你是菜鸟教程 RUNOOB 的管理员助手。&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: <span class="string">&quot;admin-001&quot;</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第一步：发起删除请求（会触发中断）</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== 开始执行 ===&quot;</span>)</span><br><span class="line">result = agent.invoke(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;请删除课程《过时的 Java 教程》&quot;</span>)]&#125;,</span><br><span class="line">    config=config,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;除了在工具中使用 interrupt()，我们还可以在 create_agent() 中设置全局中断点，示例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.checkpoint.memory <span class="keyword">import</span> InMemorySaver</span><br><span class="line"></span><br><span class="line">checkpointer = InMemorySaver()</span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>,</span><br><span class="line">    tools=[some_tool],</span><br><span class="line">    checkpointer=checkpointer,</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 在工具节点之前暂停（每次调用工具前都需要审批）</span></span><br><span class="line">    interrupt_before=[<span class="string">&quot;tools&quot;</span>],</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 在模型节点之后暂停（每次模型回复后都可以检查）</span></span><br><span class="line">    <span class="comment"># interrupt_after=[&quot;model&quot;],</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;下面是一个实际 Web 应用中的人工干预实例：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 后端：接收用户消息，处理到中断点，返回中断信息</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">handle_user_message</span>(<span class="params">thread_id: <span class="built_in">str</span>, message: <span class="built_in">str</span></span>):</span><br><span class="line">    config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: thread_id&#125;&#125;</span><br><span class="line">    result = agent.invoke(</span><br><span class="line">        &#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(content=message)]&#125;,</span><br><span class="line">        config=config,</span><br><span class="line">    )</span><br><span class="line">    state = agent.get_state(config)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 检查是否在等待审批</span></span><br><span class="line">    <span class="keyword">if</span> state.tasks <span class="keyword">and</span> state.tasks[<span class="number">0</span>].interrupts:</span><br><span class="line">        <span class="keyword">return</span> &#123;</span><br><span class="line">            <span class="string">&quot;status&quot;</span>: <span class="string">&quot;pending_approval&quot;</span>,</span><br><span class="line">            <span class="string">&quot;interrupt&quot;</span>: state.tasks[<span class="number">0</span>].interrupts[<span class="number">0</span>].value,</span><br><span class="line">            <span class="string">&quot;thread_id&quot;</span>: thread_id,</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;status&quot;</span>: <span class="string">&quot;completed&quot;</span>,</span><br><span class="line">        <span class="string">&quot;reply&quot;</span>: result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 后端：处理用户审批</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">handle_approval</span>(<span class="params">thread_id: <span class="built_in">str</span>, approved: <span class="built_in">bool</span>, reason: <span class="built_in">str</span> = <span class="string">&quot;&quot;</span></span>):</span><br><span class="line">    config = &#123;<span class="string">&quot;configurable&quot;</span>: &#123;<span class="string">&quot;thread_id&quot;</span>: thread_id&#125;&#125;</span><br><span class="line">    result = agent.invoke(</span><br><span class="line">        Command(resume=&#123;<span class="string">&quot;confirmed&quot;</span>: approved, <span class="string">&quot;reason&quot;</span>: reason&#125;),</span><br><span class="line">        config=config,</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;status&quot;</span>: <span class="string">&quot;completed&quot;</span>, <span class="string">&quot;reply&quot;</span>: result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="LangChain-多-Agent"><a href="#LangChain-多-Agent" class="headerlink" title="LangChain 多 Agent"></a>LangChain 多 Agent</h2><p>&emsp;&emsp;当一个任务太复杂，单个 Agent 难以胜任时，我们可以创建多个各司其职的 Agent，让它们像团队一样协作。</p>
+<p>&emsp;&emsp;单个 Agent 可能会存在以下问题：system_prompt 太长会导致模型注意力分散，工具太多会增加模型选择工具的出错概率，不同类型的任务需要不同的专业知识和行为风格。</p>
+<h3 id="方式一、子-Agent-作为工具"><a href="#方式一、子-Agent-作为工具" class="headerlink" title="方式一、子 Agent 作为工具"></a>方式一、子 Agent 作为工具</h3><p>&emsp;&emsp;将 Agent 编译成 CompiledStateGraph，然后作为一个工具注册给父 Agent：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 子 Agent 1：天气专家</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">city: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询天气&quot;&quot;&quot;</span></span><br><span class="line">    data = &#123;<span class="string">&quot;杭州&quot;</span>: <span class="string">&quot;晴，25°C&quot;</span>, <span class="string">&quot;北京&quot;</span>: <span class="string">&quot;多云，18°C&quot;</span>&#125;</span><br><span class="line">    <span class="keyword">return</span> data.get(city, <span class="string">f&quot;<span class="subst">&#123;city&#125;</span>: 数据暂缺&quot;</span>)</span><br><span class="line"></span><br><span class="line">weather_agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[get_weather],</span><br><span class="line">    name=<span class="string">&quot;weather_expert&quot;</span>,  <span class="comment"># 名字用于标识和日志</span></span><br><span class="line">    system_prompt=<span class="string">&quot;你是天气专家，专门回答天气相关问题。回答要简洁。&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 子 Agent 2：计算专家</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">calculate</span>(<span class="params">expression: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;计算数学表达式&quot;&quot;&quot;</span></span><br><span class="line">    result = <span class="built_in">eval</span>(expression, &#123;<span class="string">&quot;__builtins__&quot;</span>: &#123;&#125;&#125;, &#123;&#125;)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;expression&#125;</span> = <span class="subst">&#123;result&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">math_agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[calculate],</span><br><span class="line">    name=<span class="string">&quot;math_expert&quot;</span>,</span><br><span class="line">    system_prompt=<span class="string">&quot;你是数学专家，专门进行数学计算。回答要简洁。&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 父 Agent：协调者</span></span><br><span class="line"><span class="comment"># 将子 Agent 作为工具注册</span></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">ask_weather_expert</span>(<span class="params">question: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;向天气专家咨询天气相关问题。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        question: 关于天气的问题</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    result = weather_agent.invoke(</span><br><span class="line">        &#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(content=question)]&#125;</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">ask_math_expert</span>(<span class="params">question: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;向数学专家咨询数学计算问题。</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        question: 数学计算问题</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    result = math_agent.invoke(</span><br><span class="line">        &#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(content=question)]&#125;</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">return</span> result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content</span><br><span class="line"></span><br><span class="line">coordinator = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[ask_weather_expert, ask_math_expert],</span><br><span class="line">    system_prompt=<span class="string">&quot;&quot;&quot;你是协调助手。根据用户问题选择合适的专家：</span></span><br><span class="line"><span class="string">- 天气相关问题 → 使用 ask_weather_expert</span></span><br><span class="line"><span class="string">- 数学计算问题 → 使用 ask_math_expert</span></span><br><span class="line"><span class="string">- 如果同时涉及多个领域，依次咨询各个专家&quot;&quot;&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 测试复合问题</span></span><br><span class="line">result = coordinator.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [HumanMessage(</span><br><span class="line">        content=<span class="string">&quot;杭州今天天气怎么样？如果温度是 25 度，换算成华氏度是多少？&quot;</span></span><br><span class="line">        <span class="string">&quot;（公式：华氏度 = 摄氏度 × 9/5 + 32）&quot;</span></span><br><span class="line">    )]</span><br><span class="line">&#125;)</span><br><span class="line"><span class="built_in">print</span>(result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+
+<h3 id="方式二、用-name-参数区分-Agent"><a href="#方式二、用-name-参数区分-Agent" class="headerlink" title="方式二、用 name 参数区分 Agent"></a>方式二、用 name 参数区分 Agent</h3><p>&emsp;&emsp;当你将子 Agent 作为工具嵌入时，设置 name 参数有助于追踪消息来源：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># name 参数的作用：</span></span><br><span class="line"><span class="comment"># 1. 编译后的图中使用该名称</span></span><br><span class="line"><span class="comment"># 2. 作为子图节点嵌入父图时使用该名称</span></span><br><span class="line"><span class="comment"># 3. 所有 AI 消息被标记为该名称</span></span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    tools=[...],</span><br><span class="line">    name=<span class="string">&quot;customer_service&quot;</span>,  <span class="comment"># 给 Agent 命名</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h3 id="方式三、Middleware-实现-Agent-路由"><a href="#方式三、Middleware-实现-Agent-路由" class="headerlink" title="方式三、Middleware 实现 Agent 路由"></a>方式三、Middleware 实现 Agent 路由</h3><p>&emsp;&emsp;更加复杂的多 Agent 场景可以通过 Middleware 实现动态路由：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> before_model</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义不同专家使用的工具集</span></span><br><span class="line">general_tools = [tool_a, tool_b]</span><br><span class="line">admin_tools = [tool_c, tool_d]</span><br><span class="line"></span><br><span class="line"><span class="meta">@before_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">route_by_user_role</span>(<span class="params">state, runtime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;根据用户角色动态切换可用工具&quot;&quot;&quot;</span></span><br><span class="line">    context = runtime.context</span><br><span class="line">    <span class="keyword">if</span> context <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    user_role = context.get(<span class="string">&quot;user_role&quot;</span>, <span class="string">&quot;user&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 不同角色看到不同的工具</span></span><br><span class="line">    <span class="keyword">if</span> user_role == <span class="string">&quot;admin&quot;</span>:</span><br><span class="line">        available_tools = general_tools + admin_tools</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        available_tools = general_tools</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 注意：before_model 不能直接修改 tools，</span></span><br><span class="line">    <span class="comment"># 需要配合 wrap_model_call 或 request.override 来实现</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;多 Agent 有以下几种架构：</p>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>结构</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>协调者模式</td>
+<td>一个父Agent —&gt; 多个子 Agent 工具</td>
+<td>任务类型明确可分类</td>
+</tr>
+<tr>
+<td>接力模式</td>
+<td>Agent A 的输出 -&gt; Agent B 的输入</td>
+<td>流水线式处理(生成 -&gt; 审核 -&gt; 润色)</td>
+</tr>
+<tr>
+<td>辩论模式</td>
+<td>多个 Agent 并行输出 -&gt; 汇总决策</td>
+<td>需要多角度分析问题</td>
+</tr>
+</tbody></table>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/07/23/langchain-learn-4/" rel="prev" title="LangChain 学习(4) LangChain 的输出、中间件">
+      <i class="fa fa-chevron-left"></i> LangChain 学习(4) LangChain 的输出、中间件
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/07/25/langchain-learn-6/" rel="next" title="LangChain 学习(6) LangChain 实现简易 RAG 以及 LangSmith">
+      LangChain 学习(6) LangChain 实现简易 RAG 以及 LangSmith <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-%E5%AF%B9%E8%AF%9D%E8%AE%B0%E5%BF%86-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-Checkpointer"><span class="nav-number">1.</span> <span class="nav-text">LangChain 对话记忆 ———— Checkpointer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-%E8%B7%A8%E4%BC%9A%E8%AF%9D%E5%AD%98%E5%82%A8-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-store"><span class="nav-number">2.</span> <span class="nav-text">LangChain 跨会话存储 ———— store</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%BA%E5%B7%A5%E4%BB%8B%E5%85%A5"><span class="nav-number">3.</span> <span class="nav-text">人工介入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#interrupt-%E2%80%94%E2%80%94-%E5%9C%A8%E5%B7%A5%E5%85%B7%E4%B8%AD%E6%9A%82%E5%81%9C%E6%89%A7%E8%A1%8C"><span class="nav-number">3.1.</span> <span class="nav-text">interrupt() —— 在工具中暂停执行</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-%E5%A4%9A-Agent"><span class="nav-number">4.</span> <span class="nav-text">LangChain 多 Agent</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E5%BC%8F%E4%B8%80%E3%80%81%E5%AD%90-Agent-%E4%BD%9C%E4%B8%BA%E5%B7%A5%E5%85%B7"><span class="nav-number">4.1.</span> <span class="nav-text">方式一、子 Agent 作为工具</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E5%BC%8F%E4%BA%8C%E3%80%81%E7%94%A8-name-%E5%8F%82%E6%95%B0%E5%8C%BA%E5%88%86-Agent"><span class="nav-number">4.2.</span> <span class="nav-text">方式二、用 name 参数区分 Agent</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%B9%E5%BC%8F%E4%B8%89%E3%80%81Middleware-%E5%AE%9E%E7%8E%B0-Agent-%E8%B7%AF%E7%94%B1"><span class="nav-number">4.3.</span> <span class="nav-text">方式三、Middleware 实现 Agent 路由</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">77</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>

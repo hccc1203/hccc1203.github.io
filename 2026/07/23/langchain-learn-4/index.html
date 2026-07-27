@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="LangChain 的输出、中间件">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain 学习(4) LangChain 的输出、中间件">
+<meta property="og:url" content="https://hccc1203.github.io/2026/07/23/langchain-learn-4/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="LangChain 的输出、中间件">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-07-23T11:59:43.000Z">
+<meta property="article:modified_time" content="2026-07-27T12:14:57.043Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="LangChain">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/07/23/langchain-learn-4/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangChain 学习(4) LangChain 的输出、中间件 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/07/23/langchain-learn-4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangChain 学习(4) LangChain 的输出、中间件
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-07-23 19:59:43" itemprop="dateCreated datePublished" datetime="2026-07-23T19:59:43+08:00">2026-07-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="流式输出-Streaming"><a href="#流式输出-Streaming" class="headerlink" title="流式输出 Streaming"></a>流式输出 Streaming</h2><p>&emsp;&emsp;流式输出让 AI 的回复像打字一样逐字显示，极大地提升了用户体验。LangChain 的 Agent 内置了完善的流式输出支持。如果使用 invoke()，用户需要等待 Agent 完成所有步骤（多次模型调用 + 工具执行）才能看到结果。对于复杂任务，这可能耗时十几秒甚至更长。流式输出解决了这个问题：每生成一个 Token 就立即返回，用户可以实时看到进展。</p>
+<h3 id="stream-mode-”messages”——逐-Token-流式"><a href="#stream-mode-”messages”——逐-Token-流式" class="headerlink" title="stream_mode&#x3D;”messages”——逐 Token 流式"></a>stream_mode&#x3D;”messages”——逐 Token 流式</h3><p>&emsp;&emsp;这是最细粒度的流式模式，每个 chunk 对应一个 Token，示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line">load_dotenv()</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>)</span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    system_prompt=<span class="string">&quot;你是菜鸟教程 RUNOOB 的助手。&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># stream_mode=&quot;messages&quot; 逐个 Token 返回</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;实时流式输出：&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> msg_chunk, metadata <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;用一句话介绍菜鸟教程 RUNOOB&quot;</span>)]&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;messages&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    <span class="comment"># msg_chunk 是 AIMessageChunk</span></span><br><span class="line">    <span class="comment"># 每个 chunk 只包含一小段内容</span></span><br><span class="line">    <span class="keyword">if</span> msg_chunk.content:</span><br><span class="line">        <span class="built_in">print</span>(msg_chunk.content, end=<span class="string">&quot;&quot;</span>, flush=<span class="literal">True</span>)</span><br><span class="line"><span class="built_in">print</span>()  <span class="comment"># 最后换行</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="stream-mode-”updates”——逐步查看-Agent-执行过程"><a href="#stream-mode-”updates”——逐步查看-Agent-执行过程" class="headerlink" title="stream_mode&#x3D;”updates”——逐步查看 Agent 执行过程"></a>stream_mode&#x3D;”updates”——逐步查看 Agent 执行过程</h3><p>&emsp;&emsp;这个模式在构建需要显示”思考过程”的界面时非常有用，示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_course</span>(<span class="params">keyword: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在菜鸟教程 RUNOOB 搜索课程&quot;&quot;&quot;</span></span><br><span class="line">    courses = &#123;</span><br><span class="line">        <span class="string">&quot;python&quot;</span>: <span class="string">&quot;Python3 基础教程（30章，20小时）&quot;</span>,</span><br><span class="line">        <span class="string">&quot;html&quot;</span>: <span class="string">&quot;HTML 基础教程（25章，15小时）&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> courses.get(keyword.lower(), <span class="string">&quot;未找到相关课程&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>, temperature=<span class="number">0</span>),</span><br><span class="line">    tools=[search_course],</span><br><span class="line">    system_prompt=<span class="string">&quot;你是菜鸟教程 RUNOOB 的课程顾问。&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用 updates 模式查看每一步</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== Agent 执行过程 ===\n&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [HumanMessage(content=<span class="string">&quot;帮我查一下 Python 课程&quot;</span>)]&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;updates&quot;</span>,</span><br><span class="line">):</span><br><span class="line">    <span class="keyword">for</span> node_name, update <span class="keyword">in</span> chunk.items():</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[<span class="subst">&#123;node_name&#125;</span>]&quot;</span>, end=<span class="string">&quot; &quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> <span class="string">&quot;messages&quot;</span> <span class="keyword">in</span> update:</span><br><span class="line">            <span class="keyword">for</span> msg <span class="keyword">in</span> update[<span class="string">&quot;messages&quot;</span>]:</span><br><span class="line">                <span class="keyword">if</span> msg.<span class="built_in">type</span> == <span class="string">&quot;ai&quot;</span>:</span><br><span class="line">                    <span class="keyword">if</span> <span class="built_in">hasattr</span>(msg, <span class="string">&#x27;tool_calls&#x27;</span>) <span class="keyword">and</span> msg.tool_calls:</span><br><span class="line">                        calls = [tc[<span class="string">&#x27;name&#x27;</span>] <span class="keyword">for</span> tc <span class="keyword">in</span> msg.tool_calls]</span><br><span class="line">                        <span class="built_in">print</span>(<span class="string">f&quot;请求调用: <span class="subst">&#123;calls&#125;</span>&quot;</span>)</span><br><span class="line">                    <span class="keyword">elif</span> msg.content:</span><br><span class="line">                        <span class="built_in">print</span>(<span class="string">f&quot;回复: <span class="subst">&#123;msg.content[:<span class="number">80</span>]&#125;</span>&quot;</span>)</span><br><span class="line">                <span class="keyword">elif</span> msg.<span class="built_in">type</span> == <span class="string">&quot;tool&quot;</span>:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">f&quot;工具返回 [<span class="subst">&#123;msg.name&#125;</span>]: <span class="subst">&#123;msg.content&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="结构化输出"><a href="#结构化输出" class="headerlink" title="结构化输出"></a>结构化输出</h2><p>&emsp;&emsp;大多数时候，我们需要的不是一段文本，而是结构化的数据，例如 Json 对象。这样做可以省去从文本中解析数据这一步，让 AI 的输出可以直接被程序使用。接下来我们学习几种方法来实现结构化输出。</p>
+<h3 id="传入-Pydantic-模型"><a href="#传入-Pydantic-模型" class="headerlink" title="传入 Pydantic 模型"></a>传入 Pydantic 模型</h3><p>&emsp;&emsp;最简单的做法是将 Pydantic 模型传给 response_format 参数即可，示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line">load_dotenv()</span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.messages <span class="keyword">import</span> HumanMessage</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义期望的输出结构</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CourseInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;菜鸟教程 RUNOOB 课程提取结果&quot;&quot;&quot;</span></span><br><span class="line">    course_name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;课程名称&quot;</span>)</span><br><span class="line">    difficulty: <span class="built_in">str</span> = Field(description=<span class="string">&quot;难度：入门/进阶/高级&quot;</span>)</span><br><span class="line">    estimated_hours: <span class="built_in">int</span> = Field(description=<span class="string">&quot;预计学习时长（小时）&quot;</span>)</span><br><span class="line">    is_free: <span class="built_in">bool</span> = Field(description=<span class="string">&quot;是否免费&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">model = init_chat_model(<span class="string">&quot;deepseek:deepseek-v4-flash&quot;</span>, temperature=<span class="number">0</span>)</span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=CourseInfo,  <span class="comment"># 传入 Pydantic 模型</span></span><br><span class="line">    system_prompt=<span class="string">&quot;你是菜鸟教程 RUNOOB 的课程助手，从用户描述中提取课程信息。&quot;</span>,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 用户输入一段非结构化的描述</span></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [HumanMessage(</span><br><span class="line">        content=<span class="string">&quot;我最近在学习 Python3 基础教程，是入门级别的，&quot;</span></span><br><span class="line">                <span class="string">&quot;大概要学 20 个小时，而且是完全免费的&quot;</span></span><br><span class="line">    )]</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 从 structured_response 获取结构化结果</span></span><br><span class="line"><span class="keyword">if</span> <span class="string">&quot;structured_response&quot;</span> <span class="keyword">in</span> result:</span><br><span class="line">    course = result[<span class="string">&quot;structured_response&quot;</span>]</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;课程名: <span class="subst">&#123;course.course_name&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;难度: <span class="subst">&#123;course.difficulty&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;预计时长: <span class="subst">&#123;course.estimated_hours&#125;</span> 小时&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;免费: <span class="subst">&#123;<span class="string">&#x27;是&#x27;</span> <span class="keyword">if</span> course.is_free <span class="keyword">else</span> <span class="string">&#x27;否&#x27;</span>&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;对象类型: <span class="subst">&#123;<span class="built_in">type</span>(course)&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;注意，模型返回的 structured_response 是 Pydantic 模型实例，而不是普通字典，这意味着你可以使用 .course_name 等属性访问。response_format 和 tools 可以同时使用——Agent 在需要时调用工具，最终输出结构化数据。</p>
+<p>&emsp;&emsp;同时 Pydantic 还支持复杂的嵌套结构，如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">LearningPlan</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;学习计划&quot;&quot;&quot;</span></span><br><span class="line">    goal: <span class="built_in">str</span> = Field(description=<span class="string">&quot;学习目标概述&quot;</span>)</span><br><span class="line">    level: <span class="type">Literal</span>[<span class="string">&quot;入门&quot;</span>, <span class="string">&quot;进阶&quot;</span>, <span class="string">&quot;高级&quot;</span>] = Field(description=<span class="string">&quot;难度级别&quot;</span>)</span><br><span class="line">    total_hours: <span class="built_in">float</span> = Field(description=<span class="string">&quot;总时长（小时）&quot;</span>)</span><br><span class="line">    topics: <span class="built_in">list</span>[Topic] = Field(description=<span class="string">&quot;知识点列表&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h2 id="LangChain-中间件-Middleware"><a href="#LangChain-中间件-Middleware" class="headerlink" title="LangChain 中间件(Middleware)"></a>LangChain 中间件(Middleware)</h2><p>&emsp;&emsp;LangChain Middleware（中间件）是 LangChain 最强大的特性。它让你在 Agent 执行的各个环节插入自定义逻辑，实现重试、降级、缓存、内容过滤、日志记录等功能——而不需要修改 Agent 本身的代码。</p>
+<p>&emsp;&emsp;Middleware 是 Agent 执行流程中的钩子(Hook)。每个购自让你在特定的时间点执行自定义代码。如何更加直观的理解 Middleware？假设 Agent 的执行流程是这样的：1. 用户输入 → 2. 模型思考 → 3. 可能调用工具 → 4. 模型再思考 → 5. 输出结果。Middleware 可以让你在这 5 个环节中插入自定义逻辑：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">1. 用户输入</span><br><span class="line">↓ [before_agent 钩子：日志记录、权限检查]</span><br><span class="line">2. 模型思考</span><br><span class="line">↓ [before_model 钩子：消息预处理]</span><br><span class="line">↓ [wrap_model_call 钩子：重试、降级、缓存]</span><br><span class="line">↓ [after_model 钩子：内容审核]</span><br><span class="line">3. 工具执行</span><br><span class="line">↓ [wrap_tool_call 钩子：工具调用重试]</span><br><span class="line">4. 回到模型思考（循环直到完成）</span><br><span class="line">↓ [after_agent 钩子：结果格式化、统计分析]</span><br><span class="line">5. 输出结果</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;LangChain 的 Middleware 提供了 6 个钩子，按执行时机分为两类：</p>
+<table>
+<thead>
+<tr>
+<th>钩子</th>
+<th>执行频率</th>
+<th>执行位置</th>
+<th>主要用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>before_agent</td>
+<td>一次</td>
+<td>Agent 开始前</td>
+<td>初始化、权限检查、输入预处理</td>
+</tr>
+<tr>
+<td>before_model</td>
+<td>每次循环</td>
+<td>模型调用前</td>
+<td>消息预处理，动态上下文注入</td>
+</tr>
+<tr>
+<td>wrap_model_call</td>
+<td>每次循环</td>
+<td>包裹模型调用</td>
+<td>重试、降级、缓存、请求改写</td>
+</tr>
+<tr>
+<td>after_model</td>
+<td>每次循环</td>
+<td>模型调用后</td>
+<td>内容审核、相应过滤、日志</td>
+</tr>
+<tr>
+<td>wrap_tool_call</td>
+<td>每次工具调用</td>
+<td>包裹工具执行</td>
+<td>工具重试、结果缓存、参数改写</td>
+</tr>
+<tr>
+<td>after_agent</td>
+<td>一次</td>
+<td>Agent 结束后</td>
+<td>格式化输出、统计、清理资源</td>
+</tr>
+</tbody></table>
+<p>&emsp;&emsp;Middleware 可以通过类继承或装饰器两种方法使用。<br>&emsp;&emsp;方式一：装饰器，示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> before_model, after_model</span><br><span class="line"></span><br><span class="line"><span class="comment"># 装饰器方式：简单、直观</span></span><br><span class="line"><span class="meta">@before_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">log_before</span>(<span class="params">state, runtime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在每次模型调用前记录日志&quot;&quot;&quot;</span></span><br><span class="line">    msg_count = <span class="built_in">len</span>(state.get(<span class="string">&quot;messages&quot;</span>, []))</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;[before_model] 当前消息数: <span class="subst">&#123;msg_count&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@after_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">log_after</span>(<span class="params">state, runtime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在每次模型调用后记录日志&quot;&quot;&quot;</span></span><br><span class="line">    last_msg = state[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>] <span class="keyword">if</span> state.get(<span class="string">&quot;messages&quot;</span>) <span class="keyword">else</span> <span class="literal">None</span></span><br><span class="line">    <span class="keyword">if</span> last_msg <span class="keyword">and</span> <span class="built_in">hasattr</span>(last_msg, <span class="string">&#x27;tool_calls&#x27;</span>) <span class="keyword">and</span> last_msg.tool_calls:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[after_model] 模型请求了工具调用&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;方式二：类继承，适合复杂逻辑，示例代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> AgentMiddleware</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">LoggingMiddleware</span>(<span class="title class_ inherited__">AgentMiddleware</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;自定义日志中间件&quot;&quot;&quot;</span></span><br><span class="line"><span class="meta">    @property</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">name</span>(<span class="params">self</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="comment"># 自定义中间件名称（默认是类名）</span></span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;logging&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">before_agent</span>(<span class="params">self, state, runtime</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;Agent 开始前的逻辑&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;[Logging] Agent 开始执行&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">before_model</span>(<span class="params">self, state, runtime</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;模型调用前的逻辑&quot;&quot;&quot;</span></span><br><span class="line">        msg_count = <span class="built_in">len</span>(state.get(<span class="string">&quot;messages&quot;</span>, []))</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[Logging] 准备调用模型，当前 <span class="subst">&#123;msg_count&#125;</span> 条消息&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">after_model</span>(<span class="params">self, state, runtime</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;模型调用后的逻辑&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;[Logging] 模型调用完成&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">after_agent</span>(<span class="params">self, state, runtime</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;Agent 结束后的逻辑&quot;&quot;&quot;</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;[Logging] Agent 执行结束&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="before-model-与-after-model"><a href="#before-model-与-after-model" class="headerlink" title="@before_model 与 @after_model"></a>@before_model 与 @after_model</h3><p>&emsp;&emsp;@before_model 在每次调用模型前执行，可以在这里修改消息、注入上下文条件、或者直接跳过模型调用，下面是一个裁剪消息的示例：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@before_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">limit_context</span>(<span class="params">state, runtime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;限制消息历史长度，防止上下文过长&quot;&quot;&quot;</span></span><br><span class="line">    messages = state.get(<span class="string">&quot;messages&quot;</span>, [])</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 保留 system message + 最近 6 条消息</span></span><br><span class="line">    MAX_MESSAGES = <span class="number">6</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(messages) &gt; MAX_MESSAGES:</span><br><span class="line">        <span class="comment"># 裁剪到最近的消息</span></span><br><span class="line">        trimmed = messages[-MAX_MESSAGES:]</span><br><span class="line">        <span class="comment"># 确保第一条是用户消息</span></span><br><span class="line">        <span class="keyword">if</span> trimmed <span class="keyword">and</span> trimmed[<span class="number">0</span>].<span class="built_in">type</span> != <span class="string">&quot;human&quot;</span>:</span><br><span class="line">            trimmed = trimmed[<span class="number">1</span>:]</span><br><span class="line">        <span class="keyword">return</span> &#123;<span class="string">&quot;messages&quot;</span>: trimmed&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;还可以使用 before_model 来屏蔽敏感词。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@before_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">content_filter</span>(<span class="params">state, runtime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;检查用户消息是否包含敏感词，如果包含则拦截&quot;&quot;&quot;</span></span><br><span class="line">    messages = state.get(<span class="string">&quot;messages&quot;</span>, [])</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> messages:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    last_msg = messages[-<span class="number">1</span>]</span><br><span class="line">    content = <span class="built_in">str</span>(last_msg.content) <span class="keyword">if</span> <span class="built_in">hasattr</span>(last_msg, <span class="string">&#x27;content&#x27;</span>) <span class="keyword">else</span> <span class="string">&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> word <span class="keyword">in</span> SENSITIVE_WORDS:</span><br><span class="line">        <span class="keyword">if</span> word <span class="keyword">in</span> content:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;[拦截] 检测到敏感词: <span class="subst">&#123;word&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="comment"># jump_to=&quot;end&quot; 直接结束，不让模型回复</span></span><br><span class="line">            <span class="keyword">return</span> &#123;</span><br><span class="line">                <span class="string">&quot;jump_to&quot;</span>: <span class="string">&quot;end&quot;</span>,</span><br><span class="line">                <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">                    HumanMessage(content=<span class="string">f&quot;抱歉，为了安全，不能处理包含「<span class="subst">&#123;word&#125;</span>」的请求。&quot;</span>)</span><br><span class="line">                ]</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;@after_model 在模型回复后执行，适合审核模型输出、提取关键信息、追加后续指令等。有如下两个场景，分别问响应内容审核以及自动追加提示信息：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@after_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">response_audit</span>(<span class="params">state, runtime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;审核模型回复，如果涉及禁止话题则替换&quot;&quot;&quot;</span></span><br><span class="line">    messages = state.get(<span class="string">&quot;messages&quot;</span>, [])</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> messages:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    last_msg = messages[-<span class="number">1</span>]</span><br><span class="line">    content = <span class="built_in">str</span>(last_msg.content) <span class="keyword">if</span> <span class="built_in">hasattr</span>(last_msg, <span class="string">&#x27;content&#x27;</span>) <span class="keyword">else</span> <span class="string">&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> topic <span class="keyword">in</span> FORBIDDEN_TOPICS:</span><br><span class="line">        <span class="keyword">if</span> topic <span class="keyword">in</span> content:</span><br><span class="line">            runtime.stream_writer(&#123;</span><br><span class="line">                <span class="string">&quot;type&quot;</span>: <span class="string">&quot;warning&quot;</span>,</span><br><span class="line">                <span class="string">&quot;message&quot;</span>: <span class="string">f&quot;检测到回复包含「<span class="subst">&#123;topic&#125;</span>」相关内容，已被替换&quot;</span></span><br><span class="line">            &#125;)</span><br><span class="line">            <span class="comment"># 返回一个覆盖的消息（通过 add_messages reducer）</span></span><br><span class="line">            <span class="keyword">from</span> langchain.messages <span class="keyword">import</span> AIMessage</span><br><span class="line">            <span class="keyword">return</span> &#123;</span><br><span class="line">                <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">                    AIMessage(content=<span class="string">&quot;抱歉，我无法回答这个问题。&quot;</span></span><br><span class="line">                                      <span class="string">&quot;请询问编程学习相关的内容。&quot;</span>)</span><br><span class="line">                ]</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@after_model</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">append_disclaimer</span>(<span class="params">state, runtime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在每次模型回复后自动追加免责声明&quot;&quot;&quot;</span></span><br><span class="line">    messages = state.get(<span class="string">&quot;messages&quot;</span>, [])</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> messages:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    last_msg = messages[-<span class="number">1</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 只在 AI 的最终回复（没有 tool_calls）时追加</span></span><br><span class="line">    <span class="keyword">if</span> (last_msg.<span class="built_in">type</span> == <span class="string">&quot;ai&quot;</span></span><br><span class="line">        <span class="keyword">and</span> last_msg.content</span><br><span class="line">        <span class="keyword">and</span> <span class="keyword">not</span> (<span class="built_in">hasattr</span>(last_msg, <span class="string">&#x27;tool_calls&#x27;</span>) <span class="keyword">and</span> last_msg.tool_calls)):</span><br><span class="line">        <span class="comment"># 替换最后一条 AI 消息，加上免责声明</span></span><br><span class="line">        <span class="keyword">return</span> &#123;</span><br><span class="line">            <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">                AIMessage(</span><br><span class="line">                    content=(</span><br><span class="line">                        last_msg.content</span><br><span class="line">                        + <span class="string">&quot;\n\n---\n*以上内容由菜鸟教程 RUNOOB AI 助手生成，仅供参考。*&quot;</span></span><br><span class="line">                    )</span><br><span class="line">                )</span><br><span class="line">            ]</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在这两个 hook 中，我们还可以通过 can_jump_to 参数和 jump_to 状态来控制 Agent 的流程：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> before_model</span><br><span class="line"></span><br><span class="line"><span class="meta">@before_model(<span class="params">can_jump_to=[<span class="string">&quot;end&quot;</span>]</span>)  </span><span class="comment"># 声明可以跳转到的目标</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">conditional_exit</span>(<span class="params">state, runtime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在特定条件下直接结束 Agent&quot;&quot;&quot;</span></span><br><span class="line">    messages = state.get(<span class="string">&quot;messages&quot;</span>, [])</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> messages:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 如果用户说&quot;再见&quot;，直接结束</span></span><br><span class="line">    last_content = <span class="built_in">str</span>(messages[-<span class="number">1</span>].content)</span><br><span class="line">    <span class="keyword">if</span> last_content.strip() <span class="keyword">in</span> [<span class="string">&quot;再见&quot;</span>, <span class="string">&quot;拜拜&quot;</span>, <span class="string">&quot;bye&quot;</span>]:</span><br><span class="line">        <span class="keyword">return</span> &#123;</span><br><span class="line">            <span class="string">&quot;jump_to&quot;</span>: <span class="string">&quot;end&quot;</span>,  <span class="comment"># 直接结束 Agent</span></span><br><span class="line">            <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;assistant&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;再见！期待下次为您服务。&quot;</span>&#125;]</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;can_jump_to 支持的值如下：</p>
+<table>
+<thead>
+<tr>
+<th>值</th>
+<th>含义</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>[“end”]</td>
+<td>可跳转到结束</td>
+<td>条件退出、安全拦截</td>
+</tr>
+<tr>
+<td>[“model”]</td>
+<td>可跳转回模型</td>
+<td>需要让模型重新处理</td>
+</tr>
+<tr>
+<td>[“tools”]</td>
+<td>可跳转到工具节点</td>
+<td>跳过模型直接执行工具</td>
+</tr>
+<tr>
+<td>[“model”,”end”]</td>
+<td>可跳转到模型或结束</td>
+<td>多种条件分支</td>
+</tr>
+</tbody></table>
+<h3 id="wrap-model-call"><a href="#wrap-model-call" class="headerlink" title="@wrap_model_call"></a>@wrap_model_call</h3><p>&emsp;&emsp;@wrap_model_call 是中间件中最强大的钩子，它不像 before 和 after 那样只是观察，而是可以完全控制模型的执行过程 —- 重试、降级、缓存、甚至跳过模型直接用预设回复。</p>
+<p>&emsp;&emsp;@wrap_model_call 的核心是一个 handler 回调函数。调用 handler(request) 才会真正执行模型；不调用则跳过模型。示例如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># wrap_model_call 的基本结构</span></span><br><span class="line"><span class="comment"># request: 包含模型、消息、工具等全部信息</span></span><br><span class="line"><span class="comment"># handler: 一个可调用对象，执行它才会真正调用模型</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@wrap_model_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">my_middleware</span>(<span class="params">request, handler</span>):</span><br><span class="line">    <span class="comment"># 在模型调用前可以做任何事</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;模型即将被调用...&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 调用 handler(request) 才真正执行模型</span></span><br><span class="line">    response = handler(request)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 在模型调用后可以做任何事</span></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;模型调用完成&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> response</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来是几个 @wrap_model_call 的常见场景：<br>&emsp;&emsp;场景一：模型调用失败重试</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@wrap_model_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">retry_on_error</span>(<span class="params">request, handler</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;模型调用失败时自动重试，最多 3 次&quot;&quot;&quot;</span></span><br><span class="line">    max_retries = <span class="number">3</span></span><br><span class="line">    last_error = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> attempt <span class="keyword">in</span> <span class="built_in">range</span>(max_retries):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            result = handler(request)</span><br><span class="line">            <span class="keyword">if</span> attempt &gt; <span class="number">0</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;  [重试成功] 第 <span class="subst">&#123;attempt + <span class="number">1</span>&#125;</span> 次尝试&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span> result</span><br><span class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">            last_error = e</span><br><span class="line">            <span class="keyword">if</span> attempt &lt; max_retries - <span class="number">1</span>:</span><br><span class="line">                wait_time = (attempt + <span class="number">1</span>) * <span class="number">2</span>  <span class="comment"># 递增等待：2s, 4s</span></span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;  [重试] 第 <span class="subst">&#123;attempt + <span class="number">1</span>&#125;</span> 次失败，<span class="subst">&#123;wait_time&#125;</span>秒后重试...&quot;</span>)</span><br><span class="line">                <span class="keyword">import</span> time</span><br><span class="line">                time.sleep(wait_time)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 所有重试都失败了</span></span><br><span class="line">    <span class="keyword">raise</span> last_error</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;场景二、模型降级&#x2F;故障转移。当主模型不可用时，自动切换到备用模型：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@wrap_model_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">fallback_on_error</span>(<span class="params">request, handler</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;主模型失败时自动切换到备用模型&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="comment"># 尝试用主模型</span></span><br><span class="line">        <span class="keyword">return</span> handler(request)</span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[降级] 主模型失败: <span class="subst">&#123;e&#125;</span>，切换到备用模型...&quot;</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 覆盖 request 中的 model，切换到备用模型</span></span><br><span class="line">        request = request.override(model=fallback_model)</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            <span class="keyword">return</span> handler(request)</span><br><span class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e2:</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">f&quot;[降级] 备用模型也失败了: <span class="subst">&#123;e2&#125;</span>&quot;</span>)</span><br><span class="line">            <span class="comment"># 两个模型都失败，返回友好提示</span></span><br><span class="line">            <span class="keyword">return</span> AIMessage(</span><br><span class="line">                content=<span class="string">&quot;抱歉，服务暂时不可用，请稍后重试。&quot;</span></span><br><span class="line">            )</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;场景三、缓存模型响应。对于重复的查询，可以缓存模型响应以减少 API 调用成本，相当于给 Agent 的模型调用装了一个“缓存门卫”——相同问题第二次来时，门卫直接把上次的答案塞回去，根本不让请求走到大模型那里，从而实现零成本、零延迟的重复查询优化：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@wrap_model_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">cache_responses</span>(<span class="params">request, handler</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;缓存模型响应，相同问题不重复调用&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 使用最后一条用户消息的内容作为缓存键</span></span><br><span class="line">    messages = request.messages</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> messages:</span><br><span class="line">        <span class="keyword">return</span> handler(request)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 生成缓存键</span></span><br><span class="line">    last_content = <span class="built_in">str</span>(messages[-<span class="number">1</span>].content) <span class="keyword">if</span> <span class="built_in">hasattr</span>(messages[-<span class="number">1</span>], <span class="string">&#x27;content&#x27;</span>) <span class="keyword">else</span> <span class="string">&quot;&quot;</span></span><br><span class="line">    cache_key = last_content[:<span class="number">200</span>]  <span class="comment"># 截断超长内容</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 检查缓存</span></span><br><span class="line">    <span class="keyword">if</span> cache_key <span class="keyword">in</span> cache:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[缓存命中] 直接返回缓存结果&quot;</span>)</span><br><span class="line">        cached = cache[cache_key]</span><br><span class="line">        <span class="keyword">return</span> AIMessage(content=<span class="string">f&quot;<span class="subst">&#123;cached&#125;</span>\n\n*(来自缓存)*&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 缓存未命中，调用模型</span></span><br><span class="line">    result = handler(request)</span><br><span class="line">    <span class="comment"># AIMessage 的 content 可能混在列表中，直接取第一个</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">hasattr</span>(result, <span class="string">&#x27;content&#x27;</span>):</span><br><span class="line">        cache[cache_key] = result.content</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[缓存未命中] 已存入缓存，当前 <span class="subst">&#123;<span class="built_in">len</span>(cache)&#125;</span> 条&quot;</span>)</span><br><span class="line">    <span class="keyword">elif</span> <span class="built_in">hasattr</span>(result, <span class="string">&#x27;model_response&#x27;</span>):</span><br><span class="line">        <span class="comment"># ExtendedModelResponse 的情况</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+
+<h3 id="wrap-tool-call"><a href="#wrap-tool-call" class="headerlink" title="@wrap_tool_call"></a>@wrap_tool_call</h3><p>&emsp;&emsp;@wrap_tool_call 让你在工具执行层面实现与 @wrap_model_call 类似的控制能力——重试、缓存、参数改写、结果后处理。<br>&emsp;&emsp;@wrap_tool_call 的结构与 @wrap_model_call 类似，接收 request 和 handler 两个参数：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents.middleware <span class="keyword">import</span> wrap_tool_call</span><br><span class="line"></span><br><span class="line"><span class="meta">@wrap_tool_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">my_tool_wrapper</span>(<span class="params">request, handler</span>):</span><br><span class="line">    <span class="comment"># request.tool_call: 包含工具名称和参数</span></span><br><span class="line">    <span class="comment"># request.tool: 工具对象本身</span></span><br><span class="line">    <span class="comment"># request.state: Agent 当前状态</span></span><br><span class="line">    <span class="comment"># request.runtime: 运行时上下文</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 调用 handler(request) 才会真正执行工具</span></span><br><span class="line">    result = handler(request)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># result 是 ToolMessage 或 Command</span></span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;场景一、工具调用失败时自动重试：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@wrap_tool_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">retry_tool_on_error</span>(<span class="params">request, handler</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;工具调用失败时自动重试&quot;&quot;&quot;</span></span><br><span class="line">    max_retries = <span class="number">3</span></span><br><span class="line">    last_result = <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> attempt <span class="keyword">in</span> <span class="built_in">range</span>(max_retries):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            result = handler(request)</span><br><span class="line">            <span class="comment"># 检查是否是错误结果</span></span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">hasattr</span>(result, <span class="string">&#x27;status&#x27;</span>) <span class="keyword">and</span> result.status == <span class="string">&quot;error&quot;</span>:</span><br><span class="line">                <span class="keyword">if</span> attempt &lt; max_retries - <span class="number">1</span>:</span><br><span class="line">                    <span class="built_in">print</span>(<span class="string">f&quot;  [重试] 工具返回错误，第 <span class="subst">&#123;attempt + <span class="number">1</span>&#125;</span> 次重试...&quot;</span>)</span><br><span class="line">                    <span class="keyword">continue</span></span><br><span class="line">            <span class="keyword">if</span> attempt &gt; <span class="number">0</span>:</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;  [重试成功] 第 <span class="subst">&#123;attempt + <span class="number">1</span>&#125;</span> 次尝试&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span> result</span><br><span class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">            <span class="keyword">if</span> attempt &lt; max_retries - <span class="number">1</span>:</span><br><span class="line">                <span class="keyword">import</span> time</span><br><span class="line">                time.sleep((attempt + <span class="number">1</span>) * <span class="number">2</span>)</span><br><span class="line">                <span class="built_in">print</span>(<span class="string">f&quot;  [重试] 异常 <span class="subst">&#123;e&#125;</span>，<span class="subst">&#123;attempt + <span class="number">1</span>&#125;</span> 次重试...&quot;</span>)</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                <span class="keyword">raise</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> last_result</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;场景二、修改工具参数。在工具执行之前动态修改参数，可以在不修改工具代码的情况下实现参数转换：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@wrap_tool_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">normalize_city_name</span>(<span class="params">request, handler</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;自动规范化城市名称（全角转半角、去除多余空格等）&quot;&quot;&quot;</span></span><br><span class="line">    tool_call = request.tool_call</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 只处理包含 city 参数的工具调用</span></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;city&quot;</span> <span class="keyword">in</span> tool_call.get(<span class="string">&quot;args&quot;</span>, &#123;&#125;):</span><br><span class="line">        city = tool_call[<span class="string">&quot;args&quot;</span>][<span class="string">&quot;city&quot;</span>]</span><br><span class="line">        <span class="comment"># 规范化城市名：去空格、统一大小写</span></span><br><span class="line">        normalized = city.strip().replace(<span class="string">&quot;　&quot;</span>, <span class="string">&quot;&quot;</span>)  <span class="comment"># 移除全角空格</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 替换参数</span></span><br><span class="line">        new_args = &#123;**tool_call[<span class="string">&quot;args&quot;</span>], <span class="string">&quot;city&quot;</span>: normalized&#125;</span><br><span class="line">        new_tool_call = &#123;**tool_call, <span class="string">&quot;args&quot;</span>: new_args&#125;</span><br><span class="line">        request = request.override(tool_call=new_tool_call)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> handler(request)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;场景三、工具结果缓存，对于重复的工具调用（相同工具 + 相同参数），可以缓存结果：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@wrap_tool_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">cache_tool_results</span>(<span class="params">request, handler</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;缓存工具执行结果&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 生成缓存键：工具名 + 参数</span></span><br><span class="line">    tool_name = request.tool_call.get(<span class="string">&quot;name&quot;</span>, <span class="string">&quot;unknown&quot;</span>)</span><br><span class="line">    tool_args = <span class="built_in">str</span>(request.tool_call.get(<span class="string">&quot;args&quot;</span>, &#123;&#125;))</span><br><span class="line"></span><br><span class="line">    cache_key = <span class="string">f&quot;<span class="subst">&#123;tool_name&#125;</span>:<span class="subst">&#123;tool_args&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 检查缓存</span></span><br><span class="line">    <span class="keyword">if</span> cache_key <span class="keyword">in</span> tool_cache:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[工具缓存命中] <span class="subst">&#123;tool_name&#125;</span>&quot;</span>)</span><br><span class="line">        cached_content = tool_cache[cache_key]</span><br><span class="line">        <span class="keyword">return</span> ToolMessage(</span><br><span class="line">            content=cached_content,</span><br><span class="line">            tool_call_id=request.tool_call.get(<span class="string">&quot;id&quot;</span>, <span class="string">&quot;&quot;</span>),</span><br><span class="line">            name=tool_name,</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 执行工具</span></span><br><span class="line">    result = handler(request)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 存入缓存</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">hasattr</span>(result, <span class="string">&#x27;content&#x27;</span>):</span><br><span class="line">        tool_cache[cache_key] = result.content</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[工具缓存写入] <span class="subst">&#123;tool_name&#125;</span>，当前 <span class="subst">&#123;<span class="built_in">len</span>(tool_cache)&#125;</span> 条&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;场景四、工具调用日志与监控。记录所有工具调用的详细信息：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@wrap_tool_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">monitor_tool_performance</span>(<span class="params">request, handler</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;监控工具调用的性能指标&quot;&quot;&quot;</span></span><br><span class="line">    tool_name = request.tool_call.get(<span class="string">&quot;name&quot;</span>, <span class="string">&quot;unknown&quot;</span>)</span><br><span class="line">    tool_args = request.tool_call.get(<span class="string">&quot;args&quot;</span>, &#123;&#125;)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 记录开始时间</span></span><br><span class="line">    start_time = time.time()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        result = handler(request)</span><br><span class="line">        elapsed = time.time() - start_time</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 记录成功调用</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[监控] <span class="subst">&#123;tool_name&#125;</span>(<span class="subst">&#123;tool_args&#125;</span>) 成功，耗时 <span class="subst">&#123;elapsed:<span class="number">.2</span>f&#125;</span>s&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> result</span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        elapsed = time.time() - start_time</span><br><span class="line">        <span class="comment"># 记录失败调用</span></span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;[监控] <span class="subst">&#123;tool_name&#125;</span>(<span class="subst">&#123;tool_args&#125;</span>) 失败，耗时 <span class="subst">&#123;elapsed:<span class="number">.2</span>f&#125;</span>s，错误: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">raise</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;场景五、根据结果决定后续流程。你可以根据工具执行结果决定是否继续 Agent 循环。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@wrap_tool_call</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">check_empty_result</span>(<span class="params">request, handler</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;如果工具返回空结果，直接结束 Agent，不浪费模型调用&quot;&quot;&quot;</span></span><br><span class="line">    result = handler(request)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 检查是否返回了空结果</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">hasattr</span>(result, <span class="string">&#x27;content&#x27;</span>) <span class="keyword">and</span> (</span><br><span class="line">        <span class="string">&quot;未找到&quot;</span> <span class="keyword">in</span> <span class="built_in">str</span>(result.content)</span><br><span class="line">        <span class="keyword">or</span> <span class="string">&quot;无结果&quot;</span> <span class="keyword">in</span> <span class="built_in">str</span>(result.content)</span><br><span class="line">        <span class="keyword">or</span> <span class="string">&quot;没有&quot;</span> <span class="keyword">in</span> <span class="built_in">str</span>(result.content)</span><br><span class="line">    ):</span><br><span class="line">        <span class="comment"># 直接返回一个 Command 来更新状态</span></span><br><span class="line">        <span class="comment"># 添加一条 AI 消息说明情况</span></span><br><span class="line">        <span class="keyword">from</span> langchain.messages <span class="keyword">import</span> AIMessage</span><br><span class="line">        <span class="keyword">return</span> Command(update=&#123;</span><br><span class="line">            <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">                AIMessage(content=<span class="string">&quot;抱歉，没有找到相关信息。请换个关键词试试。&quot;</span>)</span><br><span class="line">            ]</span><br><span class="line">        &#125;)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+
+<h3 id="before-agent-和-after-agent"><a href="#before-agent-和-after-agent" class="headerlink" title="@before_agent 和 @after_agent"></a>@before_agent 和 @after_agent</h3><p>&emsp;&emsp;before_agent 和 after_agent 是 Agent 级别的钩子，分别在 Agent 执行之前和完成之后各执行一次。适合做初始化、预处理、后处理和统计分析。</p>
+<p>&emsp;&emsp;before_agent 在 Agent 正式开始执行前运行，只运行以此。可以在这里做输入预处理、用户信息验证、资源初始化等等。</p>
+<p>&emsp;&emsp;场景一、输入预处理——自动修正用户输入</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@before_agent</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">preprocess_input</span>(<span class="params">state, runtime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;在 Agent 开始前处理用户输入&quot;&quot;&quot;</span></span><br><span class="line">    messages = state.get(<span class="string">&quot;messages&quot;</span>, [])</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> messages:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 获取用户最后一条消息</span></span><br><span class="line">    last_msg = messages[-<span class="number">1</span>]</span><br><span class="line">    content = <span class="built_in">str</span>(last_msg.content) <span class="keyword">if</span> <span class="built_in">hasattr</span>(last_msg, <span class="string">&#x27;content&#x27;</span>) <span class="keyword">else</span> <span class="string">&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 自动添加礼貌用语（如果用户直接问问题）</span></span><br><span class="line">    greetings = [<span class="string">&quot;你好&quot;</span>, <span class="string">&quot;您好&quot;</span>, <span class="string">&quot;hi&quot;</span>, <span class="string">&quot;hello&quot;</span>, <span class="string">&quot;嗨&quot;</span>]</span><br><span class="line">    <span class="keyword">if</span> content <span class="keyword">and</span> <span class="keyword">not</span> <span class="built_in">any</span>(content.lower().startswith(g) <span class="keyword">for</span> g <span class="keyword">in</span> greetings):</span><br><span class="line">        <span class="comment"># 不修改，直接返回</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;场景二、访问控制、权限检查：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@before_agent</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">access_control</span>(<span class="params">state, runtime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;检查用户是否有权限使用 Agent&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 从 runtime.context 获取用户信息</span></span><br><span class="line">    context = runtime.context</span><br><span class="line">    <span class="keyword">if</span> context <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line">    user_role = context.get(<span class="string">&quot;user_role&quot;</span>, <span class="string">&quot;guest&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 访客用户只能使用有限功能</span></span><br><span class="line">    <span class="keyword">if</span> user_role == <span class="string">&quot;guest&quot;</span>:</span><br><span class="line">        messages = state.get(<span class="string">&quot;messages&quot;</span>, [])</span><br><span class="line">        <span class="keyword">if</span> messages:</span><br><span class="line">            last_content = <span class="built_in">str</span>(messages[-<span class="number">1</span>].content)</span><br><span class="line">            <span class="comment"># 检查是否涉及限制功能</span></span><br><span class="line">            restricted_keywords = [<span class="string">&quot;删除&quot;</span>, <span class="string">&quot;管理&quot;</span>, <span class="string">&quot;配置&quot;</span>, <span class="string">&quot;admin&quot;</span>]</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">any</span>(kw <span class="keyword">in</span> last_content <span class="keyword">for</span> kw <span class="keyword">in</span> restricted_keywords):</span><br><span class="line">                <span class="keyword">return</span> &#123;</span><br><span class="line">                    <span class="string">&quot;jump_to&quot;</span>: <span class="string">&quot;end&quot;</span>,</span><br><span class="line">                    <span class="string">&quot;messages&quot;</span>: [HumanMessage(</span><br><span class="line">                        content=<span class="string">&quot;您当前的权限不足，无法执行此操作。请登录后重试。&quot;</span></span><br><span class="line">                    )]</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;after_agent 在 Agent 完成所有处理后执行（只执行一次）。你可以在这里格式化最终输出、记录统计信息、清理资源等。</p>
+<p>&emsp;&emsp;场景三、统计分析：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@after_agent</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">conversation_stats</span>(<span class="params">state, runtime</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;统计对话信息并追加到结果中&quot;&quot;&quot;</span></span><br><span class="line">    messages = state.get(<span class="string">&quot;messages&quot;</span>, [])</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 统计数据</span></span><br><span class="line">    model_calls = <span class="number">0</span></span><br><span class="line">    tool_calls = <span class="number">0</span></span><br><span class="line">    total_chars = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> msg <span class="keyword">in</span> messages:</span><br><span class="line">        <span class="keyword">if</span> msg.<span class="built_in">type</span> == <span class="string">&quot;ai&quot;</span>:</span><br><span class="line">            model_calls += <span class="number">1</span></span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">hasattr</span>(msg, <span class="string">&#x27;tool_calls&#x27;</span>) <span class="keyword">and</span> msg.tool_calls:</span><br><span class="line">                tool_calls += <span class="built_in">len</span>(msg.tool_calls)</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">hasattr</span>(msg, <span class="string">&#x27;content&#x27;</span>) <span class="keyword">and</span> msg.content:</span><br><span class="line">            total_chars += <span class="built_in">len</span>(<span class="built_in">str</span>(msg.content))</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 通过 custom stream 发送统计信息</span></span><br><span class="line">    runtime.stream_writer(&#123;</span><br><span class="line">        <span class="string">&quot;type&quot;</span>: <span class="string">&quot;stats&quot;</span>,</span><br><span class="line">        <span class="string">&quot;model_calls&quot;</span>: model_calls,</span><br><span class="line">        <span class="string">&quot;tool_calls&quot;</span>: tool_calls,</span><br><span class="line">        <span class="string">&quot;total_messages&quot;</span>: <span class="built_in">len</span>(messages),</span><br><span class="line">        <span class="string">&quot;total_chars&quot;</span>: total_chars,</span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;以上就是所有 hook 的基本用法，在实际的 Agent 开发中还会有其他更复杂的场景。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangChain/" rel="tag"># LangChain</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/07/22/langchain-learn-3/" rel="prev" title="LangChain 学习(3) Agent 工作流程">
+      <i class="fa fa-chevron-left"></i> LangChain 学习(3) Agent 工作流程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/07/24/langchain-learn-5/" rel="next" title="LangChain 学习(5) LangChain 的对话记忆、跨会话存储、人工介入以及多 Agent 的实现">
+      LangChain 学习(5) LangChain 的对话记忆、跨会话存储、人工介入以及多 Agent 的实现 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA-Streaming"><span class="nav-number">1.</span> <span class="nav-text">流式输出 Streaming</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#stream-mode-%E2%80%9Dmessages%E2%80%9D%E2%80%94%E2%80%94%E9%80%90-Token-%E6%B5%81%E5%BC%8F"><span class="nav-number">1.1.</span> <span class="nav-text">stream_mode&#x3D;”messages”——逐 Token 流式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#stream-mode-%E2%80%9Dupdates%E2%80%9D%E2%80%94%E2%80%94%E9%80%90%E6%AD%A5%E6%9F%A5%E7%9C%8B-Agent-%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">stream_mode&#x3D;”updates”——逐步查看 Agent 执行过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA"><span class="nav-number">2.</span> <span class="nav-text">结构化输出</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%A0%E5%85%A5-Pydantic-%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.1.</span> <span class="nav-text">传入 Pydantic 模型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LangChain-%E4%B8%AD%E9%97%B4%E4%BB%B6-Middleware"><span class="nav-number">3.</span> <span class="nav-text">LangChain 中间件(Middleware)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#before-model-%E4%B8%8E-after-model"><span class="nav-number">3.1.</span> <span class="nav-text">@before_model 与 @after_model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wrap-model-call"><span class="nav-number">3.2.</span> <span class="nav-text">@wrap_model_call</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wrap-tool-call"><span class="nav-number">3.3.</span> <span class="nav-text">@wrap_tool_call</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#before-agent-%E5%92%8C-after-agent"><span class="nav-number">3.4.</span> <span class="nav-text">@before_agent 和 @after_agent</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">77</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
