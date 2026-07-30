@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="做 RAG，今天只做文档处理！">
+<meta property="og:type" content="article">
+<meta property="og:title" content="动手做 Rag(1) -- 文档处理系统的设计">
+<meta property="og:url" content="https://hccc1203.github.io/2026/07/30/rag_system_1/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="做 RAG，今天只做文档处理！">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-07-30T02:09:38.000Z">
+<meta property="article:modified_time" content="2026-07-30T14:11:13.800Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="AGENT">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/07/30/rag_system_1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>动手做 Rag(1) -- 文档处理系统的设计 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/07/30/rag_system_1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          动手做 Rag(1) -- 文档处理系统的设计
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-07-30 10:09:38" itemprop="dateCreated datePublished" datetime="2026-07-30T10:09:38+08:00">2026-07-30</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><p>&emsp;&emsp;实现 PPT 文件的读取、清洗、分块、向量化。</p>
+<h2 id="写在前面的一些-Py-基础"><a href="#写在前面的一些-Py-基础" class="headerlink" title="写在前面的一些 Py 基础"></a>写在前面的一些 Py 基础</h2><h3 id="抽象基类-ABC-和-abstractmethod"><a href="#抽象基类-ABC-和-abstractmethod" class="headerlink" title="抽象基类 (ABC)  和 @abstractmethod"></a>抽象基类 (ABC)  和 @abstractmethod</h3><p>&emsp;&emsp;ABC 是一个合同模板，它自己不能直接使用，只能被子类继承。它用 @abstractmethod 标记的方法，子类必须实现，否则连对象都创建不了。目的是避免子类忘记写关键方法，把错误从运行时提前到代码启动时暴露。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyBase</span>(<span class="title class_ inherited__">ABC</span>):</span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">do_something</span>(<span class="params">self</span>):</span><br><span class="line">        ...   <span class="comment"># 只定义接口，不写具体内容</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="classmethod-类方法与普通方法的区别"><a href="#classmethod-类方法与普通方法的区别" class="headerlink" title="@classmethod 类方法与普通方法的区别"></a>@classmethod 类方法与普通方法的区别</h3><p>&emsp;&emsp;实例方法(self)：绑定到实例，必须先创建对象才能调用，处理的是某一只具体的狗的数据。<br>&emsp;&emsp;类方法(cls)：绑定到类本身，直接用 <code>类名.方法()</code> 调用，处理的是整个类共有的信息。</p>
+<h3 id="kwargs"><a href="#kwargs" class="headerlink" title="kwargs"></a>kwargs</h3><p>&emsp;&emsp;<code>**kwargs</code> 是 Python 里的万能收纳盒，专门存放多传的带名字的参数。其全称为 keyword arguments，拆开看：** 表示打包，kwargs 是变量名。举个例子：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">make_coffee</span>(<span class="params">**kwargs</span>):</span><br><span class="line">    <span class="built_in">print</span>(kwargs)</span><br><span class="line"></span><br><span class="line">make_coffee(糖=<span class="string">&quot;少糖&quot;</span>, 温度=<span class="string">&quot;热&quot;</span>, 杯型=<span class="string">&quot;大&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;所有多余的参数都会被收进一个字典，函数不需要提前知道你有多少种参数。</p>
+<p>&emsp;&emsp;<code>*args</code> 负责收<strong>没名字</strong>的参数，打包成<strong>元组</strong>。<br>&emsp;&emsp;而 <code>**kwargs</code> 负责收 <strong>有名字</strong> 的参数，打包成<strong>字典</strong>。</p>
+<h3 id="any-和-Any"><a href="#any-和-Any" class="headerlink" title="any 和 Any"></a>any 和 Any</h3><p>&emsp;&emsp;any 是 Python 的内置函数，用来判断一个可迭代的对象（列表、元组）有没有至少一个为真的元素：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(<span class="built_in">any</span>([<span class="literal">False</span>, <span class="literal">False</span>, <span class="literal">True</span>]))   <span class="comment"># True（有 True）</span></span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">any</span>([<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>]))             <span class="comment"># False（全是 0，视为假）</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;Any 从 typing 模块导入，表示任意类型，表示这里可以接受任何类型，不要检查他：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, file_path: <span class="built_in">str</span>, **kwargs: <span class="type">Any</span></span>):</span><br></pre></td></tr></table></figure>
+
+<h3 id="dataclass-————-自动生成基础代码"><a href="#dataclass-————-自动生成基础代码" class="headerlink" title="@dataclass ———— 自动生成基础代码"></a>@dataclass ———— 自动生成基础代码</h3><p>&emsp;&emsp;正常写一个类，需要写一大堆初始化属性：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Document</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, page_content, metadata</span>):</span><br><span class="line">        <span class="variable language_">self</span>.page_content = page_content</span><br><span class="line">        <span class="variable language_">self</span>.metadata = metadata</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;使用 <code>@dataclass</code> 装饰器，只需要列出属性，一些方法会自动创建，省时省力不易出错。</p>
+<h3 id="常用正则表达式"><a href="#常用正则表达式" class="headerlink" title="常用正则表达式"></a>常用正则表达式</h3><p>&emsp;&emsp;<code>re</code> 是 Python 的正则表达式模块，主要用于按照某种规则查找、匹配、替换字符串中的内容。接下来我们学习几个最常用的函数：<br>&emsp;&emsp;<strong>①、re.sub() ———— 替换</strong><br>&emsp;&emsp;这是文本清洗中最常用的，可以实现字符的替换，其格式如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">re.sub(</span><br><span class="line">    pattern,</span><br><span class="line">    replacement,</span><br><span class="line">    string</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<strong>②、re.search() ———— 查找</strong><br>&emsp;&emsp;判断字符串里面有没有某种模式。例如，判断文件是不是 PPT：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> re</span><br><span class="line">filename=<span class="string">&quot;report.pptx&quot;</span></span><br><span class="line">result = re.search(</span><br><span class="line">    <span class="string">r&quot;\.pptx$&quot;</span>,</span><br><span class="line">    filename</span><br><span class="line">)</span><br><span class="line"><span class="keyword">if</span> result:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;PPT文件&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<strong>③、re.findall() ———— 找出所有匹配内容</strong><br>&emsp;&emsp;例如提取 PPT 中的所有数字：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">numbers = re.findall(</span><br><span class="line">    <span class="string">r&quot;\d+&quot;</span>,</span><br><span class="line">    text</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(numbers)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;以下是一些正则表达式常见的符号</p>
+<p>&emsp;&emsp;<strong>字符匹配</strong></p>
+<table>
+<thead>
+<tr>
+<th>表达式</th>
+<th>含义</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.</code></td>
+<td>任意字符</td>
+<td>a,b,1</td>
+</tr>
+<tr>
+<td><code>\d</code></td>
+<td>数字</td>
+<td>0-9</td>
+</tr>
+<tr>
+<td><code>\w</code></td>
+<td>字母数字下划线</td>
+<td>abc_1</td>
+</tr>
+<tr>
+<td><code>\s</code></td>
+<td>空白</td>
+<td>空格换行</td>
+</tr>
+<tr>
+<td><code>[abc]</code></td>
+<td>a&#x2F;b&#x2F;c其中一个</td>
+<td>apple</td>
+</tr>
+</tbody></table>
+<p>&emsp;&emsp;<strong>数量控制</strong></p>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>*</code></td>
+<td>0次或多次</td>
+</tr>
+<tr>
+<td><code>+</code></td>
+<td>1次或多次</td>
+</tr>
+<tr>
+<td><code>?</code></td>
+<td>0次或1次</td>
+</tr>
+<tr>
+<td><code>&#123;n&#125;</code></td>
+<td>n次</td>
+</tr>
+<tr>
+<td><code>&#123;n,m&#125;</code></td>
+<td>n到m次</td>
+</tr>
+</tbody></table>
+<h3 id="strip-方法"><a href="#strip-方法" class="headerlink" title="strip 方法"></a>strip 方法</h3><p>&emsp;&emsp;Python strip() 方法用于移除字符串头尾指定的字符（默认为空格）或字符序列。注意：该方法只能删除开头或是结尾的字符，不能删除中间部分的字符。</p>
+<h3 id="enumerate-函数"><a href="#enumerate-函数" class="headerlink" title="enumerate 函数"></a>enumerate 函数</h3><p>&emsp;&emsp;enumerate() 函数用于将一个可遍历的数据对象(如列表、元组或字符串)组合为一个索引序列，同时列出数据和数据下标，一般用在 for 循环当中。</p>
+<h2 id="文档处理基类"><a href="#文档处理基类" class="headerlink" title="文档处理基类"></a>文档处理基类</h2><p>&emsp;&emsp;我们先创建 FileProcess 文件夹，新建 file_process_base.py，创建文件处理基类。后续其他的文件处理类都基于此类创建。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod</span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass, field</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Any</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Document</span>:</span><br><span class="line">    page_content: <span class="built_in">str</span></span><br><span class="line">    metadata: <span class="built_in">dict</span> = field(default_factory=<span class="built_in">dict</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BaseLoader</span>(<span class="title class_ inherited__">ABC</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    文档加载器抽象基类</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, file_path: <span class="built_in">str</span>, **kwargs: <span class="type">Any</span></span>):</span><br><span class="line">        <span class="variable language_">self</span>.file_path = file_path</span><br><span class="line">        <span class="variable language_">self</span>.kwargs = kwargs</span><br><span class="line">    </span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">load</span>(<span class="params">self</span>) -&gt; <span class="built_in">list</span>[Document]:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;加载文档并返回 Document 列表&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BaseCleaner</span>(<span class="title class_ inherited__">ABC</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    文档清洗器抽象基类</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">clean</span>(<span class="params">self, documents: <span class="built_in">list</span>[Document]</span>) -&gt; <span class="built_in">list</span>[Document]:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;清洗文本&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BaseSplitter</span>(<span class="title class_ inherited__">ABC</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    文档清洗器抽象基类</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">split</span>(<span class="params">self, documents: <span class="built_in">list</span>[Document]</span>) -&gt; <span class="built_in">list</span>[Document]:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;文本分割&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BaseProcessor</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    文档处理基类</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, </span></span><br><span class="line"><span class="params">                 loader: BaseLoader, </span></span><br><span class="line"><span class="params">                 cleaner: BaseCleaner, </span></span><br><span class="line"><span class="params">                 splitter: BaseSplitter</span></span><br><span class="line"><span class="params">                </span>):</span><br><span class="line">        <span class="variable language_">self</span>.loader = loader</span><br><span class="line">        <span class="variable language_">self</span>.cleaner = cleaner</span><br><span class="line">        <span class="variable language_">self</span>.splitter = splitter</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> </span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;创建加载、清洗、分块基类，然后再创建处理大类。这样就可以对每一种文件实行不同的策略。</p>
+<h2 id="PPTx-process"><a href="#PPTx-process" class="headerlink" title="PPTx_process"></a>PPTx_process</h2><p>&emsp;&emsp;创建 <code>PPTx_process.py</code> 文件，继承三种基类。接下来我们依次实现三种方法。</p>
+<h3 id="加载"><a href="#加载" class="headerlink" title="加载"></a>加载</h3><p>&emsp;&emsp;我先尝试使用 markitdown 工具将 PPT 转换为 MD 文件，代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> FileProcess.file_process_base <span class="keyword">import</span> BaseLoader, BaseCleaner, BaseSplitter</span><br><span class="line"><span class="keyword">from</span> FileProcess.file_process_base <span class="keyword">import</span> Document</span><br><span class="line"><span class="keyword">from</span> markitdown <span class="keyword">import</span> MarkItDown</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PPTx_Loader</span>(<span class="title class_ inherited__">BaseLoader</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">load</span>(<span class="params">self, file_path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">list</span>[Document]:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;加载文档并返回 Document 列表&quot;&quot;&quot;</span></span><br><span class="line">        md = MarkItDown(enable_plugins=<span class="literal">False</span>)</span><br><span class="line">        result = md.convert(file_path)</span><br><span class="line">        doc = Document(page_content=result.text_content, </span><br><span class="line">                       metadata=&#123;<span class="string">&quot;file&quot;</span>: <span class="string">f&quot;<span class="subst">&#123;file_path&#125;</span>&quot;</span>&#125;)</span><br><span class="line">        <span class="keyword">return</span> [doc]</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;但是这样存在一个问题，markitdown 获取的信息是一整个文档，并没有分页。询问 GPT 后，其建议我们使用 python-pptx 来获取信息，具体代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> FileProcess.file_process_base <span class="keyword">import</span> BaseLoader, BaseCleaner, BaseSplitter</span><br><span class="line"><span class="keyword">from</span> FileProcess.file_process_base <span class="keyword">import</span> Document</span><br><span class="line"><span class="keyword">from</span> pptx <span class="keyword">import</span> Presentation</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PPTx_Loader</span>(<span class="title class_ inherited__">BaseLoader</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">load</span>(<span class="params">self, file_path: <span class="built_in">str</span></span>) -&gt; <span class="built_in">list</span>[Document]:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;加载文档并返回 Document 列表&quot;&quot;&quot;</span></span><br><span class="line">        docs = []</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 使用 python-pptx 打开ppt文件</span></span><br><span class="line">        <span class="comment">#</span></span><br><span class="line">        <span class="comment"># Presentation会读取:</span></span><br><span class="line">        <span class="comment"># - 幻灯片数量</span></span><br><span class="line">        <span class="comment"># - 每一页的shape</span></span><br><span class="line">        <span class="comment"># - 文本框内容</span></span><br><span class="line">        <span class="comment">#</span></span><br><span class="line">        prs = Presentation(file_path)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 遍历 PPT 中每一页</span></span><br><span class="line">        <span class="comment"># prs.slides:</span></span><br><span class="line">        <span class="comment">#   是一个幻灯片集合</span></span><br><span class="line">        <span class="comment"># enumerate:</span></span><br><span class="line">        <span class="comment">#   同时获取:</span></span><br><span class="line">        <span class="comment">#       index -&gt; 页码索引</span></span><br><span class="line">        <span class="comment">#       slide -&gt; 当前页对象</span></span><br><span class="line">        <span class="comment"># 例如:</span></span><br><span class="line">        <span class="comment"># 第1页:</span></span><br><span class="line">        <span class="comment"># index = 0</span></span><br><span class="line">        <span class="comment"># slide = 第一页对象</span></span><br><span class="line">        <span class="comment"># 第2页:</span></span><br><span class="line">        <span class="comment"># index = 1</span></span><br><span class="line">        <span class="keyword">for</span> index, slide <span class="keyword">in</span> <span class="built_in">enumerate</span>(prs.slides):</span><br><span class="line">            texts = []</span><br><span class="line"></span><br><span class="line">            <span class="comment"># 遍历所有元素，此处只保留文本</span></span><br><span class="line">            <span class="keyword">for</span> shape <span class="keyword">in</span> slide.shapes:</span><br><span class="line">                <span class="keyword">if</span> <span class="built_in">hasattr</span>(shape, <span class="string">&quot;text&quot;</span>):</span><br><span class="line">                    texts.append(shape.text)</span><br><span class="line"></span><br><span class="line">            <span class="comment"># 合并所有文档</span></span><br><span class="line">            content = <span class="string">&quot;\n&quot;</span>.join(texts)</span><br><span class="line"></span><br><span class="line">            doc = Document(page_content=content,</span><br><span class="line">                        metadata=&#123;</span><br><span class="line">                            <span class="string">&quot;file&quot;</span>:file_path,</span><br><span class="line">                            <span class="string">&quot;slide&quot;</span>:index+<span class="number">1</span>,</span><br><span class="line">                            <span class="string">&quot;type&quot;</span>:<span class="string">&quot;pptx&quot;</span></span><br><span class="line">                        &#125;)</span><br><span class="line">            docs.append(doc)</span><br><span class="line">        <span class="keyword">return</span> docs</span><br></pre></td></tr></table></figure>
+
+<h3 id="清洗"><a href="#清洗" class="headerlink" title="清洗"></a>清洗</h3><p>&emsp;&emsp;接下来我们清洗文档。有很多清洗的步骤是可以通用的，因此我们直接将其定义在基类内。这里我们首先实现了三种方法：分别是去除空格、去除特殊符号，去除短文本。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">clean_whitespace</span>(<span class="params">text: <span class="built_in">str</span></span>):</span><br><span class="line">    text = re.sub(<span class="string">r&#x27;\s+&#x27;</span>, <span class="string">&#x27; &#x27;</span>, text)</span><br><span class="line">    text = text.strip()</span><br><span class="line">    <span class="keyword">return</span> text</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">clean_symbol</span>(<span class="params">text: <span class="built_in">str</span></span>):</span><br><span class="line">        text=text.replace(<span class="string">&quot;•&quot;</span>,<span class="string">&quot;&quot;</span>)</span><br><span class="line">        text=text.replace(<span class="string">&quot;▪&quot;</span>,<span class="string">&quot;&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> text</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">remove_short_text</span>(<span class="params">text</span>):</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(text)&lt;<span class="number">5</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> text</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来我们实现一个更高级的用法，去除多余的重复内容。企业 PPT 经常有重复的公司信息等内容，会干扰 Embedding 效果。<br>&emsp;&emsp;我们先统计每一行出现的次数</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">remove_repeat_lines</span>(<span class="params">self, docs: <span class="built_in">list</span>[Document], threshold=<span class="number">0.5</span></span>):</span><br><span class="line">    <span class="keyword">from</span> collections <span class="keyword">import</span> Counter</span><br><span class="line">    counter = Counter()</span><br><span class="line">    <span class="keyword">for</span> doc <span class="keyword">in</span> docs:</span><br><span class="line">        lines = doc.page_content.split(<span class="string">&quot;\n&quot;</span>)</span><br><span class="line">        <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">            line = line.strip()</span><br><span class="line">            <span class="keyword">if</span> line:</span><br><span class="line">                counter[line] += <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来就是对于出现次数大于阈值的词进行删除</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">total = <span class="built_in">len</span>(docs)</span><br><span class="line"><span class="comment"># 无序不重复元素集</span></span><br><span class="line">remove_lines=<span class="built_in">set</span>()</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> line,count <span class="keyword">in</span> counter.items():</span><br><span class="line">    <span class="keyword">if</span> count/total &gt; threshold:</span><br><span class="line">        remove_lines.add(line)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> doc <span class="keyword">in</span> docs:</span><br><span class="line">    lines = []</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> doc.page_content.split(<span class="string">&quot;\n&quot;</span>):</span><br><span class="line">        <span class="keyword">if</span> line.strip <span class="keyword">not</span> <span class="keyword">in</span> remove_lines:</span><br><span class="line">            lines.append(line)</span><br><span class="line">    doc.page_content = <span class="string">&quot;\n&quot;</span>.join(lines)</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> docs</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;完成后，我们写对文档的清洗代码。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">PPTxCleaner</span>(<span class="title class_ inherited__">BaseCleaner</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">clean</span>(<span class="params">self, docs: <span class="built_in">list</span>[Document]</span>) -&gt; <span class="built_in">list</span>[Document]:</span><br><span class="line">        <span class="keyword">for</span> doc <span class="keyword">in</span> docs:</span><br><span class="line">            doc.page_content = <span class="variable language_">self</span>.clean_whitespace(doc.page_content)</span><br><span class="line">            doc.page_content = <span class="variable language_">self</span>.clean_symbol(doc.page_content)</span><br><span class="line">            doc.page_content = <span class="variable language_">self</span>.remove_short_text(doc.page_content)</span><br><span class="line">        docs = <span class="variable language_">self</span>.remove_repeat_lines(docs)</span><br><span class="line">        <span class="keyword">return</span> docs</span><br></pre></td></tr></table></figure>
+
+<h3 id="分块"><a href="#分块" class="headerlink" title="分块"></a>分块</h3><p>&emsp;&emsp;对于 PPT 分块，我们应该以页为整体，优先整理一页内的内容，如果一页内的内容过长，再通过滑动窗口分块分为不同的 chunk。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">PPTxSplitter</span>(<span class="title class_ inherited__">BaseSplitter</span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params"></span></span><br><span class="line"><span class="params">        self,</span></span><br><span class="line"><span class="params">        chunk_size=<span class="number">256</span>,</span></span><br><span class="line"><span class="params">        chunk_overlap=<span class="number">50</span></span></span><br><span class="line"><span class="params">    </span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">        参数:</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        chunk_size:</span></span><br><span class="line"><span class="string">            每个chunk最大字符数</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        chunk_overlap:</span></span><br><span class="line"><span class="string">            chunk之间重叠字符数</span></span><br><span class="line"><span class="string">        &quot;&quot;&quot;</span></span><br><span class="line">        <span class="variable language_">self</span>.chunk_size = chunk_size</span><br><span class="line">        <span class="variable language_">self</span>.chunk_overlap = chunk_overlap</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">_split_text</span>(<span class="params">self, text: <span class="built_in">str</span></span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;简单滑动窗口切分&quot;&quot;&quot;</span></span><br><span class="line">        chunks = []</span><br><span class="line">        start = <span class="number">0</span></span><br><span class="line">        length = <span class="built_in">len</span>(text)</span><br><span class="line">        <span class="keyword">while</span> start &lt; length:</span><br><span class="line">            end = start+<span class="variable language_">self</span>.chunk_size</span><br><span class="line">            chunk = text[start:end]</span><br><span class="line">            chunks.append(chunk)</span><br><span class="line">            start = end - <span class="variable language_">self</span>.chunk_overlap</span><br><span class="line">        <span class="keyword">return</span> chunks</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">split</span>(<span class="params">self, </span></span><br><span class="line"><span class="params">              docs: <span class="built_in">list</span>[Document], </span></span><br><span class="line"><span class="params">              </span>) -&gt; <span class="built_in">list</span>[Chunk]:</span><br><span class="line">        chunks = []</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> doc <span class="keyword">in</span> docs:</span><br><span class="line">            text = doc.page_content</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">len</span>(text) &lt;= <span class="variable language_">self</span>.chunk_size:</span><br><span class="line">                chunks.append(</span><br><span class="line">                    Chunk(</span><br><span class="line">                        chunk_content=doc.page_content,</span><br><span class="line">                        metadata=doc.metadata</span><br><span class="line">                    )</span><br><span class="line">                )</span><br><span class="line"></span><br><span class="line">            <span class="comment"># PPT 优先一页内容</span></span><br><span class="line">            <span class="keyword">elif</span> <span class="built_in">len</span>(text) &lt;= <span class="number">4</span>*<span class="variable language_">self</span>.chunk_size:</span><br><span class="line">                chunks.append(</span><br><span class="line">                    Chunk(</span><br><span class="line">                        chunk_content=doc.page_content,</span><br><span class="line">                        metadata=doc.metadata</span><br><span class="line">                    )</span><br><span class="line">                )</span><br><span class="line"></span><br><span class="line">            <span class="comment"># 超长文本再切割</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                sub_chunks = <span class="variable language_">self</span>._split_text(text)</span><br><span class="line"></span><br><span class="line">                <span class="keyword">for</span> index, chunk <span class="keyword">in</span> <span class="built_in">enumerate</span>(sub_chunks):</span><br><span class="line">                    new_chunk = Chunk(</span><br><span class="line">                        chunk_content=chunk,</span><br><span class="line">                        metadata=&#123;</span><br><span class="line">                            **doc.metadata,</span><br><span class="line">                            <span class="comment"># 标记这是第几个chunk</span></span><br><span class="line">                            <span class="string">&quot;chunk_id&quot;</span>:index</span><br><span class="line">                        &#125;</span><br><span class="line">                    )</span><br><span class="line">                    chunks.append(new_chunk)</span><br><span class="line">        <span class="keyword">return</span> chunks</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;So Good！我们现在已经完成了加载、清洗、分块等一系列操作。接下来定义 Processor 基类。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">PPTxProcessor</span>(<span class="title class_ inherited__">BaseProcessor</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">super</span>().__init__(</span><br><span class="line">            loader=PPTxLoader(),</span><br><span class="line">            cleaner=PPTxCleaner(),</span><br><span class="line">            splitter=PPTxSplitter()</span><br><span class="line">        )</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;然后只需要在 main.py 中定义此基类，运行 run 方法，就可以成功进行处理并输出 Chunks。</p>
+<h2 id="Embedding"><a href="#Embedding" class="headerlink" title="Embedding"></a>Embedding</h2><p>&emsp;&emsp;新建 embedding 文件夹，创建 base_embedding.py 文件，定义基类。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod</span><br><span class="line"><span class="keyword">from</span> FileProcess.file_process_base <span class="keyword">import</span> Chunk</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BaseEmbedding</span>(<span class="title class_ inherited__">ABC</span>):</span><br><span class="line"></span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">embed</span>(<span class="params">self, chunks:<span class="built_in">list</span>[Chunk]</span>):</span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来新建一个文件，定义 <code>TongyiEmbedding</code> 类，继承基类。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TongyiEmbedding</span>(<span class="title class_ inherited__">BaseEmbedding</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, model</span>):</span><br><span class="line">        <span class="variable language_">self</span>.client = OpenAI(api_key=api_key,</span><br><span class="line">                             base_url=base_url,)</span><br><span class="line">        <span class="variable language_">self</span>.model = model</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">embed</span>(<span class="params">self, chunks:<span class="built_in">list</span>[Chunk]</span>) -&gt; <span class="built_in">list</span>[VectorChunk]:</span><br><span class="line">        texts=[]</span><br><span class="line">        <span class="keyword">for</span> chunk <span class="keyword">in</span> chunks:</span><br><span class="line">            texts.append(chunk.chunk_content)</span><br><span class="line">        response = <span class="variable language_">self</span>.client.embeddings.create(</span><br><span class="line">            model = <span class="variable language_">self</span>.model,</span><br><span class="line">            <span class="built_in">input</span>=texts</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        vectors:<span class="built_in">list</span>[VectorChunk] = []</span><br><span class="line">        <span class="keyword">for</span> item, chunk <span class="keyword">in</span> <span class="built_in">zip</span>(response.data, chunks):</span><br><span class="line">            vectors.append(</span><br><span class="line">                VectorChunk(chunk_content=chunk.chunk_content,</span><br><span class="line">                            vector=item.embedding,</span><br><span class="line">                            metadata=chunk.metadata)</span><br><span class="line">            )</span><br><span class="line">        <span class="keyword">return</span> vectors</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;So Good!那么到现在为止，我们的向量化也已经完成！那么接下来，我们就应该实现入库了！</p>
+<h2 id="Chroma-入库"><a href="#Chroma-入库" class="headerlink" title="Chroma 入库"></a>Chroma 入库</h2><p>&emsp;&emsp;作为一个初代版本，我们先使用 Chroma 作为数据库，它小、轻量，适合个人 Demo。</p>
+<p>&emsp;&emsp;同样的 为了方便后续的代码发展，我们新建 VectorStore 文件夹，新建 base_store.py，写一个基类。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BaseVectorStore</span>(<span class="title class_ inherited__">ABC</span>):</span><br><span class="line"></span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">add</span>(<span class="params">self, vectors</span>):</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">search</span>(<span class="params">self,query_vector</span>):</span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来我们实现 Chromadb 的类。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ChromaVectorStore</span>(<span class="title class_ inherited__">BaseVectorStore</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="comment"># 使用持久化本地 Chroma 数据库</span></span><br><span class="line">        <span class="variable language_">self</span>.client = chromadb.PersistentClient(</span><br><span class="line">            path=<span class="string">&quot;./Chroma_db&quot;</span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="comment"># collection 为一张向量表</span></span><br><span class="line">        <span class="variable language_">self</span>.collection = (</span><br><span class="line">            <span class="variable language_">self</span>.client</span><br><span class="line">            .get_or_create_collection(</span><br><span class="line">                <span class="string">&quot;company_docs&quot;</span></span><br><span class="line">            )</span><br><span class="line">        )</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;Chroma 初始化已经写好，接下来就是录入和查询函数。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">add</span>(<span class="params">self, chunks:<span class="built_in">list</span>[VectorChunk]</span>):</span><br><span class="line">    ids = []</span><br><span class="line">    docs = []</span><br><span class="line">    embeddings = []</span><br><span class="line">    metadatas = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> index, chunk <span class="keyword">in</span> <span class="built_in">enumerate</span>(chunks):</span><br><span class="line"></span><br><span class="line">        ids.append(<span class="string">f&quot;chunk_<span class="subst">&#123;index&#125;</span>&quot;</span>)</span><br><span class="line">        docs.append(chunk.chunk_content)</span><br><span class="line">        embeddings.append(chunk.vector)</span><br><span class="line">        metadatas.append(chunk.metadata)</span><br><span class="line"></span><br><span class="line">    <span class="variable language_">self</span>.collection.add(</span><br><span class="line">        ids = ids,</span><br><span class="line">        documents=docs,</span><br><span class="line">        metadatas=metadatas,</span><br><span class="line">        embeddings=embeddings</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search</span>(<span class="params">self, vector:<span class="built_in">list</span>[<span class="built_in">float</span>], top_k:<span class="built_in">int</span></span>):</span><br><span class="line">    result = <span class="variable language_">self</span>.collection.query(</span><br><span class="line">        query_embeddings=[</span><br><span class="line">            vector</span><br><span class="line">        ],</span><br><span class="line">        n_results=top_k</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;至此，所有的基础功能已经完成。我们应该写处理文档、模型回复的工作流了！在下一篇日志中我会开始！</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AGENT/" rel="tag"># AGENT</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/07/27/langgraph-learn-1/" rel="prev" title="LangGraph 学习(6) 核心概念及一些基本模型">
+      <i class="fa fa-chevron-left"></i> LangGraph 学习(6) 核心概念及一些基本模型
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E6%A0%87"><span class="nav-number">1.</span> <span class="nav-text">目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E5%9C%A8%E5%89%8D%E9%9D%A2%E7%9A%84%E4%B8%80%E4%BA%9B-Py-%E5%9F%BA%E7%A1%80"><span class="nav-number">2.</span> <span class="nav-text">写在前面的一些 Py 基础</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%BD%E8%B1%A1%E5%9F%BA%E7%B1%BB-ABC-%E5%92%8C-abstractmethod"><span class="nav-number">2.1.</span> <span class="nav-text">抽象基类 (ABC)  和 @abstractmethod</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#classmethod-%E7%B1%BB%E6%96%B9%E6%B3%95%E4%B8%8E%E6%99%AE%E9%80%9A%E6%96%B9%E6%B3%95%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">2.2.</span> <span class="nav-text">@classmethod 类方法与普通方法的区别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kwargs"><span class="nav-number">2.3.</span> <span class="nav-text">kwargs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#any-%E5%92%8C-Any"><span class="nav-number">2.4.</span> <span class="nav-text">any 和 Any</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dataclass-%E2%80%94%E2%80%94%E2%80%94%E2%80%94-%E8%87%AA%E5%8A%A8%E7%94%9F%E6%88%90%E5%9F%BA%E7%A1%80%E4%BB%A3%E7%A0%81"><span class="nav-number">2.5.</span> <span class="nav-text">@dataclass ———— 自动生成基础代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E7%94%A8%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F"><span class="nav-number">2.6.</span> <span class="nav-text">常用正则表达式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#strip-%E6%96%B9%E6%B3%95"><span class="nav-number">2.7.</span> <span class="nav-text">strip 方法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#enumerate-%E5%87%BD%E6%95%B0"><span class="nav-number">2.8.</span> <span class="nav-text">enumerate 函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E6%A1%A3%E5%A4%84%E7%90%86%E5%9F%BA%E7%B1%BB"><span class="nav-number">3.</span> <span class="nav-text">文档处理基类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#PPTx-process"><span class="nav-number">4.</span> <span class="nav-text">PPTx_process</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD"><span class="nav-number">4.1.</span> <span class="nav-text">加载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B8%85%E6%B4%97"><span class="nav-number">4.2.</span> <span class="nav-text">清洗</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%9D%97"><span class="nav-number">4.3.</span> <span class="nav-text">分块</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Embedding"><span class="nav-number">5.</span> <span class="nav-text">Embedding</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Chroma-%E5%85%A5%E5%BA%93"><span class="nav-number">6.</span> <span class="nav-text">Chroma 入库</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">78</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
