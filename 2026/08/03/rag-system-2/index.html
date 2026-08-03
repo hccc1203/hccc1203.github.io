@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="设计 Pipeline，并优化整体程序架构。Python 的异常处理、Protocol、__init__.py 等基础知识">
+<meta property="og:type" content="article">
+<meta property="og:title" content="动手做 RAG(2)">
+<meta property="og:url" content="https://hccc1203.github.io/2026/08/03/rag-system-2/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="设计 Pipeline，并优化整体程序架构。Python 的异常处理、Protocol、__init__.py 等基础知识">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-08-03T08:39:09.000Z">
+<meta property="article:modified_time" content="2026-08-03T08:41:04.512Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="AGENT">
+<meta property="article:tag" content="RAG">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/08/03/rag-system-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>动手做 RAG(2) | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/08/03/rag-system-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          动手做 RAG(2)
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-08-03 16:39:09" itemprop="dateCreated datePublished" datetime="2026-08-03T16:39:09+08:00">2026-08-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="做什么"><a href="#做什么" class="headerlink" title="做什么"></a>做什么</h2><p>&emsp;&emsp;设计一些基础的 Pipeline，实现最基本的 Rag 功能。</p>
+<h2 id="开始做"><a href="#开始做" class="headerlink" title="开始做"></a>开始做</h2><h3 id="文件入库的做法"><a href="#文件入库的做法" class="headerlink" title="文件入库的做法"></a>文件入库的做法</h3><p>&emsp;&emsp;新建 Pipeline 文件夹，新建 base_pipeline.py 文件，创建 Pipeline 基类，后续所有的 Pipeline 都将继承这个类。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BasePipeline</span>(<span class="title class_ inherited__">ABC</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, **kwargs</span>):</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self, **kwargs</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;执行业务流程&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;新建 ingestion_pipeline.py 文件，实现文件加载、解析、切片录入数据库。但是在写这个 Pipeline 之前，我们应该还实现一个 ProcessorFactor 功能，让文件自适应解析，而非我们制定 processor。在 file_process 文件夹中新建 processor_factory.py 文件，并写入如下内容：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pathlib <span class="keyword">import</span> Path</span><br><span class="line"><span class="keyword">from</span> file_process.PPTx_peocess <span class="keyword">import</span> PPTxProcessor</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ProcessorFactory</span>:</span><br><span class="line"><span class="meta">    @staticmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">create</span>(<span class="params">file_path:<span class="built_in">str</span></span>):</span><br><span class="line">        suffix = Path(file_path).suffix.lower()</span><br><span class="line">        <span class="keyword">if</span> suffix == <span class="string">&quot;.pptx&quot;</span>:</span><br><span class="line">            <span class="keyword">return</span> PPTxProcessor()</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(</span><br><span class="line">                <span class="string">f&quot;不支持的文件类型:<span class="subst">&#123;suffix&#125;</span>&quot;</span></span><br><span class="line">            )</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来在 pipeline 中新建 ingestion_pipeline 文件，写入如下内容：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pipeline.base_pipeline <span class="keyword">import</span> BasePipeline</span><br><span class="line"><span class="keyword">from</span> embedding .tongyi_embedding <span class="keyword">import</span> TongyiEmbedding</span><br><span class="line"><span class="keyword">from</span> file_process.PPTx_peocess <span class="keyword">import</span> PPTxProcessor</span><br><span class="line"><span class="keyword">from</span> vector_store.chroma_store <span class="keyword">import</span> ChromaVectorStore</span><br><span class="line"><span class="keyword">from</span> file_process.processor_factory <span class="keyword">import</span> ProcessorFactory</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">IngestionPipeline</span>(<span class="title class_ inherited__">BasePipeline</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, </span></span><br><span class="line"><span class="params">        embedding,</span></span><br><span class="line"><span class="params">        vector_store,</span></span><br><span class="line"><span class="params">        processor_factory=ProcessorFactory</span></span><br><span class="line"><span class="params">    </span>):</span><br><span class="line">        <span class="variable language_">self</span>.embedding = embedding</span><br><span class="line">        <span class="variable language_">self</span>.vector_store = vector_store</span><br><span class="line">        <span class="variable language_">self</span>.processor_factory = processor_factory</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self, file_path: <span class="built_in">str</span></span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;执行业务逻辑&quot;&quot;&quot;</span></span><br><span class="line">        processor = <span class="variable language_">self</span>.processor_factory.create(file_path=file_path)</span><br><span class="line">        chunks = processor.run(file_path=file_path)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;已切分 <span class="subst">&#123;<span class="built_in">len</span>(chunks)&#125;</span> 个切块...&quot;</span>)</span><br><span class="line">        vector_chunks = <span class="variable language_">self</span>.embedding.embed(chunks=chunks)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;向量化已完成...&quot;</span>)</span><br><span class="line">        <span class="variable language_">self</span>.vector_store.add(vector_chunks)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;文件成功入库！&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在 main.py 中调用，非常成功，文件入库。</p>
+<h3 id="调用-LLM-回答"><a href="#调用-LLM-回答" class="headerlink" title="调用 LLM 回答"></a>调用 LLM 回答</h3><p>&emsp;&emsp;首先还是得建立 LLM 基类，后期就可以通过继承基类来实现不同厂家的调用。新建 llm 文件夹，建立 base_llm.py，输入如下内容：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BaseLLM</span>(<span class="title class_ inherited__">ABC</span>):</span><br><span class="line"></span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">invoke</span>(<span class="params">self, prompt: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;调用大模型进行回答&quot;&quot;&quot;</span></span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;新建 deepseek_llm.py，输入如下内容</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> .base_llm <span class="keyword">import</span> BaseLLM</span><br><span class="line"><span class="keyword">from</span> openai <span class="keyword">import</span> OpenAI</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> (</span><br><span class="line">    BaseMessage,</span><br><span class="line">    SystemMessage,</span><br><span class="line">    HumanMessage,</span><br><span class="line">    AIMessage</span><br><span class="line">)</span><br><span class="line"><span class="keyword">from</span> config <span class="keyword">import</span> (</span><br><span class="line">    DEEPSEEK_API_KEY,</span><br><span class="line">    DEEPSEEK_BASE_URL</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DeepseekLLM</span>(<span class="title class_ inherited__">BaseLLM</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, model</span>):</span><br><span class="line">        <span class="variable language_">self</span>.client = OpenAI(</span><br><span class="line">            api_key=DEEPSEEK_API_KEY,</span><br><span class="line">            base_url=DEEPSEEK_BASE_URL,</span><br><span class="line">        )</span><br><span class="line">        <span class="variable language_">self</span>.model = model</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">invoke</span>(<span class="params">self, prompt: <span class="built_in">list</span>[BaseMessage]</span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        openai_messages=[]</span><br><span class="line">        <span class="keyword">for</span> msg <span class="keyword">in</span> prompt:</span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">isinstance</span>(msg, HumanMessage):</span><br><span class="line">                role = <span class="string">&quot;user&quot;</span></span><br><span class="line">            <span class="keyword">elif</span> <span class="built_in">isinstance</span>(msg, SystemMessage):</span><br><span class="line">                role = <span class="string">&quot;system&quot;</span></span><br><span class="line">            <span class="keyword">elif</span> <span class="built_in">isinstance</span>(msg, AIMessage):</span><br><span class="line">                role = <span class="string">&quot;assistant&quot;</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                <span class="keyword">raise</span> ValueError(</span><br><span class="line">                    <span class="string">f&quot;不支持的消息类型:<span class="subst">&#123;<span class="built_in">type</span>(msg)&#125;</span>&quot;</span></span><br><span class="line">                )</span><br><span class="line">            openai_messages.append(</span><br><span class="line">                &#123;</span><br><span class="line">                    <span class="string">&quot;role&quot;</span>: role,</span><br><span class="line">                    <span class="string">&quot;content&quot;</span>: msg.content</span><br><span class="line">                &#125;</span><br><span class="line">            )</span><br><span class="line">        response = <span class="variable language_">self</span>.client.chat.completions.create(</span><br><span class="line">            model=<span class="variable language_">self</span>.model,</span><br><span class="line">            messages=openai_messages</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> response.choices[<span class="number">0</span>].message.content</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;经过这两步后，我已经明白如何实现一个 LLM Client。那么现在就让我们使用 LangChain 的官方 ChatModel，嵌入我们的系统。安装包：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install langchain-openai</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在 deepseek_llm.py 中写下如下内容，然后在主程序中调用该 Client：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_openai <span class="keyword">import</span> ChatOpenAI</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> (</span><br><span class="line">    BaseMessage,</span><br><span class="line">    SystemMessage,</span><br><span class="line">    HumanMessage,</span><br><span class="line">    AIMessage</span><br><span class="line">)</span><br><span class="line"><span class="keyword">from</span> config <span class="keyword">import</span> (</span><br><span class="line">    DEEPSEEK_API_KEY,</span><br><span class="line">    DEEPSEEK_BASE_URL</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">Client = ChatOpenAI(</span><br><span class="line">    model=<span class="string">&quot;deepseek-v4-flash&quot;</span>,</span><br><span class="line">    api_key=DEEPSEEK_API_KEY,</span><br><span class="line">    base_url=DEEPSEEK_BASE_URL,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;测试代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> llm.deepseek_llm <span class="keyword">import</span> Client</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> (</span><br><span class="line">    HumanMessage,</span><br><span class="line">    SystemMessage</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">messages = [</span><br><span class="line">    SystemMessage(</span><br><span class="line">        content=<span class="string">&quot;你是企业知识助手&quot;</span></span><br><span class="line">    ),</span><br><span class="line"></span><br><span class="line">    HumanMessage(</span><br><span class="line">        content=<span class="string">&quot;hello，你是谁&quot;</span></span><br><span class="line">    )</span><br><span class="line">]</span><br><span class="line">response = Client.invoke(messages)</span><br><span class="line"><span class="built_in">print</span>(response.content)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;如果需要流式传输的效果，那么就需要在 ChatModel 创建时加入关键字 <code>stream=True</code>，然后在测试时写下如下代码，即可实现流式传输效果：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> deepseek_client.stream(messages):</span><br><span class="line">    <span class="built_in">print</span>(</span><br><span class="line">        chunk.content,</span><br><span class="line">        end=<span class="string">&quot;&quot;</span>,</span><br><span class="line">        flush=<span class="literal">True</span></span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来我们应该实现文本的召回。在这一步需要先将提问的文本转换为向量，在 tongyi_embedding.py 中新建 embed_text 函数，内容如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">embed_text</span>(<span class="params">self, text:<span class="built_in">str</span></span>) -&gt; <span class="built_in">list</span>[<span class="built_in">float</span>]:</span><br><span class="line">    response = <span class="variable language_">self</span>.client.embeddings.create(</span><br><span class="line">        model=<span class="variable language_">self</span>.model,</span><br><span class="line">        <span class="built_in">input</span>=text</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> response.data[<span class="number">0</span>].embedding</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在 chroma_store.py 中新增 search 函数，实现在数据库中的相似向量检索：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">search</span>(<span class="params">self, query_vector: <span class="built_in">list</span>[<span class="built_in">float</span>], top_k:<span class="built_in">int</span> = <span class="number">5</span></span>)-&gt; <span class="built_in">list</span>[Chunk]:</span><br><span class="line">    result = <span class="variable language_">self</span>.collection.query(</span><br><span class="line">        query_embeddings=[</span><br><span class="line">            query_vector</span><br><span class="line">        ],</span><br><span class="line">        n_results=top_k</span><br><span class="line">    )</span><br><span class="line">    <span class="built_in">print</span>(result)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 转换为 Chunk</span></span><br><span class="line">    documents = result[<span class="string">&quot;documents&quot;</span>][<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    metadatas = result[<span class="string">&quot;metadatas&quot;</span>][<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    distances = result[<span class="string">&quot;distances&quot;</span>][<span class="number">0</span>]</span><br><span class="line">    chunks = []</span><br><span class="line">    <span class="keyword">for</span> doc, metadata, distance <span class="keyword">in</span> <span class="built_in">zip</span>(documents, metadatas, distances):</span><br><span class="line">        chunks.append(Chunk(</span><br><span class="line">                chunk_content=doc,</span><br><span class="line"></span><br><span class="line">                metadata=&#123;</span><br><span class="line">                    **metadata,</span><br><span class="line">                    <span class="string">&quot;distance&quot;</span>:distance</span><br><span class="line">                &#125;</span><br><span class="line">            )</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">return</span> chunks</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在经过转化，返回的就是相似的 chunks 列表。那么接下来我们就应该做上下文管理了。新建 context 文件夹，新建 rag_context.py 和 context_builder.py 文件。<br>&emsp;&emsp;在 rag_context.py 文件中，我们定义专门用于 RAG 的专属上下文类型，代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass, field</span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">RAGContext</span>:</span><br><span class="line">    query: <span class="built_in">str</span></span><br><span class="line">    documents: <span class="built_in">list</span></span><br><span class="line">    history: <span class="built_in">list</span>= field(default_factory=<span class="built_in">list</span>)</span><br><span class="line">    system_prompt: <span class="built_in">str</span> = <span class="string">&quot;&quot;</span></span><br><span class="line">    metadata: <span class="built_in">dict</span> = field(default_factory=<span class="built_in">dict</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;在 context_builder.py 中，我们创建 ContextBuilder 类，我们将在其中实现各种类型的上下文构建。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> HumanMessage, SystemMessage, AIMessage, BaseMessage</span><br><span class="line"><span class="keyword">from</span> .rag_context <span class="keyword">import</span> RAGContext</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ContextBuilder</span>():</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">rag_context_build</span>(<span class="params">self, context: RAGContext</span>) -&gt; <span class="built_in">list</span>[BaseMessage]:</span><br><span class="line">        messages=[]</span><br><span class="line"></span><br><span class="line">        messages.append(</span><br><span class="line">            SystemMessage(</span><br><span class="line">                content=context.system_prompt</span><br><span class="line">            )</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        docs_text = <span class="string">&quot;\n\n&quot;</span>.join(</span><br><span class="line">            [</span><br><span class="line">                doc.chunk_content</span><br><span class="line">                <span class="keyword">for</span> doc <span class="keyword">in</span> context.documents</span><br><span class="line">            ]</span><br><span class="line">        )</span><br><span class="line">        </span><br><span class="line">        user_content = <span class="string">f&quot;&quot;&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">参考资料:</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string"><span class="subst">&#123;docs_text&#125;</span></span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">问题：</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string"><span class="subst">&#123;context.query&#125;</span></span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line">        messages.append(</span><br><span class="line">            HumanMessage(content = user_content)</span><br><span class="line">        )</span><br><span class="line">        <span class="keyword">return</span> messages</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;新建 query_pipeline.py 文件，实现 rag 自动化，如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> .base_pipeline imuilder <span class="keyword">import</span> ContextBuilder</span><br><span class="line"><span class="keyword">from</span> context.rag_context <span class="keyword">import</span> RAGContext</span><br><span class="line"></span><br><span class="line">SYSTEM_PROMPT = <span class="string">&quot;你是企业知识助手，请严格按照提示词中提供的资料回答问题，如果资料不全无法回答，请如实说明。&quot;</span></span><br><span class="line">port BasePipeline</span><br><span class="line"><span class="keyword">from</span> context.context_b</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">QueryPipeline</span>(<span class="title class_ inherited__">BasePipeline</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, client, embedding, store</span>):</span><br><span class="line">        <span class="variable language_">self</span>.context_builder = ContextBuilder()</span><br><span class="line">        <span class="variable language_">self</span>.client = client</span><br><span class="line">        <span class="variable language_">self</span>.embedding = embedding</span><br><span class="line">        <span class="variable language_">self</span>.store = store</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self, query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;运行 RAG 流程&quot;&quot;&quot;</span></span><br><span class="line">        query_vector = <span class="variable language_">self</span>.embedding.embed_text(query)</span><br><span class="line">        docs = <span class="variable language_">self</span>.store.search(query_vector)</span><br><span class="line">        context= RAGContext(</span><br><span class="line">            query=query,</span><br><span class="line">            documents=docs,</span><br><span class="line">            system_prompt=SYSTEM_PROMPT</span><br><span class="line">        )</span><br><span class="line">        messages = <span class="variable language_">self</span>.context_builder.rag_context_build(context=context)</span><br><span class="line">        answer = <span class="variable language_">self</span>.client.invoke(messages)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> answer</span><br></pre></td></tr></table></figure>
+
+<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>&emsp;&emsp;到目前为止，我们已经实现了 RAG 的最小链路，但是文件结构仍需优化。我们询问 codex 如何优化这个架构，其给出如下建议：</p>
+<p>&emsp;&emsp;1、新建独立领域层，集中定义常用的类型，解除反向依赖。<br>&emsp;&emsp;2、重构入库链路，将 PPTX 加载、清洗、切片拆成基础设施适配器，通过处理器注册表按扩展名选择实现；未知格式返回明确的“不支持文件类型”错误。<br>&emsp;&emsp;3、重构查询链路。拆分为RetrievalService、PromptBuilder 和 AnswerService：Retrieval 负责查询向量化、top-k 检索、阈值过滤；PromptBuilder 负责上下文格式、来源编号和 token&#x2F;字符预算；AnswerService 负责组合调用并返回结构化答案。<br>&emsp;&emsp;4、集中配置。使用不可变 Settings 管理 API、模型、Chroma 路径、collection、检索参数、切片参数和网络策略。</p>
+<h3 id="整体框架"><a href="#整体框架" class="headerlink" title="整体框架"></a>整体框架</h3><p>&emsp;&emsp;codex 修改完成后，我们再次学习代码结构设计。经过更新后的项目采用了四层架构：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">presentation     用户交互层</span><br><span class="line">      ↓</span><br><span class="line">application      业务编排层</span><br><span class="line">      ↓</span><br><span class="line">domain           领域模型与接口层</span><br><span class="line">      ↑</span><br><span class="line">infrastructure   外部技术实现层</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<code>bootstrap.py</code> 负责把四层组件组装取来，<code>config.py</code> 则负责提供配置</p>
+<h3 id="各层职责及文件作用"><a href="#各层职责及文件作用" class="headerlink" title="各层职责及文件作用"></a>各层职责及文件作用</h3><h4 id="Domain：领域层"><a href="#Domain：领域层" class="headerlink" title="Domain：领域层"></a>Domain：领域层</h4><p>&emsp;&emsp;领域层定义系统中的核心数据和接口，不关心 Chroma、OpenAI SDK 或 PPTX 等具体技术，其理想依赖关系如下，应用层使用领域接口编排业务，基础设施层实现领域接口，领域层不依赖其他层：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Application ──→ Domain ←── Infrastructure</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<code>domain/__init__.py</code>，标记 domain 为 Python 包，并说明该目录存放核心领域类型及端口，没有额外业务逻辑。<br>&emsp;&emsp;<code>domain/models.py</code>，定义整个 RAG 系统使用的数据模型，如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@dataclass(<span class="params">frozen=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Document</span>:</span><br><span class="line">    page_content: <span class="built_in">str</span></span><br><span class="line">    metadata: Metadata = field(default_factory=<span class="built_in">dict</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass(<span class="params">frozen=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Chunk</span>:</span><br><span class="line">    chunk_id: <span class="built_in">str</span></span><br><span class="line">    chunk_content: <span class="built_in">str</span></span><br><span class="line">    metadata: Metadata = field(default_factory=<span class="built_in">dict</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass(<span class="params">frozen=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ChatMessage</span>:</span><br><span class="line">    role: <span class="type">Literal</span>[<span class="string">&quot;system&quot;</span>, <span class="string">&quot;user&quot;</span>, <span class="string">&quot;assistant&quot;</span>]</span><br><span class="line">    content: <span class="built_in">str</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<code>domain/prots.py</code>，使用 Python Protocol 定义系统组件应遵循的接口。</p>
+<h4 id="Application：应用层"><a href="#Application：应用层" class="headerlink" title="Application：应用层"></a>Application：应用层</h4><p>&emsp;&emsp;应用层描述了系统要完成的业务，例如如何完成一次文档入库、如何完成一次检索。它不应该关心 API 请求细节和数据库内部实现。</p>
+<p>&emsp;&emsp;<code>application/errors.py</code> 定义了统一的应用异常，如下：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">RAGError</span><br><span class="line">├── ConfigurationError</span><br><span class="line">├── DocumentProcessingError</span><br><span class="line">├── EmbeddingError</span><br><span class="line">├── StorageError</span><br><span class="line">└── GenerationError</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;CLI 只需要捕获 RAGError，不必分别理解 OpenAI、Chroma 和 python-pptx 的底层异常。</p>
+<p>&emsp;&emsp;<code>application/ingestion.py</code>，定义 IngestionService，负责完整的文档入库流程：选择处理器、处理文件、处理文档 ID、批量向量化、写入向量库。它不会直接实现 PPTX 解析或 API 请求，只负责编排这些组件。<br>&emsp;&emsp;<code>application/retrieval.py</code>，定义了 RetrievalService，负责：检查查询是否为空；调用 Embedder 生成查询向量；使用 SearchOptions 查询向量库；返回 SearchResult。top_k 和最大距离阈值在构造服务时注入。<br>&emsp;&emsp;<code>application/prompting.py</code>，定义系统提示词和 Prompting.py。它将检索格式化，然后构造系统提示词、用户提示词、参考资料及用户问题。<br>&emsp;&emsp;<code>application/answering.py</code>，定义 AnswerService，是查询链路的总编排器。</p>
+<h4 id="Infrastructure：基础设施层"><a href="#Infrastructure：基础设施层" class="headerlink" title="Infrastructure：基础设施层"></a>Infrastructure：基础设施层</h4><p>&emsp;&emsp;基础设施层处理外部技术，如读取 PPT，调用千问 Embedding 等等。</p>
+<p>&emsp;&emsp;<code>infrastructure/loaders/registry.py</code> 根据文件扩展名选择处理器。<br>&emsp;&emsp;<code>infrastructure/loaders/pptx.py</code> 定义 PPTXProcessor，负责完整的 PPTX 预处理。<br>&emsp;&emsp;<code>infrastructure/embeddings/openai_compatible.py</code> 实现 OpenAI 兼容的 Embedding 适配器。<br>&emsp;&emsp;<code>infrastructure/vectorstores/__init__.py</code> 实现 Chroma 向量数据库适配器。</p>
+<h4 id="Presentation：交互层"><a href="#Presentation：交互层" class="headerlink" title="Presentation：交互层"></a>Presentation：交互层</h4><p>&emsp;&emsp;交互层负责接收用户输入、显示结果和处理命令行参数，不包含核心 RAG 逻辑。</p>
+<h3 id="异常处理机制的重构"><a href="#异常处理机制的重构" class="headerlink" title="异常处理机制的重构"></a>异常处理机制的重构</h3><p>&emsp;&emsp;经过 Codex 优化后，该项目采用了统一应用异常 + 基础设施异常转换 + CLI 集中处理的机制，其核心目标为不让用户直接看到 OpenAI SDK、Chroma、文件系统等底层异常，而是把它们转换成 RAG 业务能够理解的异常。其整体结构如下：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">底层库异常</span><br><span class="line">OpenAI / Chroma / python-pptx / 文件系统</span><br><span class="line">                 ↓ 转换</span><br><span class="line">应用级异常</span><br><span class="line">EmbeddingError / StorageError / ...</span><br><span class="line">                 ↓ 传播</span><br><span class="line">Application Service</span><br><span class="line">                 ↓ 传播</span><br><span class="line">CLI 统一捕获</span><br><span class="line">                 ↓</span><br><span class="line">向用户打印友好错误并返回退出码 1</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其异常类型集中定义在 <code>application/errors.py</code> 文件中。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">RAGError</span>(<span class="title class_ inherited__">Exception</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Base error exposed by the application layer.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ConfigurationError</span>(<span class="title class_ inherited__">RAGError</span>):</span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">DocumentProcessingError</span>(<span class="title class_ inherited__">RAGError</span>):</span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">EmbeddingError</span>(<span class="title class_ inherited__">RAGError</span>):</span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">StorageError</span>(<span class="title class_ inherited__">RAGError</span>):</span><br><span class="line">    <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">GenerationError</span>(<span class="title class_ inherited__">RAGError</span>):</span><br><span class="line">    <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;定义自己的异常，CLI 只需要处理 RAGError 即可，无需关注底层库，可以去耦合。在项目中，大量使用了如下写法：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">except</span> Exception <span class="keyword">as</span> exc:</span><br><span class="line">    <span class="keyword">raise</span> EmbeddingError(<span class="string">&quot;文档向量化失败&quot;</span>) <span class="keyword">from</span> exc</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;第一句：如果 try 里面发生任何继承自 Exception 的错误，把这个错误对象保存到变量 exc。第二行表示主动抛出自己定义的 EmbeddingError 异常，from exc 会保留原始错误以便排查错误原因。<br>&emsp;&emsp;其中，exc 是原始底层异常，EmbeddingError 是新的应用异常，from exc 将两者连成一条异常链。</p>
+<h2 id="Py-基础知识补充"><a href="#Py-基础知识补充" class="headerlink" title="Py 基础知识补充"></a>Py 基础知识补充</h2><h3 id="Protocol-的使用"><a href="#Protocol-的使用" class="headerlink" title="Protocol 的使用"></a>Protocol 的使用</h3><p>&emsp;&emsp;我们之前使用的是 ABC 基类，如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> abc <span class="keyword">import</span> ABC, abstractmethod</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BaseEmbedding</span>(<span class="title class_ inherited__">ABC</span>):</span><br><span class="line"></span><br><span class="line"><span class="meta">    @abstractmethod</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">embed</span>(<span class="params">self, chunks</span>):</span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;然后需要在创建新的类时继承基类。但是如果你这样定义：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MyEmbedding</span>:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">embed</span>(<span class="params">self, chunks</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;我的Embedding&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;那么 MyEmbedding 和 BaseEmbedding 就没有继承关系。</p>
+<p>&emsp;&emsp;Protocol 的思想不同，它只关心你有没有这个能力，比如：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Protocol</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">EmbeddingProtocol</span>(<span class="title class_ inherited__">Protocol</span>):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">embed</span>(<span class="params">self, chunks</span>):</span><br><span class="line">        ...</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;现在在定义类，如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">TongyiEmbedding</span>:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">embed</span>(<span class="params">self, chunks</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;通义&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">LocalEmbedding</span>:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">embed</span>(<span class="params">self, chunks</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;本地模型&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;都符合 EmbeddingProtocol，因为他们都有 embed()。接下来举一个具体的实例：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Duck</span>:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">speak</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;嘎嘎&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span>:</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">speak</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;你好&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">talk</span>(<span class="params">obj</span>):</span><br><span class="line"></span><br><span class="line">    obj.speak()</span><br><span class="line"></span><br><span class="line">talk(Duck())</span><br><span class="line">talk(Person())</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;Protocol 只关心方法不关心类型。<code>domain/prots.py</code> 就是使用了 Protocol 定义了不同组件的必需方法。</p>
+<h3 id="init-的使用"><a href="#init-的使用" class="headerlink" title="__init__ 的使用"></a><code>__init__</code> 的使用</h3><p>&emsp;&emsp;假设目录结构为</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">infrastructure/</span><br><span class="line">├── __init__.py</span><br><span class="line">└── embeddings/</span><br><span class="line">    ├── __init__.py</span><br><span class="line">    └── openai_compatible.py</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;当 Python 看到 <code>__init__.py</code> 时，会把对应目录当作一个可导入的包，当一个包第一次被导入时，Python会执行这个包中的 <code>__init__.py</code>。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> infrastructure</span><br><span class="line"><span class="keyword">import</span> infrastructure.embeddings</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;当导入 infrastructure.embeddings 时，其大致顺序为：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. 执行 infrastructure/__init__.py</span><br><span class="line">2. 执行 infrastructure/embeddings/__init__.py</span><br><span class="line">3. 得到 infrastructure.embeddings 模块对象</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;同一个 Python 进程中，模块通常只会在第一次导入时执行，之后会从 sys.modules 缓存中复用。</p>
+<h3 id="Python-异常机制基础"><a href="#Python-异常机制基础" class="headerlink" title="Python 异常机制基础"></a>Python 异常机制基础</h3><p>&emsp;&emsp;Python 中错的错误本质是一个异常对象。例如</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    a = <span class="number">1</span> / <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">    <span class="built_in">print</span>(e)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这样运行程序，会输出 division by zero，这里的 e 就是异常对象。<br>&emsp;&emsp;try &#x2F; except 基本结构是 py 中常用的错误检测机制。例如：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    x = <span class="number">1</span> / <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">except</span> ZeroDivisionError:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;不能除0&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;执行时先进入 try，发生异常后跳转 except，执行处理代码。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/AGENT/" rel="tag"># AGENT</a>
+              <a href="/tags/RAG/" rel="tag"># RAG</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/07/30/rag-system-1/" rel="prev" title="动手做 Rag(1) -- 文档处理系统的设计">
+      <i class="fa fa-chevron-left"></i> 动手做 Rag(1) -- 文档处理系统的设计
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%81%9A%E4%BB%80%E4%B9%88"><span class="nav-number">1.</span> <span class="nav-text">做什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%A7%8B%E5%81%9A"><span class="nav-number">2.</span> <span class="nav-text">开始做</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%85%A5%E5%BA%93%E7%9A%84%E5%81%9A%E6%B3%95"><span class="nav-number">2.1.</span> <span class="nav-text">文件入库的做法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E7%94%A8-LLM-%E5%9B%9E%E7%AD%94"><span class="nav-number">2.2.</span> <span class="nav-text">调用 LLM 回答</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96"><span class="nav-number">3.</span> <span class="nav-text">优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E6%A1%86%E6%9E%B6"><span class="nav-number">3.1.</span> <span class="nav-text">整体框架</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%84%E5%B1%82%E8%81%8C%E8%B4%A3%E5%8F%8A%E6%96%87%E4%BB%B6%E4%BD%9C%E7%94%A8"><span class="nav-number">3.2.</span> <span class="nav-text">各层职责及文件作用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Domain%EF%BC%9A%E9%A2%86%E5%9F%9F%E5%B1%82"><span class="nav-number">3.2.1.</span> <span class="nav-text">Domain：领域层</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Application%EF%BC%9A%E5%BA%94%E7%94%A8%E5%B1%82"><span class="nav-number">3.2.2.</span> <span class="nav-text">Application：应用层</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Infrastructure%EF%BC%9A%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD%E5%B1%82"><span class="nav-number">3.2.3.</span> <span class="nav-text">Infrastructure：基础设施层</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Presentation%EF%BC%9A%E4%BA%A4%E4%BA%92%E5%B1%82"><span class="nav-number">3.2.4.</span> <span class="nav-text">Presentation：交互层</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E6%9C%BA%E5%88%B6%E7%9A%84%E9%87%8D%E6%9E%84"><span class="nav-number">3.3.</span> <span class="nav-text">异常处理机制的重构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Py-%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86%E8%A1%A5%E5%85%85"><span class="nav-number">4.</span> <span class="nav-text">Py 基础知识补充</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Protocol-%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">4.1.</span> <span class="nav-text">Protocol 的使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#init-%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">4.2.</span> <span class="nav-text">__init__ 的使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Python-%E5%BC%82%E5%B8%B8%E6%9C%BA%E5%88%B6%E5%9F%BA%E7%A1%80"><span class="nav-number">4.3.</span> <span class="nav-text">Python 异常机制基础</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">79</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
