@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="学习 LangGraph 中 Agent 的入口">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangGraph 源码学习(1)">
+<meta property="og:url" content="https://hccc1203.github.io/2026/08/04/langgraph/langgraph-code-learn-1/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="学习 LangGraph 中 Agent 的入口">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-08-04T01:57:52.000Z">
+<meta property="article:modified_time" content="2026-08-04T09:00:19.327Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="LangGraph">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/08/04/langgraph/langgraph-code-learn-1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>LangGraph 源码学习(1) | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/08/04/langgraph/langgraph-code-learn-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          LangGraph 源码学习(1)
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-08-04 09:57:52" itemprop="dateCreated datePublished" datetime="2026-08-04T09:57:52+08:00">2026-08-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/AI/" itemprop="url" rel="index"><span itemprop="name">AI</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="fake-chat"><a href="#fake-chat" class="headerlink" title="fake_chat"></a>fake_chat</h2><p>&emsp;&emsp;<code>fake_chat</code> 是 LangGraph 官方写好的模拟 LLM，可以让我们快速学习模型接口。</p>
+<p>&emsp;&emsp;在文件开始，导入了正则表达式、迭代器、异步等功能包以及 LangChain 的核心。接下来创建了一个继承了 <code>GenericFakeChatModel</code> 的类，名为 <code>FakeChatModel</code>。成员变量有：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 保存模型要返回的信息</span></span><br><span class="line">messages: <span class="built_in">list</span>[BaseMessage]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 当前返回第几个信息</span></span><br><span class="line">i: <span class="built_in">int</span> = <span class="number">0</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<code>bind_tools</code> 函数表示绑定工具，Fake 模型不支持工具所以直接返回自己。</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">bind_tools</span>(<span class="params">self, functions: <span class="built_in">list</span></span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">self</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;<code>_generate()</code> 函数是 ChatModel 最核心的方法，当外部调用 <code>model.invoke()</code> 时，最终会调用 <code>_generate()</code></p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_generate</span>(<span class="params"></span></span><br><span class="line"><span class="params">    self,</span></span><br><span class="line"><span class="params">    messages: <span class="built_in">list</span>[BaseMessage],</span></span><br><span class="line"><span class="params">    stop: <span class="built_in">list</span>[<span class="built_in">str</span>] | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    run_manager: CallbackManagerForLLMRun | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    **kwargs: <span class="type">Any</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; ChatResult:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Top Level call&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="variable language_">self</span>.i &gt;= <span class="built_in">len</span>(<span class="variable language_">self</span>.messages):</span><br><span class="line">        <span class="variable language_">self</span>.i = <span class="number">0</span></span><br><span class="line">    message = <span class="variable language_">self</span>.messages[<span class="variable language_">self</span>.i]</span><br><span class="line">    <span class="variable language_">self</span>.i += <span class="number">1</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">isinstance</span>(message, <span class="built_in">str</span>):</span><br><span class="line">        message_ = AIMessage(content=message)</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">hasattr</span>(message, <span class="string">&quot;model_copy&quot;</span>):</span><br><span class="line">            message_ = message.model_copy()</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            message_ = message.copy()</span><br><span class="line">    generation = ChatGeneration(message=message_)</span><br><span class="line">    <span class="keyword">return</span> ChatResult(generations=[generation])</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这里只是从消息列表中依次读取消息，然后判断是否为字符串，然后转换为 LangChain 能接收的 Message 类型。最终通过 <code>ChatGeneration()</code> 函数生成结果。</p>
+<p>&emsp;&emsp;<code>_stream()</code> 用于流式输出，对应的是 <code>model.stream()</code> 函数。但其本质上是先调用 <code>generate</code> 函数拿到完整答案，然后获取 AIMessage，再获取文本。再通过正则表达式拆分文本：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">content_chunks = re.split(</span><br><span class="line">    <span class="string">r&quot;(\s)&quot;</span>,</span><br><span class="line">    content</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;接下来创建 chunk，将拆分好的文本存入不同的 chunk。通过 <code>run_manager.on_llm_new_token()</code> 函数通知前端新 Token 来了，方便前端显示。整个函数完整代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">_stream</span>(<span class="params"></span></span><br><span class="line"><span class="params">    self,</span></span><br><span class="line"><span class="params">    messages: <span class="built_in">list</span>[BaseMessage],</span></span><br><span class="line"><span class="params">    stop: <span class="built_in">list</span>[<span class="built_in">str</span>] | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    run_manager: CallbackManagerForLLMRun | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    **kwargs: <span class="type">Any</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; Iterator[ChatGenerationChunk]:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Stream the output of the model.&quot;&quot;&quot;</span></span><br><span class="line">    chat_result = <span class="variable language_">self</span>._generate(</span><br><span class="line">        messages, stop=stop, run_manager=run_manager, **kwargs</span><br><span class="line">    )</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">isinstance</span>(chat_result, ChatResult):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(</span><br><span class="line">            <span class="string">f&quot;Expected generate to return a ChatResult, &quot;</span></span><br><span class="line">            <span class="string">f&quot;but got <span class="subst">&#123;<span class="built_in">type</span>(chat_result)&#125;</span> instead.&quot;</span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    message = chat_result.generations[<span class="number">0</span>].message</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">isinstance</span>(message, AIMessage):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(</span><br><span class="line">            <span class="string">f&quot;Expected invoke to return an AIMessage, &quot;</span></span><br><span class="line">            <span class="string">f&quot;but got <span class="subst">&#123;<span class="built_in">type</span>(message)&#125;</span> instead.&quot;</span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">    content = message.content</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> content:</span><br><span class="line">        <span class="comment"># Use a regular expression to split on whitespace with a capture group</span></span><br><span class="line">        <span class="comment"># so that we can preserve the whitespace in the output.</span></span><br><span class="line">        <span class="keyword">assert</span> <span class="built_in">isinstance</span>(content, <span class="built_in">str</span>)</span><br><span class="line">        content_chunks = cast(<span class="built_in">list</span>[<span class="built_in">str</span>], re.split(<span class="string">r&quot;(\s)&quot;</span>, content))</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> i, token <span class="keyword">in</span> <span class="built_in">enumerate</span>(content_chunks):</span><br><span class="line">            <span class="keyword">if</span> i == <span class="built_in">len</span>(content_chunks) - <span class="number">1</span>:</span><br><span class="line">                chunk = ChatGenerationChunk(</span><br><span class="line">                    message=AIMessageChunk(</span><br><span class="line">                        content=token, <span class="built_in">id</span>=message.<span class="built_in">id</span>, chunk_position=<span class="string">&quot;last&quot;</span></span><br><span class="line">                    )</span><br><span class="line">                )</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                chunk = ChatGenerationChunk(</span><br><span class="line">                    message=AIMessageChunk(content=token, <span class="built_in">id</span>=message.<span class="built_in">id</span>)</span><br><span class="line">                )</span><br><span class="line">            <span class="keyword">if</span> run_manager:</span><br><span class="line">                run_manager.on_llm_new_token(token, chunk=chunk)</span><br><span class="line">            <span class="keyword">yield</span> chunk</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        args = message.__dict__</span><br><span class="line">        args.pop(<span class="string">&quot;type&quot;</span>)</span><br><span class="line">        chunk = ChatGenerationChunk(</span><br><span class="line">            message=AIMessageChunk(**args, chunk_position=<span class="string">&quot;last&quot;</span>)</span><br><span class="line">        )</span><br><span class="line">        <span class="keyword">if</span> run_manager:</span><br><span class="line">            run_manager.on_llm_new_token(<span class="string">&quot;&quot;</span>, chunk=chunk)</span><br><span class="line">        <span class="keyword">yield</span> chunk</span><br></pre></td></tr></table></figure>
+
+<h2 id="AgentState"><a href="#AgentState" class="headerlink" title="AgentState"></a>AgentState</h2><p>&emsp;&emsp;<code>AgentState</code> 是整个 LangGraph 的核心，Agent 运行过程中的所有信息都存在这个字典里：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">AgentState</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;The state of the agent.&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    messages: Annotated[<span class="type">Sequence</span>[BaseMessage], add_messages]</span><br><span class="line"></span><br><span class="line">    remaining_steps: NotRequired[RemainingSteps]</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;messages：完整对话历史。Annotated[…, add_messages] 是重点 —— add_messages 是 reducer，规定”新值如何合并进旧值”。因为没有 reducer 时，新消息会覆盖旧消息；有了它，新消息会 append 追加到历史里。<br>&emsp;&emsp;remaining_steps：剩余步数上限（防死循环）。</p>
+<h2 id="create-react-agent"><a href="#create-react-agent" class="headerlink" title="create_react_agent"></a>create_react_agent</h2><p>&emsp;&emsp;这个函数是 LangGraph 里的核心函数之一，它的作用是根据一个大模型 + 工具集合，自动创建一个 ReAct Agent 的状态图（StateGraph），最后返回一个可以执行的 Agent。其函数入口如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">create_react_agent</span>(<span class="params"></span></span><br><span class="line"><span class="params">    model: <span class="built_in">str</span></span></span><br><span class="line"><span class="params">    | LanguageModelLike</span></span><br><span class="line"><span class="params">    | <span class="type">Callable</span>[[StateSchema, Runtime[ContextT]], BaseChatModel]</span></span><br><span class="line"><span class="params">    | <span class="type">Callable</span>[[StateSchema, Runtime[ContextT]], Awaitable[BaseChatModel]]</span></span><br><span class="line"><span class="params">    | <span class="type">Callable</span>[</span></span><br><span class="line"><span class="params">        [StateSchema, Runtime[ContextT]], Runnable[LanguageModelInput, BaseMessage]</span></span><br><span class="line"><span class="params">    ]</span></span><br><span class="line"><span class="params">    | <span class="type">Callable</span>[</span></span><br><span class="line"><span class="params">        [StateSchema, Runtime[ContextT]],</span></span><br><span class="line"><span class="params">        Awaitable[Runnable[LanguageModelInput, BaseMessage]],</span></span><br><span class="line"><span class="params">    ],</span></span><br><span class="line"><span class="params">    tools: <span class="type">Sequence</span>[BaseTool | <span class="type">Callable</span> | <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="type">Any</span>]] | ToolNode,</span></span><br><span class="line"><span class="params">    *,</span></span><br><span class="line"><span class="params">    prompt: Prompt | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    response_format: StructuredResponseSchema</span></span><br><span class="line"><span class="params">    | <span class="built_in">tuple</span>[<span class="built_in">str</span>, StructuredResponseSchema]</span></span><br><span class="line"><span class="params">    | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    pre_model_hook: RunnableLike | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    post_model_hook: RunnableLike | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    state_schema: StateSchemaType | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    context_schema: <span class="built_in">type</span>[<span class="type">Any</span>] | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    checkpointer: Checkpointer | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    store: BaseStore | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    interrupt_before: <span class="built_in">list</span>[<span class="built_in">str</span>] | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    interrupt_after: <span class="built_in">list</span>[<span class="built_in">str</span>] | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    debug: <span class="built_in">bool</span> = <span class="literal">False</span>,</span></span><br><span class="line"><span class="params">    version: <span class="type">Literal</span>[<span class="string">&quot;v1&quot;</span>, <span class="string">&quot;v2&quot;</span>] = <span class="string">&quot;v2&quot;</span>,</span></span><br><span class="line"><span class="params">    name: <span class="built_in">str</span> | <span class="literal">None</span> = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params">    **deprecated_kwargs: <span class="type">Any</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; CompiledStateGraph:</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其中有三个关键部分：model、tools、返回值。</p>
+<h3 id="model"><a href="#model" class="headerlink" title="model"></a>model</h3><p>&emsp;&emsp;在这个函数中，model 可以是很多种形式：<br>&emsp;&emsp;1、字符串，LangGraph 内部根据字符串帮你创建模型。<br>&emsp;&emsp;2、直接传模型对象，任何满足 LangChain Runnable 接口的模型都可以。<br>&emsp;&emsp;3、Callable 模型。例如：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Callable</span>[</span><br><span class="line">[</span><br><span class="line">StateSchema,</span><br><span class="line">Runtime[ContextT]</span><br><span class="line">],</span><br><span class="line">BaseChatModel</span><br><span class="line">]</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;意为 model 也可以是一个函数。其具体语法如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 一个函数 输入 int，int 输出 int</span></span><br><span class="line"><span class="type">Callable</span>[[<span class="built_in">int</span>, <span class="built_in">int</span>], <span class="built_in">int</span>]</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">add</span>(<span class="params"></span></span><br><span class="line"><span class="params">    a:<span class="built_in">int</span>,</span></span><br><span class="line"><span class="params">    b:<span class="built_in">int</span></span></span><br><span class="line"><span class="params"></span>)-&gt;<span class="built_in">int</span>:</span><br><span class="line">    <span class="keyword">return</span> a+b</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这样做可以让 Agent 动态选择模型，简单问题和复杂问题用不同的模型回答。</p>
+<h3 id="tools"><a href="#tools" class="headerlink" title="tools"></a>tools</h3><p>&emsp;&emsp;第二个参数 tools 表示工具，它也可以是很多种类型。<br>&emsp;&emsp;1、BaseTool，LangChain 标准工具。例如：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search</span>(<span class="params">query:<span class="built_in">str</span></span>):</span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;2、普通函数。例如：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">add</span>(<span class="params">a,b</span>):</span><br><span class="line">    <span class="keyword">return</span> a+b</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;3、dict，工具描述，例如</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line"><span class="string">&quot;name&quot;</span>:<span class="string">&quot;search&quot;</span>,</span><br><span class="line"><span class="string">&quot;description&quot;</span>:<span class="string">&quot;搜索网页&quot;</span>,</span><br><span class="line"><span class="string">&quot;parameters&quot;</span>:&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;4、ToolNode，是 LangGraph 的工具节点。</p>
+<h3 id="返回值-CompiledStateGraph"><a href="#返回值-CompiledStateGraph" class="headerlink" title="返回值 CompiledStateGraph"></a>返回值 CompiledStateGraph</h3><p>&emsp;&emsp;这里返回的并不是 Agent 对象，而是编译好的状态图，之后可以直接使用 <code>invoke</code> 函数。</p>
+<h3 id="其他参数"><a href="#其他参数" class="headerlink" title="其他参数"></a>其他参数</h3><ul>
+<li>prompt：Agent 的系统提示词</li>
+<li>response_format：输出格式</li>
+<li>pre_model_hook：模型调用之前执行…</li>
+<li>post_model_hook：模型调用之后执行…</li>
+<li>state_schema：定义 Agent 状态</li>
+<li>context_schema：上下文</li>
+<li>checkpointer：检查点，用于保存 Agent 状态</li>
+<li>store：用于长期储存</li>
+<li>interrupt_before：执行前暂停</li>
+<li>interrupt_after：执行后暂停</li>
+</ul>
+<h3 id="工具归一化"><a href="#工具归一化" class="headerlink" title="工具归一化"></a>工具归一化</h3><p>&emsp;&emsp;在 <code>create_react_agent</code> 函数中，会将各种形式的 tools 统一成两种：</p>
+<ul>
+<li>ict 形式 → llm_builtin_tools（模型内置工具 schema，直接传给模型用）</li>
+<li>其他 (函数 &#x2F; basetool) → 包进一个 ToolNode，从它提取 tool_classes</li>
+</ul>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> <span class="built_in">isinstance</span>(tools, ToolNode):</span><br><span class="line">    tool_classes = <span class="built_in">list</span>(tools.tools_by_name.values())</span><br><span class="line">    tool_node = tools</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    llm_builtin_tools = [t <span class="keyword">for</span> t <span class="keyword">in</span> tools <span class="keyword">if</span> <span class="built_in">isinstance</span>(t, <span class="built_in">dict</span>)]</span><br><span class="line">    tool_node = ToolNode([t <span class="keyword">for</span> t <span class="keyword">in</span> tools <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">isinstance</span>(t, <span class="built_in">dict</span>)])</span><br><span class="line">    tool_classes = <span class="built_in">list</span>(tool_node.tools_by_name.values())</span><br></pre></td></tr></table></figure>
+
+<h3 id="call-model"><a href="#call-model" class="headerlink" title="call_model"></a>call_model</h3><p>&emsp;&emsp;在 LangGraph 工作流中，这个函数负责调用 LLM，并把 AI 回复写回 State。其整体流程如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">call_model</span>(<span class="params">state,runtime,config</span>):</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 1. 从state拿消息</span></span><br><span class="line">    <span class="built_in">input</span> = get_messages(state)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 2. 如果动态选择模型</span></span><br><span class="line">    <span class="keyword">if</span> dynamic:</span><br><span class="line">        model = choose_model(state,runtime)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 3. 调用LLM</span></span><br><span class="line">    response = model.invoke(<span class="built_in">input</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 4. 标记Agent名字</span></span><br><span class="line">    response.name=name</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 5. 检查是否超步骤</span></span><br><span class="line">    <span class="keyword">if</span> too_many_steps:</span><br><span class="line">        <span class="keyword">return</span> error_message</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 6. 更新State</span></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>:[response]</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;注意最后一行，节点并不直接修改 state，而是返回一个 dict 表示对 state 的更新。LangGraph 会拿这个 dict 和 旧 state 合并。</p>
+<h3 id="should-continue"><a href="#should-continue" class="headerlink" title="should_continue"></a>should_continue</h3><p>&emsp;&emsp;这个函数负责判断 LLM 下一步应该干什么：结束？调用工具？结构化输出？进入后处理？其核心判断代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Define the function that determines whether to continue or not</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">should_continue</span>(<span class="params">state: StateSchema</span>) -&gt; <span class="built_in">str</span> | <span class="built_in">list</span>[Send]:</span><br><span class="line">    messages = _get_state_value(state, <span class="string">&quot;messages&quot;</span>)</span><br><span class="line">    last_message = messages[-<span class="number">1</span>]</span><br><span class="line">    <span class="comment"># If there is no function call, then we finish</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> <span class="built_in">isinstance</span>(last_message, AIMessage) <span class="keyword">or</span> <span class="keyword">not</span> last_message.tool_calls:</span><br><span class="line">        <span class="keyword">if</span> post_model_hook <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;post_model_hook&quot;</span></span><br><span class="line">        <span class="keyword">elif</span> response_format <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;generate_structured_response&quot;</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">return</span> END</span><br><span class="line">    <span class="comment"># Otherwise if there is, we continue</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">if</span> version == <span class="string">&quot;v1&quot;</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;tools&quot;</span></span><br><span class="line">        <span class="keyword">elif</span> version == <span class="string">&quot;v2&quot;</span>:</span><br><span class="line">            <span class="keyword">if</span> post_model_hook <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">                <span class="keyword">return</span> <span class="string">&quot;post_model_hook&quot;</span></span><br><span class="line">            <span class="keyword">return</span> [</span><br><span class="line">                Send(</span><br><span class="line">                    <span class="string">&quot;tools&quot;</span>,</span><br><span class="line">                    ToolCallWithContext(</span><br><span class="line">                        __<span class="built_in">type</span>=<span class="string">&quot;tool_call_with_context&quot;</span>,</span><br><span class="line">                        tool_call=call,</span><br><span class="line">                        state=state,</span><br><span class="line">                    ),</span><br><span class="line">                )</span><br><span class="line">                <span class="keyword">for</span> call <span class="keyword">in</span> last_message.tool_calls</span><br><span class="line">            ]</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这段代码检查最后一条 AIMessage 有没有 tool_calls，没有就结束，有的话就将每个工具调用单独发给一个 tools 节点（并行）。在判断完成后就会创建新的图，其核心代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">workflow = StateGraph(state_schema=state_schema, context_schema=context_schema)</span><br><span class="line">workflow.add_node(<span class="string">&quot;agent&quot;</span>, RunnableCallable(call_model, acall_model), input_schema=input_schema)</span><br><span class="line">workflow.add_node(<span class="string">&quot;tools&quot;</span>, tool_node)</span><br><span class="line">workflow.set_entry_point(<span class="string">&quot;agent&quot;</span>)                    <span class="comment"># 入口</span></span><br><span class="line">workflow.add_conditional_edges(<span class="string">&quot;agent&quot;</span>, should_continue, path_map=agent_paths)  <span class="comment"># ★条件边</span></span><br><span class="line">workflow.add_edge(<span class="string">&quot;tools&quot;</span>, entrypoint)               <span class="comment"># 工具执行完回到 agent</span></span><br><span class="line"><span class="keyword">return</span> workflow.<span class="built_in">compile</span>(checkpointer=..., store=...)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;其整体逻辑如下图。</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">┌──────────► agent (调 LLM) ──────────┐</span><br><span class="line">│              │                      │</span><br><span class="line">│              │ should_continue      │ (无 tool_calls → END)</span><br><span class="line">│              ▼                      ▼</span><br><span class="line">│         &quot;tools&quot; (执行工具)         END</span><br><span class="line">└──────────────┘</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;这就是 ReAct 循环：agent → 有工具调用吗？→ 有则执行 tools → 回到 agent → 直到没有工具调用为止。</p>
+<h2 id="StateGraph"><a href="#StateGraph" class="headerlink" title="StateGraph"></a>StateGraph</h2><p>&emsp;&emsp;打开 <code>state.py</code>，可以看到 <code>StateGraph</code> 类下的注释：</p>
+<ul>
+<li>节点签名是 State -&gt; Partial<State>：输入整个状态，输出部分状态更新。</li>
+<li>每个 key 可以用 reducer 注解，签名 (Value, Value) -&gt; Value。</li>
+<li>StateGraph 是 builder，不能直接执行，必须 .compile()。</li>
+<li>.compile() 之后支持 invoke() &#x2F; stream() &#x2F; ainvoke() &#x2F; astream()。</li>
+</ul>
+<p>&emsp;&emsp;其核心属性如下：</p>
+<ul>
+<li>edges: set[tuple[str, str]]                    # 静态边: {(来源, 目标)}</li>
+<li>nodes: dict[str, StateNodeSpec]                # 节点: {名字: 节点规范}</li>
+<li>branches: defaultdict[str, dict[str, BranchSpec]]  # 条件边: {节点: {分支名: 分支}}</li>
+<li>channels: dict[str, BaseChannel]               # 状态通道</li>
+<li>schemas: dict[type, dict[str, …]]            # 每个 schema 的通道</li>
+</ul>
+<p>&emsp;&emsp;这就是”图纸”的完整数据模型：节点 + 边 + 条件边，全部存起来，compile 时才变成可执行结构。</p>
+<h2 id="ToolNode-与-tools-condition"><a href="#ToolNode-与-tools-condition" class="headerlink" title="ToolNode 与 tools_condition"></a>ToolNode 与 tools_condition</h2><p>&emsp;&emsp;tools_condition 是一个路由函数，用于判断 LLM 是否产生了模型调用，其核心判断逻辑如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">tools_condition</span>(<span class="params">state, messages_key=<span class="string">&quot;messages&quot;</span></span>) -&gt; <span class="type">Literal</span>[<span class="string">&quot;tools&quot;</span>, <span class="string">&quot;__end__&quot;</span>]:</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">isinstance</span>(state, <span class="built_in">list</span>):</span><br><span class="line">        ai_message = state[-<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">elif</span> (<span class="built_in">isinstance</span>(state, <span class="built_in">dict</span>) <span class="keyword">and</span> (messages := state.get(messages_key, []))) <span class="keyword">or</span> \</span><br><span class="line">         (messages := <span class="built_in">getattr</span>(state, messages_key, [])):</span><br><span class="line">        ai_message = messages[-<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">f&quot;No messages found in input state to tool_edge: <span class="subst">&#123;state&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">hasattr</span>(ai_message, <span class="string">&quot;tool_calls&quot;</span>) <span class="keyword">and</span> <span class="built_in">len</span>(ai_message.tool_calls) &gt; <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;tools&quot;</span>       <span class="comment"># 有工具调用 → 去执行工具</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;__end__&quot;</span>         <span class="comment"># 没有 → 结束</span></span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;它兼容三种格式状态：list &#x2F; dict &#x2F; BaseModel，检查最后一句话是否有 tool_calls。其实这个函数与 should_continue 是同一模式，只是这个函数更加精简。</p>
+<p>&emsp;&emsp;ToolNode 是一个大类，其输入可以有三种格式：①图状态（有 messages 键）；②消息列表；③直接的工具调用列表。输出是 {“messages”: [ToolMessage(…)]} 或 [ToolMessage(…)]。</p>
+<p>&emsp;&emsp;不同工具的结果通过 <code>_combine_tool_outputs</code> 函数汇总，多个工具并行执行完，把结果收集成一个 list。普通 ToolMessage 直接包成 {messages: […]} 返回（配合 add_messages reducer 追加进历史）。有 Command 时走复杂路径：合并 Command(goto&#x3D;…)</p>
+<p>&emsp;&emsp;小结：ToolNode 负责”执行工具 + 把结果转成 ToolMessage 塞回状态”。tools_condition 负责”要不要执行工具”。两者配合就是完整的 ReAct 闭环。</p>
+<h2 id="练习"><a href="#练习" class="headerlink" title="练习"></a>练习</h2><h3 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h3><p>&emsp;&emsp;使用今天看过的东西复现假 ReAct 模型。理解 ReAct 的循环。</p>
+<h3 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h3><p>&emsp;&emsp;完整代码如下：</p>
+<figure class="highlight py"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.prebuilt.chat_agent_executor <span class="keyword">import</span> create_react_agent</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> HumanMessage, AIMessage, ToolMessage, BaseMessage</span><br><span class="line"><span class="keyword">from</span> langchain_core.language_models.fake_chat_models <span class="keyword">import</span> GenericFakeChatModel</span><br><span class="line"><span class="keyword">from</span> langchain_core.tools <span class="keyword">import</span> tool</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyFakeChatModel</span>(<span class="title class_ inherited__">GenericFakeChatModel</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">bind_tools</span>(<span class="params">self, functions: <span class="built_in">list</span></span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span></span><br><span class="line"></span><br><span class="line">model = MyFakeChatModel(messages=<span class="built_in">iter</span>([</span><br><span class="line">    AIMessage(content=<span class="string">&quot;&quot;</span>, tool_calls=[&#123;<span class="string">&quot;id&quot;</span>: <span class="string">&quot;1&quot;</span>, <span class="string">&quot;name&quot;</span>: <span class="string">&quot;search_weather&quot;</span>, <span class="string">&quot;args&quot;</span>: &#123;<span class="string">&quot;city&quot;</span>: <span class="string">&quot;sf&quot;</span>&#125;&#125;]),</span><br><span class="line">    AIMessage(content=<span class="string">&quot;天气很好&quot;</span>),</span><br><span class="line">]))</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_weather</span>(<span class="params">city: <span class="built_in">str</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询城市天气&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;result for <span class="subst">&#123;city&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">client = create_react_agent(model, tools=[search_weather])</span><br><span class="line">result = client.invoke(&#123;<span class="string">&quot;messages&quot;</span>:[HumanMessage(content=<span class="string">&quot;你好&quot;</span>)]&#125;)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;=== 最终对话历史 ===&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> m <span class="keyword">in</span> result[<span class="string">&quot;messages&quot;</span>]:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;  <span class="subst">&#123;<span class="built_in">type</span>(m).__name__&#125;</span>: content=<span class="subst">&#123;m.content!r&#125;</span> tool_calls=<span class="subst">&#123;<span class="built_in">getattr</span>(m, <span class="string">&#x27;tool_calls&#x27;</span>, <span class="literal">None</span>)!r&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;=== 消息条数: <span class="subst">&#123;<span class="built_in">len</span>(result[<span class="string">&#x27;messages&#x27;</span>])&#125;</span> ===&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>&emsp;&emsp;最终输出如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">=== 最终对话历史 ===</span><br><span class="line">  HumanMessage: content=&#x27;你好&#x27; tool_calls=None</span><br><span class="line">  AIMessage: content=&#x27;&#x27; tool_calls=[&#123;&#x27;name&#x27;: &#x27;search_weather&#x27;, &#x27;args&#x27;: &#123;&#x27;city&#x27;: &#x27;sf&#x27;&#125;, &#x27;id&#x27;: &#x27;1&#x27;, &#x27;type&#x27;: &#x27;tool_call&#x27;&#125;]</span><br><span class="line">  ToolMessage: content=&#x27;result for sf&#x27; tool_calls=None</span><br><span class="line">  AIMessage: content=&#x27;天气很好&#x27; tool_calls=[]</span><br><span class="line">=== 消息条数: 4 ===</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/LangGraph/" rel="tag"># LangGraph</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/08/03/rag-system-2/" rel="prev" title="动手做 RAG(2)">
+      <i class="fa fa-chevron-left"></i> 动手做 RAG(2)
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#fake-chat"><span class="nav-number">1.</span> <span class="nav-text">fake_chat</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AgentState"><span class="nav-number">2.</span> <span class="nav-text">AgentState</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#create-react-agent"><span class="nav-number">3.</span> <span class="nav-text">create_react_agent</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#model"><span class="nav-number">3.1.</span> <span class="nav-text">model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tools"><span class="nav-number">3.2.</span> <span class="nav-text">tools</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%94%E5%9B%9E%E5%80%BC-CompiledStateGraph"><span class="nav-number">3.3.</span> <span class="nav-text">返回值 CompiledStateGraph</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E5%8F%82%E6%95%B0"><span class="nav-number">3.4.</span> <span class="nav-text">其他参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E5%BD%92%E4%B8%80%E5%8C%96"><span class="nav-number">3.5.</span> <span class="nav-text">工具归一化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#call-model"><span class="nav-number">3.6.</span> <span class="nav-text">call_model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#should-continue"><span class="nav-number">3.7.</span> <span class="nav-text">should_continue</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#StateGraph"><span class="nav-number">4.</span> <span class="nav-text">StateGraph</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ToolNode-%E4%B8%8E-tools-condition"><span class="nav-number">5.</span> <span class="nav-text">ToolNode 与 tools_condition</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%83%E4%B9%A0"><span class="nav-number">6.</span> <span class="nav-text">练习</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%AE%E6%A0%87"><span class="nav-number">6.1.</span> <span class="nav-text">目标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81"><span class="nav-number">6.2.</span> <span class="nav-text">代码</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">80</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+</body>
+</html>
