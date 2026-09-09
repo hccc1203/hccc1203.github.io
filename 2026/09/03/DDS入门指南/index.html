@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1.2.4/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="学习 DDS，使用 claude 实现最小例程并学习。 1. 先看一个具体问题假设你在做一个机器人，系统里有这些进程：  硬件抽象层：以 500Hz 读取关节编码器、IMU，输出机器人状态 运动控制：以 40Hz 跑控制算法，需要机器人状态，输出关节指令 遥控接收：接手柄&#x2F;遥控器输入，输出速度指令 日志记录：想看到上面所有数据  它们要互相传数据。你会怎么做？ 方案一：TCP socke">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DDS入门指南">
+<meta property="og:url" content="https://hccc1203.github.io/2026/09/03/DDS%E5%85%A5%E9%97%A8%E6%8C%87%E5%8D%97/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="学习 DDS，使用 claude 实现最小例程并学习。 1. 先看一个具体问题假设你在做一个机器人，系统里有这些进程：  硬件抽象层：以 500Hz 读取关节编码器、IMU，输出机器人状态 运动控制：以 40Hz 跑控制算法，需要机器人状态，输出关节指令 遥控接收：接手柄&#x2F;遥控器输入，输出速度指令 日志记录：想看到上面所有数据  它们要互相传数据。你会怎么做？ 方案一：TCP socke">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-09-03T13:14:29.000Z">
+<meta property="article:modified_time" content="2026-09-09T13:15:25.788Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="C&#x2F;C++">
+<meta property="article:tag" content="DDS">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/09/03/DDS%E5%85%A5%E9%97%A8%E6%8C%87%E5%8D%97/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>DDS入门指南 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">嵌入式 · AI · 折腾不止</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/hccc1203" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/09/03/DDS%E5%85%A5%E9%97%A8%E6%8C%87%E5%8D%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DDS入门指南
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-09-03 21:14:29" itemprop="dateCreated datePublished" datetime="2026-09-03T21:14:29+08:00">2026-09-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/" itemprop="url" rel="index"><span itemprop="name">学习日志</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>学习 DDS，使用 claude 实现最小例程并学习。</p>
+<h2 id="1-先看一个具体问题"><a href="#1-先看一个具体问题" class="headerlink" title="1. 先看一个具体问题"></a>1. 先看一个具体问题</h2><p>假设你在做一个机器人，系统里有这些进程：</p>
+<ul>
+<li>硬件抽象层：以 500Hz 读取关节编码器、IMU，输出机器人状态</li>
+<li>运动控制：以 40Hz 跑控制算法，需要机器人状态，输出关节指令</li>
+<li>遥控接收：接手柄&#x2F;遥控器输入，输出速度指令</li>
+<li>日志记录：想看到上面所有数据</li>
+</ul>
+<p>它们要互相传数据。你会怎么做？</p>
+<p><strong>方案一：TCP socket。</strong> 于是你要处理：谁连谁（谁是 server）、连接断了怎么重连、<br>数据怎么编码成字节又解回来、一份数据要发给 3 个订阅者怎么办（连 3 条连接？）、<br>新增一个进程要改几处配置。这些都是与业务无关的苦工，而且每一项都容易写错。</p>
+<p><strong>方案二：消息队列（Redis &#x2F; RabbitMQ &#x2F; ZeroMQ）。</strong> 好一些，但引入了 broker：<br>一个额外的进程，成为单点故障，且数据要多走一跳（发布端 → broker → 订阅端）。<br>对 500Hz 的控制回路，这一跳的延迟和抖动是要命的。而且 broker 不理解你的数据，<br>它只是搬运字节。</p>
+<p><strong>方案三：ROS 的 topic。</strong> 这就接近了 —— 事实上 ROS 2 底层用的<strong>就是 DDS</strong>。</p>
+<p>DDS 要解决的正是这个问题：<strong>多个进程之间，高频、低延迟、无中心节点地共享有类型的数据。</strong><br>它是 OMG（对象管理组织）的国际标准，工业界有多个实现（CycloneDDS、FastDDS、<br>RTI Connext、OpenDDS），本例程用的是 Eclipse CycloneDDS。</p>
+<hr>
+<h2 id="2-DDS-是什么：三种范式的对比"><a href="#2-DDS-是什么：三种范式的对比" class="headerlink" title="2. DDS 是什么：三种范式的对比"></a>2. DDS 是什么：三种范式的对比</h2><p>DDS 全称 Data Distribution Service，核心范式叫 <strong>DCPS —— 以数据为中心的发布订阅</strong><br>（Data-Centric Publish-Subscribe）。</p>
+<p>这个”以数据为中心”是关键，先和你熟悉的东西对比：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>消息队列</th>
+<th>RPC（gRPC）</th>
+<th>DDS</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>通信单位</td>
+<td>不透明的字节&#x2F;消息</td>
+<td>函数调用</td>
+<td><strong>有类型的数据对象</strong></td>
+</tr>
+<tr>
+<td>需要中间人</td>
+<td>需要 broker</td>
+<td>需知道服务端地址</td>
+<td><strong>无，端到端自组织</strong></td>
+</tr>
+<tr>
+<td>语义</td>
+<td>“把这个包送过去”</td>
+<td>“调用你的方法”</td>
+<td><strong>“这块数据的最新值是 X”</strong></td>
+</tr>
+<tr>
+<td>谁认识谁</td>
+<td>生产者认识队列名</td>
+<td>客户端认识服务端</td>
+<td><strong>两端都只认识 Topic 名</strong></td>
+</tr>
+<tr>
+<td>中间件理解数据吗</td>
+<td>不理解</td>
+<td>理解签名</td>
+<td><strong>理解每个字段</strong></td>
+</tr>
+</tbody></table>
+<h3 id="“以数据为中心”-的实际含义"><a href="#“以数据为中心”-的实际含义" class="headerlink" title="“以数据为中心” 的实际含义"></a>“以数据为中心” 的实际含义</h3><p>中间件<strong>理解</strong>你传的是什么结构 —— 这就是为什么 DDS 强制你先写 IDL 文件描述数据。<br>因为理解数据，它才能做到这些只有理解数据才能做的事：</p>
+<ul>
+<li>按主键（key）把数据分成多个独立实例，各自维护历史</li>
+<li>只保留每个实例的最新 N 个值，旧的自动丢弃</li>
+<li>检测”某个发布者失联了”</li>
+<li>按内容过滤（只接收 <code>temperature &gt; 30</code> 的样本）</li>
+</ul>
+<p>消息队列做不到这些，因为对它来说消息就是一串字节。</p>
+<h3 id="一个视角转换"><a href="#一个视角转换" class="headerlink" title="一个视角转换"></a>一个视角转换</h3><p><code>publisher.cpp:67</code> 这一行：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">writer.<span class="built_in">write</span>(sample);</span><br></pre></td></tr></table></figure>
+
+<p>它的语义<strong>不是</strong>“发送一条消息”，而是”<strong>更新</strong> <code>Demo/SensorData</code> 这个数据对象的当前值”。</p>
+<p>这个区别现在看起来像咬文嚼字，但它会解释后面几乎所有的设计：为什么默认只保留最新<br>一帧、为什么丢帧是可接受的、为什么”发布端停止发送”不等于”数据归零”。</p>
+<p>把 DDS 想象成一块<strong>所有进程都能看到的共享白板</strong>，而不是一根管道。发布端往白板上<br>写值，订阅端随时去看白板上现在写的是什么。管道关心”每个包都要送到”，白板只关心<br>“上面的值是不是最新的”。</p>
+<hr>
+<h2 id="3-先把例程跑起来"><a href="#3-先把例程跑起来" class="headerlink" title="3. 先把例程跑起来"></a>3. 先把例程跑起来</h2><p>例程只有 3 个源文件，各自职责：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">idl/sensor.idl      数据类型定义（要传什么）</span><br><span class="line">publisher.cpp       发布端，20Hz 发数据</span><br><span class="line">subscriber.cpp      订阅端，回调收数据、main 循环 5Hz 消费</span><br></pre></td></tr></table></figure>
+
+<p>构建和运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./scripts/build.sh        <span class="comment"># 构建（首次会自动跑 idlc 生成类型代码）</span></span><br><span class="line">./scripts/run.sh both     <span class="comment"># 两端都起，跟随订阅端日志</span></span><br><span class="line">./scripts/run.sh stop     <span class="comment"># 停止</span></span><br></pre></td></tr></table></figure>
+
+<p>日志在 <code>logs/</code>。你会看到这样的输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[SUB][main]     thread=140079814488320</span><br><span class="line">[SUB] reader ready, waiting for data...</span><br><span class="line">[SUB][main]     no data yet (发布端起了吗？QoS 对得上吗？)</span><br><span class="line">[SUB][main]     no data yet (发布端起了吗？QoS 对得上吗？)</span><br><span class="line">[SUB][callback] FIRST sample, thread=140079686215360  &lt;-- 注意这个 id 和 main 不同</span><br><span class="line">[SUB][main]     frame=1 (+0) temp=25.2499 gyro=[0.05,0.999,0] status=0 | rx_total=1 latency=44867.6us</span><br><span class="line">[SUB][main]     frame=5 (+4) temp=26.237  gyro=[0.247,0.969,0] status=0 | rx_total=5 latency=43940us</span><br><span class="line">[SUB][main]     frame=9 (+4) temp=27.1748 gyro=[0.435,0.900,0] status=0 | rx_total=9 latency=43264.3us</span><br></pre></td></tr></table></figure>
+
+<p>这段输出里有 4 个值得注意的现象，本文后面会逐个解释：</p>
+<ol>
+<li>两个 thread id 不一样 —— 回调不在 main 线程上（第 8 节）</li>
+<li><code>frame</code> 每次 <code>+4</code> —— 发布 20Hz、消费 5Hz，中间的帧被丢了（第 7 节）</li>
+<li><code>latency</code> 是 44 毫秒，而且在<strong>逐渐变小</strong> —— 这个数字测错了（第 10 节）</li>
+<li>开头有几次 <code>no data yet</code> —— 连接建立需要时间（第 6 节）</li>
+</ol>
+<hr>
+<h2 id="4-数据模型：IDL、Topic、类型名"><a href="#4-数据模型：IDL、Topic、类型名" class="headerlink" title="4. 数据模型：IDL、Topic、类型名"></a>4. 数据模型：IDL、Topic、类型名</h2><h3 id="为什么要写-IDL"><a href="#为什么要写-IDL" class="headerlink" title="为什么要写 IDL"></a>为什么要写 IDL</h3><p>DDS 要求你用 <strong>IDL</strong>（Interface Definition Language，OMG 的标准语言）描述数据结构。<br><code>idl/sensor.idl</code> 是本例程的全部数据定义：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">module demo &#123;</span><br><span class="line">    module msg &#123;</span><br><span class="line"></span><br><span class="line">        struct Header &#123;</span><br><span class="line">            long long timestamp;   // 纳秒</span><br><span class="line">            long long frame_id;    // 自增帧号，用来发现丢帧</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        // topic: &quot;Demo/SensorData&quot;</span><br><span class="line">        struct SensorData &#123;</span><br><span class="line">            Header header;</span><br><span class="line">            float  temperature;    // ℃</span><br><span class="line">            float  gyro[3];        // rad/s，定长数组</span><br><span class="line">            octet  status;         // 0=正常 1=告警</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">    &#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>写 IDL 而不是直接写 C++ struct，有三个原因：</p>
+<ol>
+<li><strong>跨语言</strong>：同一份 IDL 可以生成 C++、C、Python、Java、Rust 的类型，不同语言写的<br>进程能互通</li>
+<li><strong>跨平台</strong>：序列化格式（CDR）是标准的，x86 和 ARM、32 位和 64 位之间字节序和对齐<br>都由中间件处理</li>
+<li><strong>中间件需要理解结构</strong>：第 2 节说的那些能力（按 key 分实例、内容过滤）都依赖这个</li>
+</ol>
+<h3 id="IDL-到-C-的映射"><a href="#IDL-到-C-的映射" class="headerlink" title="IDL 到 C++ 的映射"></a>IDL 到 C++ 的映射</h3><p>构建时 <code>idlc</code> 工具把 <code>sensor.idl</code> 编译成 <code>build/sensor.hpp</code>（663 行）和<br><code>build/sensor.cpp</code>（89 行）。生成的是普通 C++ 类：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// build/sensor.hpp</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">SensorData</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line"> ::demo::msg::Header header_;</span><br><span class="line"> <span class="type">float</span> temperature_ = <span class="number">0.0f</span>;</span><br><span class="line"> std::array&lt;<span class="type">float</span>, 3&gt; gyro_ = &#123; &#125;;    <span class="comment">// ← IDL 的 float[3]</span></span><br><span class="line"> <span class="type">uint8_t</span> status_ = <span class="number">0</span>;                 <span class="comment">// ← IDL 的 octet</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>映射规则：</p>
+<table>
+<thead>
+<tr>
+<th>IDL</th>
+<th>C++</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>module</code></td>
+<td><code>namespace</code></td>
+<td>嵌套关系保持</td>
+</tr>
+<tr>
+<td><code>long long</code></td>
+<td><code>int64_t</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>long</code></td>
+<td><code>int32_t</code></td>
+<td>注意不是 C++ 的 <code>long</code>！</td>
+</tr>
+<tr>
+<td><code>short</code></td>
+<td><code>int16_t</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>unsigned long</code></td>
+<td><code>uint32_t</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>octet</code></td>
+<td><code>uint8_t</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>boolean</code></td>
+<td><code>bool</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>double</code></td>
+<td><code>double</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>float[3]</code></td>
+<td><code>std::array&lt;float,3&gt;</code></td>
+<td><strong>定长，值语义，栈上</strong></td>
+</tr>
+<tr>
+<td><code>sequence&lt;float&gt;</code></td>
+<td><code>std::vector&lt;float&gt;</code></td>
+<td>变长，<strong>会堆分配</strong></td>
+</tr>
+<tr>
+<td><code>string</code></td>
+<td><code>std::string</code></td>
+<td>变长，<strong>会堆分配</strong></td>
+</tr>
+</tbody></table>
+<p><strong>这里有一条实时系统的重要规则</strong>：实时路径上的 IDL 应该只用定长类型。<br><code>sensor.idl:6</code> 的注释点到了这一点 —— <code>std::array</code> 是值语义、栈上、零堆分配；<br>而 <code>sequence</code> &#x2F; <code>string</code> 每次收发都可能触发 <code>malloc</code>，在 500Hz 的控制回路里，<br>malloc 的锁竞争和不确定延迟是真实风险。</p>
+<h3 id="Topic-名字-类型"><a href="#Topic-名字-类型" class="headerlink" title="Topic &#x3D; 名字 + 类型"></a>Topic &#x3D; 名字 + 类型</h3><p><code>publisher.cpp:28</code> 和 <code>subscriber.cpp:91</code> 是同一行代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dds::<span class="function">topic::Topic&lt;demo::msg::SensorData&gt; <span class="title">topic</span><span class="params">(participant, <span class="string">&quot;Demo/SensorData&quot;</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>Topic 的身份由<strong>两个</strong>维度构成：</p>
+<ol>
+<li><strong>Topic 名</strong>：字符串 <code>&quot;Demo/SensorData&quot;</code>。斜杠只是命名习惯，DDS 里没有层级含义</li>
+<li><strong>类型名</strong>：<code>demo::msg::SensorData</code></li>
+</ol>
+<p>第二个维度是初学者最容易忽视的。它的实际来源在生成代码里，<code>build/sensor.hpp:165</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;&gt; <span class="keyword">constexpr</span> <span class="type">const</span> <span class="type">char</span>* TopicTraits&lt;::demo::msg::SensorData&gt;::<span class="built_in">getTypeName</span>()</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="string">&quot;demo::msg::SensorData&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>idlc</code> 把 IDL 里的 <code>module demo &#123; module msg &#123; struct SensorData</code> 拼成了字符串<br><code>&quot;demo::msg::SensorData&quot;</code>。这个字符串在连接建立阶段会随端点信息广播出去，<br>两端<strong>逐字节比较</strong>。</p>
+<p>后果：把 IDL 里的 <code>module demo</code> 改成 <code>module foo</code>（只改一端），两端就再也连不上。<br>不是因为 C++ 类型不兼容，而是因为这个<strong>字符串</strong>变了。</p>
+<p>这在多方协作时尤其要命：如果对接的是别人编译好的二进制（比如另一块板子上的底层<br>软件），它广播的类型名是固定的，你这边 IDL 里 module 名写错一个字母，就永远收不到<br>数据 —— <strong>而且没有任何错误提示</strong>（第 11 节详述）。</p>
+<hr>
+<h2 id="5-四层实体：那四行初始化各自在做什么"><a href="#5-四层实体：那四行初始化各自在做什么" class="headerlink" title="5. 四层实体：那四行初始化各自在做什么"></a>5. 四层实体：那四行初始化各自在做什么</h2><p><code>publisher.cpp:25-43</code> 有四步初始化。它们不是仪式，每层有明确职责：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">DomainParticipant(0)          域 = 隔离边界；一个进程一份（重量级）</span><br><span class="line">    ├── Topic&lt;T&gt;(&quot;名字&quot;)      名字+类型的绑定声明</span><br><span class="line">    ├── Publisher             DataWriter 的容器</span><br><span class="line">    │     └── DataWriter&lt;T&gt;   真正干活的：write()</span><br><span class="line">    └── Subscriber</span><br><span class="line">          └── DataReader&lt;T&gt;   真正干活的：take() / read()</span><br></pre></td></tr></table></figure>
+
+<h3 id="DomainParticipant：域是硬隔离"><a href="#DomainParticipant：域是硬隔离" class="headerlink" title="DomainParticipant：域是硬隔离"></a>DomainParticipant：域是硬隔离</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dds::<span class="function">domain::DomainParticipant <span class="title">participant</span><span class="params">(<span class="number">0</span>)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>参数 <code>0</code> 是 <strong>domain ID</strong>。规则很简单：<strong>不同 domain 的进程互相完全不可见</strong>，<br>哪怕在同一台机器、用同一个 topic 名、同一个类型。</p>
+<p>这个隔离是物理层面的，不是逻辑过滤 —— domain ID 直接编码进 UDP 端口号<br>（下一节会看到）。所以它是最省事的隔离手段：同一台机器上跑两套互不干扰的系统<br>（比如仿真和实机、开发和测试），改 domain ID 就够了。</p>
+<p>反过来说，如果整个项目所有进程都硬编码 <code>DomainParticipant(0)</code>，就等于放弃了这个<br>隔离维度 —— 哪天要在同一台机器上跑双实例，这是第一个要改的地方。</p>
+<p><strong>Participant 是重量级对象。</strong> 我实测了它的开销 —— 一个只有 1 个 writer 的<br>publisher 进程：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">ls</span> /proc/&lt;pid&gt;/task    <span class="comment"># 列出线程</span></span><br><span class="line">publisher  gc  dq.builtins  dq.user  tev  recv  recvMC  recvUC</span><br></pre></td></tr></table></figure>
+
+<p><strong>一个 participant &#x3D; 8 条线程</strong>（含 main）。加上 4 个 UDP socket。</p>
+<p>所以”一个进程只创建一个 participant”是铁律。不要在函数里随手创建，更不要为每个<br>topic 创建一个。</p>
+<h3 id="Publisher-Subscriber：多数情况下是纯样板"><a href="#Publisher-Subscriber：多数情况下是纯样板" class="headerlink" title="Publisher &#x2F; Subscriber：多数情况下是纯样板"></a>Publisher &#x2F; Subscriber：多数情况下是纯样板</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">dds::<span class="function">pub::Publisher <span class="title">publisher</span><span class="params">(participant)</span></span>;</span><br><span class="line">dds::<span class="function">sub::Subscriber <span class="title">subscriber</span><span class="params">(participant)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>说实话，这两层在 90% 的代码里没有实际作用。它们存在是为了承载<strong>跨多个 writer 的<br>组语义</strong> —— 主要是 <code>Presentation</code> QoS 的 <code>GROUP</code> 级别，语义是”这几个 writer 的更新<br>要作为一个原子批次被订阅端看到”。</p>
+<p>本例程没用这个特性，绝大多数项目也不用。所以看到这两层不用多想：</p>
+<ul>
+<li>它们<strong>不是</strong>性能相关的连接池</li>
+<li>它们<strong>不是</strong>线程的宿主</li>
+<li>它们只是 API 要求的中间层</li>
+</ul>
+<h3 id="DataWriter-DataReader：真正的主角"><a href="#DataWriter-DataReader：真正的主角" class="headerlink" title="DataWriter &#x2F; DataReader：真正的主角"></a>DataWriter &#x2F; DataReader：真正的主角</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">dds::<span class="function">pub::DataWriter&lt;demo::msg::SensorData&gt; <span class="title">writer</span><span class="params">(publisher, topic, qos)</span></span>;</span><br><span class="line">dds::<span class="function">sub::DataReader&lt;demo::msg::SensorData&gt; <span class="title">reader</span><span class="params">(subscriber, topic, qos)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>这一层是唯一有数据流经过的地方，也是绝大部分 QoS 的宿主。学 DDS 时，注意力应该<br>主要放在这一层。</p>
+<hr>
+<h2 id="6-发现机制：没有-broker，两端怎么找到彼此"><a href="#6-发现机制：没有-broker，两端怎么找到彼此" class="headerlink" title="6. 发现机制：没有 broker，两端怎么找到彼此"></a>6. 发现机制：没有 broker，两端怎么找到彼此</h2><p>这是 DDS 最”魔法”的部分。两个进程，谁也不知道对方的 IP 和端口，谁也没配置过对方的<br>地址，启动后就能自动通信。</p>
+<h3 id="底层：RTPS-over-UDP"><a href="#底层：RTPS-over-UDP" class="headerlink" title="底层：RTPS over UDP"></a>底层：RTPS over UDP</h3><p>DDS 的线上协议叫 <strong>RTPS</strong>（Real-Time Publish-Subscribe），跑在 UDP 上。我实测了<br>publisher 进程打开的端口：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ ss -unap | grep publisher</span><br><span class="line">UNCONN  0.0.0.0:7400            ← SPDP 多播：发现 participant</span><br><span class="line">UNCONN  0.0.0.0:7401            ← 用户数据多播</span><br><span class="line">UNCONN  192.168.207.177:46087   ← 单播</span><br><span class="line">UNCONN  0.0.0.0:36977           ← 单播</span><br></pre></td></tr></table></figure>
+
+<p>端口 <code>7400</code> 由公式 <code>7400 + 250 × domain_id</code> 得出 —— 这就是上一节说的<br>“domain 隔离是物理层面的”：不同 domain 用不同端口，包本身就到不了对方。</p>
+<h3 id="阶段-1：SPDP-——-找到对方进程"><a href="#阶段-1：SPDP-——-找到对方进程" class="headerlink" title="阶段 1：SPDP —— 找到对方进程"></a>阶段 1：SPDP —— 找到对方进程</h3><p><strong>SPDP</strong>（Simple Participant Discovery Protocol）：participant 创建后，周期性往<br><strong>多播地址</strong> <code>239.255.0.1:7400</code> 广播一条”我是谁”：</p>
+<ul>
+<li>自己的 GUID（全局唯一 ID）</li>
+<li>支持的协议版本</li>
+<li>自己的单播地址和端口</li>
+<li>租约时长（多久没心跳就认为我死了）</li>
+</ul>
+<p>同时它也在这个端口上监听别人的广播。两个 participant 收到彼此的广播，就完成了<br>第一阶段握手。</p>
+<p><strong>关键点：这是多播（multicast）。</strong> 由此推出几个实践后果：</p>
+<ul>
+<li>同机通信也走网络协议栈（回环多播），<strong>不是共享内存</strong>（除非显式配置<br>Iceoryx 之类的共享内存传输）</li>
+<li>多播被防火墙拦、被交换机禁、Docker 默认桥接网络不转发多播 → <strong>发现失败</strong></li>
+<li>跨网段需要路由器支持多播转发，否则要手写对端单播地址（CycloneDDS 通过<br><code>CYCLONEDDS_URI</code> 环境变量配置 <code>&lt;Peers&gt;</code>）</li>
+</ul>
+<p>排查”两端都起了但收不到数据”，<strong>确认多播是否通畅永远是第一步</strong>。</p>
+<h3 id="阶段-2：SEDP-——-交换端点清单"><a href="#阶段-2：SEDP-——-交换端点清单" class="headerlink" title="阶段 2：SEDP —— 交换端点清单"></a>阶段 2：SEDP —— 交换端点清单</h3><p><strong>SEDP</strong>（Simple Endpoint Discovery Protocol）：SPDP 握手成功后，两个 participant<br>用<strong>单播</strong>互相发送内置 topic 的数据，内容是”我有哪些 writer 和 reader，各自的<br>topic 名、类型名、QoS 配置是什么”。</p>
+<p>对端拿到清单后，逐条比对：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">topic 名相同？ → 类型名相同？ → QoS 兼容？ → 建立数据通路（match）</span><br></pre></td></tr></table></figure>
+
+<p><strong>三个条件全部通过才 match。任何一条不过，静默丢弃 —— 无日志、无异常、无返回码。</strong></p>
+<p>这就是 DDS 排障困难的根本原因，第 11 节会专门讲。</p>
+<h3 id="一个设计细节：发现数据和用户数据分开处理"><a href="#一个设计细节：发现数据和用户数据分开处理" class="headerlink" title="一个设计细节：发现数据和用户数据分开处理"></a>一个设计细节：发现数据和用户数据分开处理</h3><p>回看上一节实测的 8 条线程，有两条是投递队列：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">dq.builtins   发现数据的投递队列</span><br><span class="line">dq.user       用户数据的投递队列 ← 你的回调跑在这里</span><br></pre></td></tr></table></figure>
+
+<p>它们是<strong>分开的</strong>。这个设计有实际意义：你的回调把 <code>dq.user</code> 卡住时，发现机制仍然<br>正常工作，participant 不会被对端误判为失联。</p>
+<h3 id="实测：连接建立要多久"><a href="#实测：连接建立要多久" class="headerlink" title="实测：连接建立要多久"></a>实测：连接建立要多久</h3><p>这个数字很重要，因为它是工程约束。我写了一个带计时的版本来测（用<br><code>publication_matched_status()</code> 精确捕捉 match 时刻）。</p>
+<p><strong>场景 A：订阅端已经在运行，发布端后启动</strong>（跑 3 次）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[T] participant_created +2.19ms</span><br><span class="line">[T] writer_created      +2.82ms</span><br><span class="line">[T] MATCHED             +5.05ms  (writer 创建之后仅 2.24ms)</span><br></pre></td></tr></table></figure>
+
+<p><strong>场景 B：两端几乎同时启动</strong>（跑 3 次）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[T] MATCHED +5.56ms / +5.70ms / +5.68ms  (writer 创建之后约 2.3ms)</span><br></pre></td></tr></table></figure>
+
+<p><strong>场景 C：发布端先启动，订阅端 1.5 秒后启动</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[T] MATCHED +1509ms   ← 订阅端在 1500ms 才起，所以 match 本身只用了约 9ms</span><br></pre></td></tr></table></figure>
+
+<p>结论：<strong>在本机、多播通畅的情况下，match 只需 2-10 毫秒。</strong> DDS 的发现机制比多数人<br>想象的快得多。</p>
+<h3 id="那开头的几次-no-data-yet-是怎么来的？"><a href="#那开头的几次-no-data-yet-是怎么来的？" class="headerlink" title="那开头的几次 no data yet 是怎么来的？"></a>那开头的几次 <code>no data yet</code> 是怎么来的？</h3><p><code>logs/subscriber.log</code> 开头有 2-3 次 <code>no data yet</code>，按 200ms 一次算是 400-600ms。<br>既然 match 只要几毫秒，这几百毫秒是哪来的？</p>
+<p>我用阶段计时测了订阅端（复刻 <code>run.sh both</code> 的启动方式）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[T] main_entered   +0.018ms</span><br><span class="line">[T] participant    +2.82ms</span><br><span class="line">[T] reader_ready   +3.60ms     ← reader 在 3.6ms 就绪了</span><br><span class="line">[T] FIRST_DATA     +308.55ms  frame=0    ← 首帧，而且是 frame=0</span><br><span class="line">[T] MATCHED        +308.78ms</span><br></pre></td></tr></table></figure>
+
+<p>答案清楚了：<strong>那 300ms 是在等发布端启动。</strong> <code>run.sh:66</code> 里 publisher 比 subscriber<br>晚起 <code>sleep 0.3</code>，订阅端的 reader 在 3.6ms 就准备好了，剩下的时间纯粹在等对方。</p>
+<p>而且注意 <code>FIRST_DATA</code> 收到的是 <strong><code>frame=0</code></strong> —— 发布端的第一帧，一帧都没丢。</p>
+<p>那为什么 <code>main</code> 循环打了 2-3 次 <code>no data yet</code>？因为 <code>main</code> 每 200ms 才看一次缓存<br>（<code>subscriber.cpp:164</code>），300ms 的等待期内它会看 1-2 次，都还没数据。这是 <code>main</code><br>自己的采样周期决定的，与 DDS 无关。</p>
+<p><strong>这个澄清有实际价值</strong>：如果你以为”DDS 发现要几百毫秒”，就会在启动逻辑里留很长的<br>等待窗口，或者误以为连接慢是中间件的问题。实际上 match 是毫秒级的，几百毫秒的等待<br>几乎总是<strong>对端还没起来</strong>。</p>
+<hr>
+<h2 id="7-QoS：匹配是一份契约，不是配置项"><a href="#7-QoS：匹配是一份契约，不是配置项" class="headerlink" title="7. QoS：匹配是一份契约，不是配置项"></a>7. QoS：匹配是一份契约，不是配置项</h2><p>QoS（Quality of Service，服务质量）是 DDS 里最重要也最容易出错的概念。DDS 标准定义了<br>22 种 QoS 策略。好消息是：日常只需要真正理解 3-4 个。</p>
+<h3 id="请求-提供模型（RxO）"><a href="#请求-提供模型（RxO）" class="headerlink" title="请求&#x2F;提供模型（RxO）"></a>请求&#x2F;提供模型（RxO）</h3><p>初学者最常见的误解是”两边 QoS 写一样就行”。实际规则更精确：</p>
+<blockquote>
+<p><strong>Reader 请求（Requested）的服务等级，不能高于 Writer 提供（Offered）的。</strong></p>
+</blockquote>
+<p>这叫 <strong>RxO 契约</strong>（Requested ≤ Offered）。它是一个偏序关系，不是相等关系。</p>
+<p>本例程的两处 QoS 配置是核心对照点。<code>publisher.cpp:39-41</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Writer：提供 BestEffort</span></span><br><span class="line">dds::pub::qos::DataWriterQos qos;</span><br><span class="line">qos &lt;&lt; dds::core::policy::Reliability::<span class="built_in">BestEffort</span>()</span><br><span class="line">    &lt;&lt; dds::core::policy::History::<span class="built_in">KeepLast</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<p><code>subscriber.cpp:101-103</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Reader：请求 BestEffort  ← 必须 ≤ Writer 提供的</span></span><br><span class="line">dds::sub::qos::DataReaderQos qos;</span><br><span class="line">qos &lt;&lt; dds::core::policy::Reliability::<span class="built_in">BestEffort</span>()</span><br><span class="line">    &lt;&lt; dds::core::policy::History::<span class="built_in">KeepLast</span>(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="Reliability：可靠性"><a href="#Reliability：可靠性" class="headerlink" title="Reliability：可靠性"></a>Reliability：可靠性</h3><p>两个取值，<code>Reliable &gt; BestEffort</code>：</p>
+<ul>
+<li><strong>BestEffort</strong>：尽力而为。丢了就丢了，不重传</li>
+<li><strong>Reliable</strong>：可靠。丢包会检测并重传，保证按序无丢失到达</li>
+</ul>
+<p>兼容矩阵：</p>
+<table>
+<thead>
+<tr>
+<th>Writer 提供 ↓ &#x2F; Reader 请求 →</th>
+<th>BestEffort</th>
+<th>Reliable</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>BestEffort</strong></td>
+<td>✅ match</td>
+<td>❌ <strong>静默不匹配</strong></td>
+</tr>
+<tr>
+<td><strong>Reliable</strong></td>
+<td>✅ match</td>
+<td>✅ match</td>
+</tr>
+</tbody></table>
+<p>我实测验证了那个 ❌ 格子：把订阅端改成 <code>Reliability::Reliable()</code>（其他一切不变，<br>topic 名和类型名完全一致），运行 12 秒：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">发布端：正常发送，[PUB] frame=0 / frame=20 / frame=40 ...</span><br><span class="line">订阅端：no data yet ×63 次，收到数据帧数 = 0</span><br></pre></td></tr></table></figure>
+
+<p><strong>63 次全部静默，零报错，零异常。</strong> 这就是 DDS 最经典的陷阱。</p>
+<h3 id="为什么高频实时流要选-BestEffort"><a href="#为什么高频实时流要选-BestEffort" class="headerlink" title="为什么高频实时流要选 BestEffort"></a>为什么高频实时流要选 BestEffort</h3><p><code>publisher.cpp:32-38</code> 的注释点到了要害。这个选择不是”图省事”，而是 Reliable 在这个<br>场景下<strong>有害</strong>：</p>
+<ol>
+<li><strong>重传的数据已经过期。</strong> 20Hz 的传感器数据，丢了第 100 帧，等重传到达时第 103 帧<br>已经到了。用一帧 150ms 前的旧数据做控制，比直接跳过更糟</li>
+<li><strong>重传挤占带宽和 CPU</strong>，而且恰好发生在网络已经拥塞的时候 —— 正是最不该增加负载<br>的时刻</li>
+<li><strong>Reliable 会阻塞 writer。</strong> 队列满时 <code>write()</code> 会阻塞（受 <code>ResourceLimits</code> 和<br><code>max_blocking_time</code> 约束）。一个 20Hz 定周期循环被 <code>write()</code> 阻塞，节拍就崩了</li>
+</ol>
+<h3 id="选-QoS-的判断标准：传的是状态还是事件"><a href="#选-QoS-的判断标准：传的是状态还是事件" class="headerlink" title="选 QoS 的判断标准：传的是状态还是事件"></a>选 QoS 的判断标准：传的是状态还是事件</h3><p>这是一条实用的判断规则：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>状态量</th>
+<th>事件量</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>例子</td>
+<td>温度、角速度、位姿、电池电量</td>
+<td>急停按下、任务完成、模式切换</td>
+</tr>
+<tr>
+<td>语义</td>
+<td>“现在的值是 X”</td>
+<td>“发生了一件事”</td>
+</tr>
+<tr>
+<td>漏掉一个</td>
+<td>无所谓，下一帧就修正了</td>
+<td><strong>不可恢复</strong></td>
+</tr>
+<tr>
+<td>该选</td>
+<td>BestEffort + KeepLast(1)</td>
+<td><strong>Reliable + KeepAll</strong></td>
+</tr>
+</tbody></table>
+<p>本例程传的是状态量（温度、陀螺仪），所以 BestEffort + KeepLast(1) 是正确的。</p>
+<p>但要警惕：<strong>如果把事件量塞进同一条 BestEffort 的消息里</strong>（比如在传感器消息里加一个<br>“急停标志位”），那个标志位就会跟着变成”可以丢的”。这是真实项目里容易埋下的隐患。</p>
+<h3 id="History：保留多少历史"><a href="#History：保留多少历史" class="headerlink" title="History：保留多少历史"></a>History：保留多少历史</h3><ul>
+<li><strong>KeepLast(N)</strong>：每个实例只保留最新 N 个样本，更新的挤掉旧的</li>
+<li><strong>KeepAll</strong>：全部保留（受 <code>ResourceLimits</code> 限制），队列满了 writer 会阻塞</li>
+</ul>
+<p>本例程用 <code>KeepLast(1)</code> —— 只保留最新一帧。这直接产生了日志里那个 <code>+4</code> 现象。</p>
+<h3 id="生产快于消费：中间帧被丢弃"><a href="#生产快于消费：中间帧被丢弃" class="headerlink" title="生产快于消费：中间帧被丢弃"></a>生产快于消费：中间帧被丢弃</h3><p>发布端 20Hz，订阅端 <code>main</code> 循环 5Hz（<code>subscriber.cpp:164</code>）。日志：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">frame=1  (+0)</span><br><span class="line">frame=5  (+4)</span><br><span class="line">frame=9  (+4)</span><br><span class="line">frame=13 (+4)</span><br></pre></td></tr></table></figure>
+
+<p><code>+4</code> 是必然的：20 ÷ 5 &#x3D; 4。中间的 3 帧被 <code>KeepLast(1)</code> 挤掉了。</p>
+<p>我跑了 75 秒统计 gap 分布：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">367 次 (+4)</span><br><span class="line">  7 次 (+3)     ← 时钟漂移导致的，第 10 节解释</span><br><span class="line">  1 次 (+0)     ← 首帧</span><br></pre></td></tr></table></figure>
+
+<p><strong>这是故意的设计，不是缺陷。</strong> 高频状态流里，消费不过来的中间帧本来就没有价值 ——<br>你要的是”现在的值”，不是”每一个历史值”。</p>
+<h3 id="状态语义的必然后果：静默-≠-归零"><a href="#状态语义的必然后果：静默-≠-归零" class="headerlink" title="状态语义的必然后果：静默 ≠ 归零"></a>状态语义的必然后果：静默 ≠ 归零</h3><p><code>publisher.cpp:48-51</code> 记录的这一条，是这套范式最容易造成事故的地方：</p>
+<blockquote>
+<p>上游停发不会自动归零 —— 下游会一直用最后一帧</p>
+</blockquote>
+<p>因为语义是”这个数据对象的最新值”，而不是”消息流”。发布端进程崩了、网线断了，<br>订阅端缓存里还是崩溃前那一帧。<strong>如果那一帧是”前进 1.5 m&#x2F;s”，机器人会一直往前跑。</strong></p>
+<p>DDS 其实提供了检测手段：</p>
+<ul>
+<li><strong>Liveliness QoS</strong> + <code>on_liveliness_changed</code> 回调：检测”发布者还活着吗”</li>
+<li><strong>Deadline QoS</strong> + <code>on_requested_deadline_missed</code> 回调：检测”数据是否按承诺的周期到达”</li>
+</ul>
+<p>但本例程<strong>没有用</strong> —— <code>subscriber.cpp:109-110</code> 只订阅了一个状态位：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">dds::core::status::StatusMask mask = dds::core::status::StatusMask::<span class="built_in">none</span>();</span><br><span class="line">mask |= dds::core::status::StatusMask::<span class="built_in">data_available</span>();</span><br></pre></td></tr></table></figure>
+
+<p>所以只能靠应用层约定：”刹车必须主动发零速，不能靠沉默”、”关机时锁定零速度”。</p>
+<p><strong>这是一个值得认真考虑的改进方向</strong>：应用层约定依赖每个开发者都记得写；而<br><code>Deadline</code> QoS 是中间件强制的。给关键控制流加上 <code>Deadline</code> + 对应回调，能把<br>“上游失联”从”需要人记得处理”变成”中间件保证会告诉你”。代价是多处理一个回调，<br>收益是消除一整类静默失效。</p>
+<h3 id="其他-RxO-策略"><a href="#其他-RxO-策略" class="headerlink" title="其他 RxO 策略"></a>其他 RxO 策略</h3><p>同样遵循”Reader 不能比 Writer 要求更严”的策略：</p>
+<table>
+<thead>
+<tr>
+<th>策略</th>
+<th>含义</th>
+<th>偏序</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Durability</strong></td>
+<td>晚加入的订阅端能否收到历史数据</td>
+<td>Volatile &lt; TransientLocal &lt; Transient &lt; Persistent</td>
+</tr>
+<tr>
+<td><strong>Deadline</strong></td>
+<td>承诺&#x2F;要求的最大数据间隔</td>
+<td>Reader 请求的周期不能<strong>短于</strong> Writer 承诺的</td>
+</tr>
+<tr>
+<td><strong>Ownership</strong></td>
+<td>多个 writer 时谁说话算数</td>
+<td>SHARED &#x2F; EXCLUSIVE 必须相同</td>
+</tr>
+<tr>
+<td><strong>Liveliness</strong></td>
+<td>存活检测方式和租约时长</td>
+<td>Reader 要求的租约不能短于 Writer 承诺的</td>
+</tr>
+</tbody></table>
+<p>记住”<strong>Reader 不能比 Writer 要求更严</strong>“这一条，其余都能推导出来。</p>
+<p>其中 <code>Durability</code> 对启动顺序有实际影响：默认 <code>Volatile</code> 意味着”晚起的订阅端收不到<br>之前发过的数据”。如果希望订阅端一启动就能拿到当前值（而不是等下一帧），<br>需要 Writer 用 <code>TransientLocal</code>。</p>
+<hr>
+<h2 id="8-线程模型：整份例程最重要的一节"><a href="#8-线程模型：整份例程最重要的一节" class="headerlink" title="8. 线程模型：整份例程最重要的一节"></a>8. 线程模型：整份例程最重要的一节</h2><p>如果本文只能记住一节，应该是这一节。DDS 的线程模型是实际项目中事故的主要来源。</p>
+<h3 id="实测：8-条线程各自的职责"><a href="#实测：8-条线程各自的职责" class="headerlink" title="实测：8 条线程各自的职责"></a>实测：8 条线程各自的职责</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">publisher     main 线程 —— 你的代码</span><br><span class="line">recv          RTPS 报文接收主循环</span><br><span class="line">recvMC        多播接收</span><br><span class="line">recvUC        单播接收</span><br><span class="line">dq.user       ★ 用户数据投递队列 —— 你的回调跑在这里</span><br><span class="line">dq.builtins   发现数据投递队列（与 dq.user 隔离）</span><br><span class="line">tev           定时事件：心跳、租约续约、重传定时器</span><br><span class="line">gc            垃圾回收：延迟释放已删除的实体</span><br></pre></td></tr></table></figure>
+
+<h3 id="回调不在你的线程上"><a href="#回调不在你的线程上" class="headerlink" title="回调不在你的线程上"></a>回调不在你的线程上</h3><p><code>subscriber.cpp:86</code> 和 <code>:77</code> 分别打印了两个 thread id：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[SUB][main]     thread=140079814488320</span><br><span class="line">[SUB][callback] FIRST sample, thread=140079686215360   ← 不同</span><br></pre></td></tr></table></figure>
+
+<p><code>on_data_available</code> 是你注册的函数，但<strong>调用它的是中间件的 <code>dq.user</code> 线程</strong>，不是<br>你的 <code>main</code>。这就是”DDS 回调线程”的含义。</p>
+<p>这个事实推出两条硬约束。</p>
+<h3 id="约束一：回调与主循环共享数据，必须加锁"><a href="#约束一：回调与主循环共享数据，必须加锁" class="headerlink" title="约束一：回调与主循环共享数据，必须加锁"></a>约束一：回调与主循环共享数据，必须加锁</h3><p><code>subscriber.cpp:25-33</code> 定义了共享缓存：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">SharedState</span></span><br><span class="line">&#123;</span><br><span class="line">    std::mutex mutex;</span><br><span class="line">    demo::msg::SensorData latest;</span><br><span class="line">    <span class="type">bool</span> has_data = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 计数用 atomic 就够了，不需要锁</span></span><br><span class="line">    std::atomic&lt;<span class="type">int64_t</span>&gt; rx_count&#123;<span class="number">0</span>&#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>注意这里的<strong>粒度选择</strong>是经过思考的，不是随手写的：</p>
+<ul>
+<li><code>latest</code> 和 <code>has_data</code> 必须<strong>一起</strong>用 mutex 保护。否则可能读到<br><code>has_data == true</code> 但 <code>latest</code> 只写了一半的状态</li>
+<li><code>rx_count</code> 是独立计数器，与其他字段无一致性要求，用 <code>atomic</code> 就够，不必进临界区</li>
+</ul>
+<p>写入侧（回调线程），<code>subscriber.cpp:68-72</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_state.mutex)</span></span>;</span><br><span class="line">    g_state.latest   = s.<span class="built_in">data</span>();</span><br><span class="line">    g_state.has_data = <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>读取侧（main 线程），<code>subscriber.cpp:130-137</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_state.mutex)</span></span>;</span><br><span class="line">    <span class="keyword">if</span> (g_state.has_data)</span><br><span class="line">    &#123;</span><br><span class="line">        snapshot = g_state.latest;   <span class="comment">// 拷一份出来，尽快放锁</span></span><br><span class="line">        valid = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 锁已释放，后面的计算和打印都在锁外</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>在锁内只做一次拷贝，拿到快照后立刻放锁，所有计算和 I&#x2F;O 都在锁外。</strong></p>
+<p>这是控制系统里的标准做法，理由很直接：<strong>锁的持有时间决定了它对回调线程的阻塞上限。</strong><br>如果把 <code>subscriber.cpp:154-161</code> 那一大段 <code>std::cout</code> 放进锁里，每次打印都会阻塞<br>DDS 接收线程。</p>
+<h3 id="约束二：回调里绝对不能做重活"><a href="#约束二：回调里绝对不能做重活" class="headerlink" title="约束二：回调里绝对不能做重活"></a>约束二：回调里绝对不能做重活</h3><p><code>subscriber.cpp:51-58</code> 的注释引用了一次真实事故：一次同步日志写入在回调里卡了<br><strong>934 毫秒</strong>。</p>
+<p>934ms 是什么后果？回调运行在 <code>dq.user</code> 上 —— <strong>这条线程被卡住，该 participant 的<br>所有用户 topic 投递全部停摆</strong>。对一个 40Hz 的控制回路，934ms &#x3D; 丢掉 37 个周期。</p>
+<p>这不是”延迟略微增大”，这是控制器彻底失联接近 1 秒。</p>
+<p>正确的模式就是 <code>subscriber.cpp:60-80</code> 写的：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> samples = reader.<span class="built_in">take</span>();</span><br><span class="line"><span class="keyword">for</span> (<span class="type">const</span> <span class="keyword">auto</span> &amp;s : samples)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (!s.<span class="built_in">info</span>().<span class="built_in">valid</span>()) <span class="keyword">continue</span>;</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_state.mutex)</span></span>;</span><br><span class="line">        g_state.latest   = s.<span class="built_in">data</span>();     <span class="comment">// 只做一次拷贝</span></span><br><span class="line">        g_state.has_data = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 立刻返回</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>take → 拷贝 → 立刻返回。</strong> 真正的计算交给按自己节拍运行的工作线程。</p>
+<p>回调里禁止做的事：</p>
+<ul>
+<li>同步文件 I&#x2F;O、日志落盘</li>
+<li>网络请求</li>
+<li>加锁等待另一个可能被长期持有的锁</li>
+<li>大量内存分配</li>
+<li>复杂算法（矩阵运算、路径规划）</li>
+<li><code>sleep</code> &#x2F; 阻塞等待</li>
+</ul>
+<h3 id="生产者与消费者节拍解耦"><a href="#生产者与消费者节拍解耦" class="headerlink" title="生产者与消费者节拍解耦"></a>生产者与消费者节拍解耦</h3><p><code>subscriber.cpp:117-124</code> 的注释说明了这个结构的意义：发布端 20Hz、订阅端 <code>main</code> 5Hz，<br>两者<strong>完全解耦，各按自己的节拍跑</strong>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">发布端 20Hz  ──write()──&gt;  [DDS]  ──回调──&gt;  g_state.latest</span><br><span class="line">                                                   ↑</span><br><span class="line">                                        main 循环 5Hz 读快照</span><br></pre></td></tr></table></figure>
+
+<p>这个模式是整个实时系统的骨架。它的价值在于：</p>
+<ul>
+<li>上下游频率无需一致，也无需协商</li>
+<li>没有队列积压 —— 慢的一方只是看到较少的中间值，不会拖慢快的一方</li>
+<li>上游抖动不传导给下游</li>
+</ul>
+<h3 id="info-valid-为什么必须判"><a href="#info-valid-为什么必须判" class="headerlink" title="info().valid() 为什么必须判"></a><code>info().valid()</code> 为什么必须判</h3><p><code>subscriber.cpp:66</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (!s.<span class="built_in">info</span>().<span class="built_in">valid</span>()) <span class="keyword">continue</span>;</span><br></pre></td></tr></table></figure>
+
+<p>DDS 投递的样本分两类：</p>
+<ul>
+<li><strong>带数据的样本</strong>：<code>valid() == true</code>，<code>data()</code> 内容有效</li>
+<li><strong>纯元数据样本</strong>：<code>valid() == false</code>，表示”实例状态变了” —— 比如实例被<br><code>dispose()</code>、或者写它的所有 writer 都消失了（<code>NOT_ALIVE_NO_WRITERS</code>）。<br><strong>这种样本的 <code>data()</code> 内容是未定义的</strong></li>
+</ul>
+<p>不判就会把垃圾数据当真实值写进缓存。</p>
+<p>有意思的是：这类样本恰好携带了”发布端消失了”这个信息 —— 第 7 节说的失联检测，<br>线索其实有一半就在这里，只是当前代码把它 <code>continue</code> 掉了。</p>
+<h3 id="take-vs-read-：一个容易踩的坑"><a href="#take-vs-read-：一个容易踩的坑" class="headerlink" title="take() vs read()：一个容易踩的坑"></a><code>take()</code> vs <code>read()</code>：一个容易踩的坑</h3><p>两者都是”从 reader 缓存取数据”，区别只在取完之后样本还留不留：</p>
+<ul>
+<li><strong><code>take()</code></strong> —— 读取并<strong>从 reader 缓存移除</strong>。样本只被消费一次</li>
+<li><strong><code>read()</code></strong> —— 读取但<strong>保留在缓存</strong></li>
+</ul>
+<p>还有一个容易忽略的细节：<strong><code>read()</code> 默认只返回 <code>NOT_READ</code> 状态的样本。</strong> 样本被读过<br>一次后会被标记为 <code>READ</code>，下次裸 <code>read()</code> 默认把它过滤掉。想拿到全部（含已读过的）<br>需要显式指定：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> query = dds::sub::status::<span class="built_in">DataState</span>(</span><br><span class="line">    dds::sub::status::SampleState::<span class="built_in">any</span>(),</span><br><span class="line">    dds::sub::status::ViewState::<span class="built_in">any</span>(),</span><br><span class="line">    dds::sub::status::InstanceState::<span class="built_in">any</span>());</span><br><span class="line"><span class="keyword">auto</span> samples = reader.<span class="built_in">select</span>().<span class="built_in">state</span>(query).<span class="built_in">read</span>();</span><br></pre></td></tr></table></figure>
+
+<h3 id="实测：回调里用-read-会怎样"><a href="#实测：回调里用-read-会怎样" class="headerlink" title="实测：回调里用 read() 会怎样"></a>实测：回调里用 <code>read()</code> 会怎样</h3><p>同一份代码只切换 <code>read()</code> &#x2F; <code>take()</code>，发布端 20Hz 跑 10 秒：</p>
+<p><strong><code>KeepLast(1)</code> 下 —— 两者没有差别：</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>回调次数</th>
+<th>累计取出样本</th>
+<th>CPU</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>take()</code></td>
+<td>198</td>
+<td>198</td>
+<td>0%</td>
+</tr>
+<tr>
+<td><code>read()</code></td>
+<td>198</td>
+<td>198</td>
+<td>0%</td>
+</tr>
+</tbody></table>
+<p><strong><code>KeepAll</code> 下 —— 差异才显现：</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>回调次数</th>
+<th>累计取出样本</th>
+<th>CPU</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>take()</code></td>
+<td>398</td>
+<td>398</td>
+<td>0%</td>
+</tr>
+<tr>
+<td><code>read()</code></td>
+<td>398</td>
+<td><strong>34850</strong></td>
+<td>0%</td>
+</tr>
+</tbody></table>
+<p>两个结论：</p>
+<ol>
+<li><strong>回调次数完全相同（398 次），不会因为缓存非空而反复触发。</strong> 回调由”是否有新样本<br>到达”驱动，与你是否清空缓存无关。CycloneDDS 不会空转。</li>
+<li><strong>CPU 都是 0%，没有忙循环。</strong> 但 <code>read()</code> 累计处理了 34850 个样本 —— 同样的旧数据<br>被反复处理了约 87 倍。</li>
+</ol>
+<p><code>KeepLast(1)</code> 下两者数字一样，是因为深度只有 1、且新帧覆盖旧帧，几乎不存在<br>“已读但仍在缓存”的样本可供重复返回。</p>
+<h3 id="真实危害是逻辑错误，不是性能爆炸"><a href="#真实危害是逻辑错误，不是性能爆炸" class="headerlink" title="真实危害是逻辑错误，不是性能爆炸"></a>真实危害是逻辑错误，不是性能爆炸</h3><p><code>read()</code> 在回调里的问题是<strong>每次回调都重复处理历史样本</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">回调#1: 处理 [1]</span><br><span class="line">回调#2: 处理 [1,2]        ← 1 又处理了一遍</span><br><span class="line">回调#3: 处理 [1,2,3]      ← 1,2 又处理了一遍</span><br></pre></td></tr></table></figure>
+
+<p>主动连续 <code>read()</code> 的实测（KeepAll）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">第1次 read() 返回 11 个: 9 10 11 ... 19</span><br><span class="line">第2次 read() 返回 14 个: 9 10 11 ... 22    ← 9-19 重复</span><br><span class="line">第3次 read() 返回 16 个: 9 10 11 ... 24    ← 又重复</span><br></pre></td></tr></table></figure>
+
+<p>所以危害是：如果回调里做的是”累加计数””追加写日志””触发一次动作”，<strong>同一帧会被算<br>好几次</strong>。工作量随缓存深度线性放大（KeepAll 下实测 87 倍），但那是 O(n) 放大，<br>不是死循环。</p>
+<h3 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h3><p><strong>回调里仍然应该用 <code>take()</code></strong>，理由是语义匹配而非性能：</p>
+<ul>
+<li><code>take()</code> 语义上就是”这批数据我消费了”，天然对应”每帧处理一次”</li>
+<li><code>read()</code> 需要你自己额外管理”处理到哪了”（记录 frame_id，或用 <code>SampleState</code><br>精确筛选），容易写出重复处理的 bug</li>
+</ul>
+<p><code>read()</code> 的正当用途是”只想看一眼当前值，不消费”—— 监控线程、调试打印。<br>如果需求是”多个消费者都要看到全部数据”，正确做法不是用 <code>read()</code>，而是<br><strong>各建一个 DataReader</strong> —— 每个 DataReader 有自己独立的缓存，DDS 会把数据分别投递<br>给每一个匹配的 reader，互不影响。实测：两个独立 reader 各自 take，都收到全部 77 帧<br>（交集 77）；而两个线程共用同一个 reader 时，A 拿 100 帧、B 拿 55 帧、<strong>交集 0</strong> ——<br>先 take 的把样本移走了。详见第 12 节实验 7。</p>
+<p>本例程用的是 <code>take()</code>（<code>subscriber.cpp:60</code>），正确。</p>
+<h3 id="进阶模式：独占线程"><a href="#进阶模式：独占线程" class="headerlink" title="进阶模式：独占线程"></a>进阶模式：独占线程</h3><p><code>README.md:157-166</code> 提到一种更彻底的做法：为每个订阅者再起一条<strong>独立线程</strong>，<br><code>on_data_available</code> 里只做「置标志 + notify」就返回，真正的 <code>take()</code> 在那条线程里做。</p>
+<p>这是把上面两条约束彻底化：连一次拷贝都不在中间件线程上做，<code>dq.user</code> 的占用降到<br>接近零。代价是多一条线程和一次上下文切换。</p>
+<p><strong>但这个模式有一个经典陷阱</strong>，README 里记录了真实踩坑：如果那条线程只在某个<br><code>Dispose()</code> 方法里 join，而析构函数是空的，那么：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// std::thread 的析构语义：如果还 joinable，直接 std::terminate()</span></span><br><span class="line">~std::<span class="built_in">thread</span>() &#123; <span class="keyword">if</span> (<span class="built_in">joinable</span>()) std::<span class="built_in">terminate</span>(); &#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>不是泄漏、不是自动 detach，是立刻终止整个进程。</strong> 所以”忘记调用 <code>Dispose()</code>“的<br>惩罚不是资源泄漏，而是<strong>退出时崩溃</strong>。</p>
+<p>正确做法是在析构函数里调 <code>Stop()</code>，让 RAII 完成清理。把”必须手动调 Dispose”<br>留成一条没有编译期保障的口头约定，等于给每个新增订阅者的人埋一个坑。</p>
+<hr>
+<h2 id="9-实例与-Key：从消息管道到分布式表"><a href="#9-实例与-Key：从消息管道到分布式表" class="headerlink" title="9. 实例与 Key：从消息管道到分布式表"></a>9. 实例与 Key：从消息管道到分布式表</h2><p>这是本例程刻意没有使用、但 DDS 最有特色的能力。理解它，你才算真正理解<br>“以数据为中心”。</p>
+<h3 id="当前状态：keyless"><a href="#当前状态：keyless" class="headerlink" title="当前状态：keyless"></a>当前状态：keyless</h3><p><code>build/sensor.hpp</code> 里有这一行：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;&gt; <span class="keyword">constexpr</span> <span class="type">bool</span> TopicTraits&lt;::demo::msg::SensorData&gt;::<span class="built_in">isKeyless</span>()</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因为 <code>sensor.idl</code> 里没有任何 <code>@key</code> 标注。这意味着整个 <code>Demo/SensorData</code> topic<br><strong>只有一个数据实例</strong> —— 所有 <code>write()</code> 都在更新同一个对象。</p>
+<p>用第 2 节的白板比喻：白板上只有一个格子，所有人往同一个格子里写。</p>
+<h3 id="加上-key-会怎样"><a href="#加上-key-会怎样" class="headerlink" title="加上 key 会怎样"></a>加上 key 会怎样</h3><p>如果 IDL 改成这样：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">struct SensorData &#123;</span><br><span class="line">    @key long sensor_id;   // ← 加一个 key 字段</span><br><span class="line">    Header header;</span><br><span class="line">    float  temperature;</span><br><span class="line">    float  gyro[3];</span><br><span class="line">    octet  status;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>那么<strong>每个不同的 <code>sensor_id</code> 就是一个独立实例</strong>，各自维护独立的历史。<br><code>KeepLast(1)</code> 变成”<strong>为每个实例各保留最新一帧</strong>“。</p>
+<p>白板从一个格子变成一张表：<code>sensor_id</code> 是主键，每行独立。</p>
+<h3 id="实测对照"><a href="#实测对照" class="headerlink" title="实测对照"></a>实测对照</h3><p>我做了这个实验：同一个 topic 上跑<strong>两个发布端</strong>，分别用 <code>sensor_id=1</code> 和<br><code>sensor_id=2</code>，订阅端每秒 <code>take()</code> 一次，看能拿到几个样本。</p>
+<p><strong>有 key 的版本</strong>（<code>@key long sensor_id</code>）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[SUB] take() 返回 2 个样本: &#123;id=2 frame=9   temp=40&#125; &#123;id=1 frame=9   temp=30&#125;</span><br><span class="line">[SUB] take() 返回 2 个样本: &#123;id=1 frame=29  temp=30&#125; &#123;id=2 frame=29  temp=40&#125;</span><br><span class="line">[SUB] take() 返回 2 个样本: &#123;id=2 frame=49  temp=40&#125; &#123;id=1 frame=49  temp=30&#125;</span><br><span class="line">[SUB] take() 返回 2 个样本: &#123;id=1 frame=69  temp=30&#125; &#123;id=2 frame=69  temp=40&#125;</span><br><span class="line">...（10 次全部返回 2 个样本）</span><br></pre></td></tr></table></figure>
+
+<p><strong>每次稳定拿到 2 个样本，两路数据都在，各自的 <code>frame</code> 都连续。</strong></p>
+<p><strong>无 key 的对照版本</strong>（同样两个发布端，仅去掉 <code>@key</code>）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[SUB] take() 返回 1 个样本: &#123;id=2 frame=9   temp=40&#125;</span><br><span class="line">[SUB] take() 返回 1 个样本: &#123;id=2 frame=29  temp=40&#125;</span><br><span class="line">[SUB] take() 返回 1 个样本: &#123;id=1 frame=49  temp=30&#125;   ← 变成 1 了</span><br><span class="line">[SUB] take() 返回 1 个样本: &#123;id=2 frame=69  temp=40&#125;   ← 又变回 2</span><br><span class="line">[SUB] take() 返回 1 个样本: &#123;id=1 frame=129 temp=30&#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p><strong>每次只有 1 个样本，<code>id</code> 在 1 和 2 之间随机跳</strong> —— 两个发布端在互相覆盖同一个格子。</p>
+<p>可以在生成代码里确认 key 是否生效，<code>build/sensor.cpp</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keylist.<span class="built_in">add_key_endpoint</span>(std::list&lt;<span class="type">uint32_t</span>&gt;&#123;<span class="number">0</span>&#125;);   <span class="comment">// 有 key 时才有这一行</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="这个能力什么时候用"><a href="#这个能力什么时候用" class="headerlink" title="这个能力什么时候用"></a>这个能力什么时候用</h3><p>任何”同一类数据有多个来源&#x2F;多个目标”的场景：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>key 字段</th>
+<th>不用 key 的代价</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>多个关节的状态</td>
+<td><code>joint_id</code></td>
+<td>开 N 个 topic，或自己拼数组</td>
+</tr>
+<tr>
+<td>多路遥控器输入</td>
+<td><code>device_id</code></td>
+<td>互相覆盖，或开 N 个 topic</td>
+</tr>
+<tr>
+<td>多个检测到的目标</td>
+<td><code>track_id</code></td>
+<td>无法表达”这个目标消失了”</td>
+</tr>
+<tr>
+<td>多台机器人</td>
+<td><code>robot_id</code></td>
+<td>数据混在一起</td>
+</tr>
+</tbody></table>
+<p>用 key 比开 N 个 topic 干净得多：topic 数量不随实例数增长，订阅端一次 <code>take()</code><br>就能拿到所有实例的最新值，而且中间件会告诉你”某个实例消失了”<br>（就是第 8 节说的那种 <code>valid() == false</code> 的样本）。</p>
+<p><strong>这就是”分布式表”的含义</strong>：DDS 维护的不是一根管道，而是一张所有进程都能看到的、<br>自动同步的表。key 是主键，QoS 决定每行保留多少版本。</p>
+<hr>
+<h2 id="10-测量延迟：一个测错了的数字"><a href="#10-测量延迟：一个测错了的数字" class="headerlink" title="10. 测量延迟：一个测错了的数字"></a>10. 测量延迟：一个测错了的数字</h2><p>这一节讲一个具体的测量错误，因为它揭示的原理在实时系统里到处都是。</p>
+<h3 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h3><p><code>subscriber.cpp:146-148</code> 计算了一个”端到端延迟”：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="type">int64_t</span> now = ...;  <span class="comment">// 当前时间</span></span><br><span class="line"><span class="type">const</span> <span class="type">double</span> latency_us =</span><br><span class="line">    <span class="built_in">static_cast</span>&lt;<span class="type">double</span>&gt;(now - snapshot.<span class="built_in">header</span>().<span class="built_in">timestamp</span>()) / <span class="number">1000.0</span>;</span><br></pre></td></tr></table></figure>
+
+<p>日志里这个数字是 44000μs（44 毫秒）左右，而且<strong>在逐渐变小</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">latency=47080  →  46414  →  45080  →  ...  →  2917  →  1783  →  【50730】  →  49480  →  ...</span><br><span class="line">                                                                     ↑ 跳回</span><br></pre></td></tr></table></figure>
+
+<p>我跑了 75 秒，发现它不是”递减后稳定”，而是<strong>一路降到 1.8ms，然后瞬间跳回 50.7ms，<br>再次递减</strong> —— 一个周期约 9 秒的<strong>锯齿波</strong>。</p>
+<p>跳变点的现场：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">frame=177 (+4) ... latency=1783.32us</span><br><span class="line">frame=180 (+3) ... latency=50730.6us    ← gap 从 +4 变成 +3，latency 跳 +49ms</span><br></pre></td></tr></table></figure>
+
+<p>75 秒内 gap 分布：<code>367 次 (+4)</code>、<code>7 次 (+3)</code>、<code>1 次 (+0)</code>。<strong>7 个 <code>+3</code> 恰好对应<br>7 个锯齿周期。</strong></p>
+<h3 id="真实机制：拍频（相位漂移）"><a href="#真实机制：拍频（相位漂移）" class="headerlink" title="真实机制：拍频（相位漂移）"></a>真实机制：拍频（相位漂移）</h3><p>一个自然的猜测是”积压”：发布快、消费慢，所以读到的总是积压了一会儿的旧帧，<br>随着追赶延迟逐渐缩小。</p>
+<p><strong>但这个解释站不住，有两个反证：</strong></p>
+<ol>
+<li><code>KeepLast(1)</code> 的历史深度是 1，<strong>物理上无法积压</strong></li>
+<li>日志里 <code>rx_total=169</code> 恰好等于 <code>frame=169</code> —— <strong>一帧没丢、一帧没积压</strong></li>
+</ol>
+<p>真实机制是这样：</p>
+<p><code>g_state.latest</code> 被回调以 20Hz（每 50ms）覆写，<code>main</code> 以 5Hz（每 200ms）采样它。所以</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">latency = (main 采样时刻) − (最近一次覆写的那帧的发布时刻)</span><br><span class="line">        = 相位差 + 真实传输延迟</span><br></pre></td></tr></table></figure>
+
+<p><strong>相位差的取值范围是 <code>[0, 50ms)</code></strong> —— 取决于 main 的采样点恰好落在两次覆写之间的<br>哪个位置。这就是那个 44ms 的主要成分。</p>
+<p>而两端的周期来自<strong>两个独立的、都不精确的时钟</strong>：<code>sleep_for(50ms)</code> 实际略大于 50ms，<br><code>sleep_for(200ms)</code> 实际略大于 200ms，且两者不成精确的 4 倍关系。因此<br><code>T_sub</code> 与 <code>4 × T_pub</code> 有一个微小差值 δ（实测约 1ms）。</p>
+<p>于是每个订阅周期，相位就漂移 δ：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">相位单调漂移  →  latency 单调递减</span><br><span class="line">        ↓</span><br><span class="line">减到接近 0 时，下一次采样落到了&quot;上一帧还没被覆盖&quot;的位置</span><br><span class="line">        ↓</span><br><span class="line">只前进 3 帧（gap +3），相位回卷一整个发布周期（+50ms）</span><br><span class="line">        ↓</span><br><span class="line">锯齿的垂直边</span><br></pre></td></tr></table></figure>
+
+<p>锯齿周期 &#x3D; 50ms ÷ 1ms ≈ 50 个订阅周期 &#x3D; 10 秒。实测 45 个采样点后跳变（9 秒），吻合。</p>
+<h3 id="正确的测法：在回调里打点"><a href="#正确的测法：在回调里打点" class="headerlink" title="正确的测法：在回调里打点"></a>正确的测法：在回调里打点</h3><p>我在回调里加了打点（数据刚到达的时刻），和 main 侧对比：</p>
+<p><strong>回调侧（真实传输延迟），499 个样本：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">min=130.9μs   median=282.5μs   p95=386.2μs   max=464.9μs</span><br></pre></td></tr></table></figure>
+
+<p><strong>main 侧（同一次运行）：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">46637 → 45749 → 44890 → 44205 → ... （μs，锯齿递减）</span><br></pre></td></tr></table></figure>
+
+<p><strong>中位 282 微秒 vs 44 毫秒 —— 差了 156 倍，两个数量级。</strong></p>
+<p>本机同进程间的 DDS 传输延迟实际是 <strong>0.3 毫秒</strong>量级（而且这 282μs 里还含一次<br><code>std::cout</code>）。日志里那个 44ms 的绝大部分是订阅端自己的采样相位。</p>
+<h3 id="三层教训"><a href="#三层教训" class="headerlink" title="三层教训"></a>三层教训</h3><p><strong>1. 这个数值本身没有意义。</strong> 它在 1.8ms 到 50.7ms 之间锯齿摆动，测的主要是订阅端<br>自己的调度相位。真实传输延迟藏在锯齿的下界附近。</p>
+<p><strong>2. 想量传输延迟，必须在回调里打点。</strong> 那里才是”数据刚到达”的时刻。main 循环里<br>已经掺进了最多 200ms 的等待。</p>
+<p><strong>3. 一般性原理：任何”周期性采样另一个周期性信号”的测量，都会得到拍频，而不是被测<br>量的真值。</strong></p>
+<p>这在实时系统里到处都是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">500Hz 的硬件状态  被  40Hz 的控制器采样   → 拍频</span><br><span class="line">100Hz 的控制指令  被  20Hz 的下发线程采样  → 拍频</span><br></pre></td></tr></table></figure>
+
+<p>每一处都有一个锯齿周期。所以延迟指标必须明确”<strong>从哪到哪</strong>“，否则量到的是自己的<br>调度周期。正确做法是把链路拆成”同一线程内的两个时刻”这样的可测段，分段打点。</p>
+<h3 id="顺带：跨机器时这个减法根本不成立"><a href="#顺带：跨机器时这个减法根本不成立" class="headerlink" title="顺带：跨机器时这个减法根本不成立"></a>顺带：跨机器时这个减法根本不成立</h3><p>本例程两端在同一台机器、都用 <code>system_clock</code>，所以时间戳可以直接相减。</p>
+<p><strong>跨板子&#x2F;跨机器时不行</strong>：两台机器的 <code>system_clock</code> 之间有 NTP&#x2F;PTP 偏差，量级可能<br>远超你要测的延迟本身，甚至算出<strong>负数延迟</strong>。</p>
+<p>跨机器测延迟必须先解决时钟同步（PTP，精度可到微秒级），或者改用”回环往返时间 ÷ 2”<br>的测法。</p>
+<hr>
+<h2 id="11-静默失效：DDS-最反直觉的地方"><a href="#11-静默失效：DDS-最反直觉的地方" class="headerlink" title="11. 静默失效：DDS 最反直觉的地方"></a>11. 静默失效：DDS 最反直觉的地方</h2><p>到这里可以总结 DDS 最需要适应的一点：</p>
+<blockquote>
+<p><strong>绝大多数配置错误都不会报错，只会静默地什么都不发生。</strong></p>
+</blockquote>
+<p>原因在第 6 节讲过：match 的三个条件（topic 名、类型名、QoS）任何一条不满足，<br>中间件就是不建立通路。它不认为这是错误 —— 在一个动态的分布式系统里，”某个端点和我<br>不匹配”是完全正常的状态。</p>
+<p>对比一下你熟悉的错误处理：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>出错时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TCP connect 到错误端口</td>
+<td>立刻 <code>ECONNREFUSED</code></td>
+</tr>
+<tr>
+<td>HTTP 请求错误路径</td>
+<td>返回 404</td>
+</tr>
+<tr>
+<td>调用不存在的 RPC 方法</td>
+<td>返回 UNIMPLEMENTED</td>
+</tr>
+<tr>
+<td><strong>DDS QoS 不匹配</strong></td>
+<td><strong>什么都不发生</strong></td>
+</tr>
+</tbody></table>
+<h3 id="怎么主动发现”没连上”"><a href="#怎么主动发现”没连上”" class="headerlink" title="怎么主动发现”没连上”"></a>怎么主动发现”没连上”</h3><p>不要靠”等数据看有没有来”，DDS 提供了直接查询的接口：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 发布端：有几个订阅者匹配上了？</span></span><br><span class="line">writer.<span class="built_in">publication_matched_status</span>().<span class="built_in">current_count</span>()</span><br><span class="line"></span><br><span class="line"><span class="comment">// 订阅端：有几个发布者匹配上了？</span></span><br><span class="line">reader.<span class="built_in">subscription_matched_status</span>().<span class="built_in">current_count</span>()</span><br></pre></td></tr></table></figure>
+
+<p>这是我在第 6 节测 match 耗时用的方法。<strong>建议在任何 DDS 程序的启动自检里加上它</strong> ——<br>把”静默失效”变成一条明确的日志：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 起来后等一小会儿，检查是否匹配上</span></span><br><span class="line">std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">milliseconds</span>(<span class="number">500</span>));</span><br><span class="line"><span class="keyword">if</span> (reader.<span class="built_in">subscription_matched_status</span>().<span class="built_in">current_count</span>() == <span class="number">0</span>) &#123;</span><br><span class="line">    std::cerr &lt;&lt; <span class="string">&quot;[ERROR] 500ms 内没有匹配到任何发布者！&quot;</span></span><br><span class="line">              &lt;&lt; <span class="string">&quot; 检查：topic 名 / 类型名 / QoS / domain ID / 多播\n&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>第 6 节实测 match 只要 2-10ms，所以 500ms 的窗口足够宽松了。</p>
+<p>还可以订阅对应的状态回调（本例程没用，只订了 <code>data_available</code>）：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mask |= dds::core::status::StatusMask::<span class="built_in">subscription_matched</span>();</span><br><span class="line"><span class="comment">// 然后覆写 on_subscription_matched()，match 变化时会被调用</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="观察发现过程的工具"><a href="#观察发现过程的工具" class="headerlink" title="观察发现过程的工具"></a>观察发现过程的工具</h3><p>CycloneDDS 自带诊断手段：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 打开中间件日志（会打印发现、match、QoS 不兼容的细节）</span></span><br><span class="line"><span class="built_in">export</span> CYCLONEDDS_URI=<span class="string">&#x27;&lt;Tracing&gt;&lt;Verbosity&gt;finest&lt;/Verbosity&gt;&lt;OutputFile&gt;dds.log&lt;/OutputFile&gt;&lt;/Tracing&gt;&#x27;</span></span><br><span class="line">./build/subscriber</span><br><span class="line"></span><br><span class="line"><span class="comment"># 抓包看 RTPS 报文（Wireshark 有 RTPS 解析器）</span></span><br><span class="line"><span class="built_in">sudo</span> tcpdump -i any -n <span class="string">&#x27;udp port 7400 or udp port 7401&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p><code>Verbosity</code> 设成 <code>finest</code> 后，QoS 不兼容会在日志里留下痕迹 —— 这是排查静默失效最<br>直接的手段。</p>
+<h3 id="一个隐蔽的坑：多个发布者"><a href="#一个隐蔽的坑：多个发布者" class="headerlink" title="一个隐蔽的坑：多个发布者"></a>一个隐蔽的坑：多个发布者</h3><p><code>scripts/run.sh:34-39</code> 记录了一个真实踩坑，值得单独讲，因为它是 DDS 范式的直接后果：</p>
+<blockquote>
+<p>孤儿 publisher 的后果很隐蔽：它和新起的 publisher 在同一个 topic 上<strong>同时是 writer</strong>，<br>订阅端会交替收到两者的数据，<code>frame_id</code> 在两个序列间来回跳。看起来像”DDS 乱序&#x2F;串数据”，<br>实际是多了一个发布者。DDS 本身不限制一个 topic 有多少 writer，所以不会报错。</p>
+</blockquote>
+<p>DDS 的 topic 是<strong>多对多</strong>的：N 个 writer、M 个 reader 都能挂在同一个 topic 上，<br>这是设计特性而非漏洞。所以”上一轮进程没清干净”会表现为数据看起来乱序 ——<br>一个极难定位的现象，因为你会先去怀疑中间件。</p>
+<p>（第 9 节的 keyless 对照实验其实就是这个现象的受控复现：两个发布端互相覆盖，<br><code>id</code> 在 1 和 2 之间随机跳。）</p>
+<p><strong>DDS 对此提供了 <code>Ownership</code> QoS</strong>：设成 <code>EXCLUSIVE</code> 后，同一实例同时只有<br><code>ownership_strength</code> 最高的 writer 能生效，其余被忽略。对”同一路数据只应有一个权威<br>来源”的场景（几乎所有控制指令都是），这比靠脚本清进程可靠得多。本例程用的是默认的<br><code>SHARED</code>。</p>
+<h3 id="版本演进的坑：可扩展性"><a href="#版本演进的坑：可扩展性" class="headerlink" title="版本演进的坑：可扩展性"></a>版本演进的坑：可扩展性</h3><p><code>build/sensor.cpp</code> 里每个字段都标着 <code>extensibility::ext_final</code>：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">props.<span class="built_in">push_back</span>(<span class="built_in">entity_properties_t</span>(<span class="number">0</span>, <span class="number">0</span>, <span class="literal">false</span>, bb_unset, extensibility::ext_final));  <span class="comment">//root</span></span><br><span class="line">props.<span class="built_in">push_back</span>(...<span class="built_in">get_bit_bound</span>&lt;<span class="type">float</span>&gt;(), extensibility::ext_final, <span class="literal">false</span>));  <span class="comment">//::temperature</span></span><br></pre></td></tr></table></figure>
+
+<p>这是因为 IDL 里没写 <code>@final</code> &#x2F; <code>@appendable</code> &#x2F; <code>@mutable</code>，<code>idlc</code> 隐式取了 <code>final</code><br>（<code>CMakeLists.txt:30</code> 那个 <code>WARNINGS no-implicit-extensibility</code> 就是在消这个告警）。</p>
+<p>三种可扩展性的差别很大：</p>
+<table>
+<thead>
+<tr>
+<th>标注</th>
+<th>语义</th>
+<th>加字段后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>@final</code></td>
+<td>布局固定</td>
+<td><strong>旧版本收不到新版本的数据</strong></td>
+</tr>
+<tr>
+<td><code>@appendable</code></td>
+<td>可在<strong>尾部</strong>追加字段</td>
+<td>新旧版本可互通，旧版忽略新字段</td>
+</tr>
+<tr>
+<td><code>@mutable</code></td>
+<td>字段带 ID，可任意增删改序</td>
+<td>最灵活，开销最大</td>
+</tr>
+</tbody></table>
+<p>当前是 <code>final</code>，意味着：<strong>给 <code>SensorData</code> 加一个字段，就必须同时重新编译并同时部署<br>所有收发两端。</strong></p>
+<p>对一个跨板子的系统（比如主控 + 底层板），这是很硬的运维约束 —— 如果底层软件是别人<br>编译的二进制，你没法要求它跟你同步升级。</p>
+<p><strong>如果 IDL 有演进需求，<code>@appendable</code> 是应该认真考虑的默认选择。</strong> 这是我在这份代码里<br>看到的、影响最深远但最不显眼的一个技术决策。</p>
+<hr>
+<h2 id="12-速查表与动手实验"><a href="#12-速查表与动手实验" class="headerlink" title="12. 速查表与动手实验"></a>12. 速查表与动手实验</h2><h3 id="静默失效排查清单"><a href="#静默失效排查清单" class="headerlink" title="静默失效排查清单"></a>静默失效排查清单</h3><p>按从最常见到最少见排列：</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>症状</th>
+<th>原因</th>
+<th>定位方法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>完全收不到</td>
+<td>QoS 不兼容（Reader 请求 &gt; Writer 提供）</td>
+<td>逐条对比 Reliability &#x2F; Durability &#x2F; Deadline</td>
+</tr>
+<tr>
+<td>2</td>
+<td>完全收不到</td>
+<td>类型名不一致（module 名、struct 名）</td>
+<td>对比 <code>getTypeName()</code> 返回的字符串</td>
+</tr>
+<tr>
+<td>3</td>
+<td>完全收不到</td>
+<td>topic 名笔误、大小写不符</td>
+<td>字符串逐字节比对</td>
+</tr>
+<tr>
+<td>4</td>
+<td>完全收不到</td>
+<td>domain ID 不同</td>
+<td>检查 <code>DomainParticipant(N)</code> 的 N</td>
+</tr>
+<tr>
+<td>5</td>
+<td>完全收不到</td>
+<td>多播不通（防火墙 &#x2F; Docker 桥接 &#x2F; 跨网段）</td>
+<td><code>ss -unap</code> 看 7400 端口；抓 RTPS 包</td>
+</tr>
+<tr>
+<td>6</td>
+<td>加字段后旧端收不到</td>
+<td><code>@final</code> 可扩展性</td>
+<td>检查 IDL 有无 <code>@appendable</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>数据看起来乱序</td>
+<td>同 topic 有多个 writer（孤儿进程）</td>
+<td><code>pgrep -f</code>；或用 <code>Ownership::EXCLUSIVE</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>收到垃圾值</td>
+<td>没判 <code>info().valid()</code></td>
+<td>检查回调里的过滤</td>
+</tr>
+<tr>
+<td>9</td>
+<td>该 topic 后续全部卡住</td>
+<td>回调里做了重活&#x2F;阻塞</td>
+<td>在回调首尾打时间戳</td>
+</tr>
+<tr>
+<td>10</td>
+<td>晚起的订阅端收不到当前值</td>
+<td><code>Durability</code> 默认 Volatile</td>
+<td>Writer 改 <code>TransientLocal</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td>上游挂了下游还在动</td>
+<td>状态语义 + 无 Liveliness&#x2F;Deadline</td>
+<td>加 Deadline QoS，或应用层强制发零</td>
+</tr>
+<tr>
+<td>12</td>
+<td>延迟数字奇怪&#x2F;周期性摆动</td>
+<td>跨线程周期采样的拍频</td>
+<td>改在回调里打点</td>
+</tr>
+<tr>
+<td>13</td>
+<td>同一帧被处理多次（计数偏大、日志重复）</td>
+<td>回调里用了 <code>read()</code> 而非 <code>take()</code></td>
+<td>改成 <code>take()</code>；<code>read()</code> 需自己管理已处理位置</td>
+</tr>
+<tr>
+<td>14</td>
+<td>退出时崩溃</td>
+<td><code>std::thread</code> 析构时仍 joinable</td>
+<td>析构函数里 join</td>
+</tr>
+</tbody></table>
+<h3 id="核心概念一句话总结"><a href="#核心概念一句话总结" class="headerlink" title="核心概念一句话总结"></a>核心概念一句话总结</h3><table>
+<thead>
+<tr>
+<th>概念</th>
+<th>一句话</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>DCPS</strong></td>
+<td>传的不是消息，是”某块数据的当前值”</td>
+</tr>
+<tr>
+<td><strong>Domain</strong></td>
+<td>硬隔离边界，不同 domain 互相完全不可见</td>
+</tr>
+<tr>
+<td><strong>Topic</strong></td>
+<td>名字 <strong>+ 类型名</strong>，两者都必须一致才能通信</td>
+</tr>
+<tr>
+<td><strong>Participant</strong></td>
+<td>重量级，8 条线程，一个进程只建一个</td>
+</tr>
+<tr>
+<td><strong>DataWriter&#x2F;Reader</strong></td>
+<td>唯一有数据流经过的层，QoS 的宿主</td>
+</tr>
+<tr>
+<td><strong>发现</strong></td>
+<td>SPDP（多播找进程）→ SEDP（单播换清单）→ match</td>
+</tr>
+<tr>
+<td><strong>RxO</strong></td>
+<td>Reader 请求的服务等级不能高于 Writer 提供的</td>
+</tr>
+<tr>
+<td><strong>BestEffort</strong></td>
+<td>状态量用它：丢了就丢，重传过期数据无意义</td>
+</tr>
+<tr>
+<td><strong>KeepLast(1)</strong></td>
+<td>只留最新值；生产快于消费时中间帧被丢弃</td>
+</tr>
+<tr>
+<td><strong>回调线程</strong></td>
+<td>不是你的线程；必须加锁、必须快速返回</td>
+</tr>
+<tr>
+<td><strong>take vs read</strong></td>
+<td><code>take()</code> 取走、<code>read()</code> 留下；回调里用 <code>take()</code>，否则同一帧会被重复处理</td>
+</tr>
+<tr>
+<td><strong>Key</strong></td>
+<td>加了它，topic 从”一个格子”变成”一张表”</td>
+</tr>
+<tr>
+<td><strong>静默失效</strong></td>
+<td>DDS 不匹配时什么都不发生，用 <code>matched_status()</code> 主动查</td>
+</tr>
+</tbody></table>
+<h3 id="建议动手做的实验"><a href="#建议动手做的实验" class="headerlink" title="建议动手做的实验"></a>建议动手做的实验</h3><p>按难度递增。前 4 个例程注释里已经提到，后 4 个是本文实测过的。</p>
+<p><strong>实验 1：看回调线程（1 分钟）</strong></p>
+<p>跑 <code>./scripts/run.sh both</code>，对比两个 thread id。这是第 8 节全部内容的起点。</p>
+<p><strong>实验 2：QoS 不匹配（5 分钟）</strong></p>
+<p>把 <code>subscriber.cpp:102</code> 的 <code>Reliability::BestEffort()</code> 改成 <code>Reliable()</code>，重新构建运行。</p>
+<p>预期：topic 名和类型完全没变，但订阅端全程静默、零报错。实测 12 秒内<br><code>no data yet ×63</code>、收到 0 帧。</p>
+<p><strong>实验 3：类型名参与匹配（5 分钟）</strong></p>
+<p>把 <code>idl/sensor.idl</code> 里的 <code>module demo</code> 改成 <code>module foo</code>，只重新构建<strong>一端</strong>。</p>
+<p>预期：topic 名一样但两端匹配不上。</p>
+<p><strong>实验 4：看丢帧（1 分钟）</strong></p>
+<p>观察 <code>frame</code> 后面的 <code>(+N)</code>，稳定是 <code>+4</code>。把 <code>subscriber.cpp:164</code> 的<br><code>sleep_for(200ms)</code> 改成 <code>50ms</code>，<code>+N</code> 会变成 <code>+1</code>。</p>
+<p><strong>实验 5：在回调里量真实延迟（15 分钟）★推荐</strong></p>
+<p>在 <code>on_data_available</code> 里加打点：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="type">int64_t</span> now_cb = std::chrono::<span class="built_in">duration_cast</span>&lt;std::chrono::nanoseconds&gt;(</span><br><span class="line">    std::chrono::system_clock::<span class="built_in">now</span>().<span class="built_in">time_since_epoch</span>()).<span class="built_in">count</span>();</span><br><span class="line"><span class="type">const</span> <span class="type">double</span> cb_us = <span class="built_in">static_cast</span>&lt;<span class="type">double</span>&gt;(now_cb - s.<span class="built_in">data</span>().<span class="built_in">header</span>().<span class="built_in">timestamp</span>()) / <span class="number">1000.0</span>;</span><br><span class="line">std::cout &lt;&lt; <span class="string">&quot;[CB] frame=&quot;</span> &lt;&lt; s.<span class="built_in">data</span>().<span class="built_in">header</span>().<span class="built_in">frame_id</span>()</span><br><span class="line">          &lt;&lt; <span class="string">&quot; cb_latency=&quot;</span> &lt;&lt; cb_us &lt;&lt; <span class="string">&quot;us\n&quot;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>预期：回调侧是稳定的几百微秒（实测中位 282μs），main 侧是 1.8-50ms 的锯齿。<br><strong>这一个实验能把第 10 节讲的拍频彻底坐实。</strong></p>
+<p><strong>实验 6：加 key 看实例（30 分钟）★最能体现 DDS 特色</strong></p>
+<p>给 <code>sensor.idl</code> 的 <code>SensorData</code> 加一个 <code>@key long sensor_id;</code>，让 publisher 从命令行<br>读 <code>sensor_id</code>，同时跑两个不同 id 的发布端，订阅端每秒 <code>take()</code> 一次打印样本数。</p>
+<p>预期：<code>take()</code> 稳定返回 2 个样本。去掉 <code>@key</code> 重跑，变成每次 1 个、<code>id</code> 随机跳。</p>
+<p><strong>实验 7：两个消费者要不要各建 reader（20 分钟）★常见误区</strong></p>
+<p>分别试两种写法，各跑两个线程消费：</p>
+<ul>
+<li><strong>两个独立 DataReader</strong>，各 take 自己的 → 实测两者都收到全部 77 帧，交集 77</li>
+<li><strong>共用一个 DataReader</strong>，两线程都 take → 实测线程 A 拿 100 帧、B 拿 55 帧，<strong>交集 0</strong></li>
+</ul>
+<p>结论：要让多个消费者都看到全量数据，必须各建一个 DataReader。共用一个 reader 时<br>先 take 的会把样本移走。</p>
+<p><strong>实验 8：验证可扩展性（30 分钟）</strong></p>
+<p>给 <code>SensorData</code> 尾部加一个字段，只重新编译一端。<code>@final</code> 下会静默失配；<br>在 struct 前加 <code>@appendable</code> 后就能互通（旧端忽略新字段）。</p>
+<p>这个实验对跨板子协作的场景最有参考价值。</p>
+<hr>
+<h2 id="附录一：本文实测数据汇总"><a href="#附录一：本文实测数据汇总" class="headerlink" title="附录一：本文实测数据汇总"></a>附录一：本文实测数据汇总</h2><p>环境：x86_64 &#x2F; Ubuntu 24.04 &#x2F; CycloneDDS 0.10.5 &#x2F; 同机双进程</p>
+<table>
+<thead>
+<tr>
+<th>测量项</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Participant 线程数</td>
+<td>8（main + gc + dq.builtins + dq.user + tev + recv + recvMC + recvUC）</td>
+</tr>
+<tr>
+<td>Participant UDP socket 数</td>
+<td>4（7400 多播、7401 多播、2 个单播）</td>
+</tr>
+<tr>
+<td><code>DomainParticipant</code> 构造耗时</td>
+<td>约 2.2-2.8ms</td>
+</tr>
+<tr>
+<td><code>DataWriter</code> 构造耗时</td>
+<td>约 0.6ms</td>
+</tr>
+<tr>
+<td><strong>match 耗时（订阅端已在）</strong></td>
+<td><strong>2.16 &#x2F; 2.24 &#x2F; 2.24ms</strong></td>
+</tr>
+<tr>
+<td><strong>match 耗时（两端同时起）</strong></td>
+<td><strong>2.31 &#x2F; 2.31 &#x2F; 2.32ms</strong></td>
+</tr>
+<tr>
+<td>首帧 frame 号</td>
+<td><code>frame=0</code>（一帧未丢）</td>
+</tr>
+<tr>
+<td><strong>回调侧传输延迟</strong>（n&#x3D;499）</td>
+<td><strong>min 130.9μs &#x2F; 中位 282.5μs &#x2F; p95 386.2μs &#x2F; max 464.9μs</strong></td>
+</tr>
+<tr>
+<td>main 侧”延迟”（同一次运行）</td>
+<td>1.8-50.7ms 锯齿波，周期约 9 秒</td>
+</tr>
+<tr>
+<td>gap 分布（75 秒）</td>
+<td><code>+4</code> ×367、<code>+3</code> ×7、<code>+0</code> ×1</td>
+</tr>
+<tr>
+<td>QoS 失配（Reader 请求 Reliable）</td>
+<td>12 秒内收到 <strong>0</strong> 帧，<code>no data yet</code> ×63，零报错</td>
+</tr>
+<tr>
+<td>有 key + 2 个发布端</td>
+<td><code>take()</code> 稳定返回 <strong>2</strong> 个样本</td>
+</tr>
+<tr>
+<td>无 key + 2 个发布端</td>
+<td><code>take()</code> 返回 <strong>1</strong> 个样本，id 随机跳</td>
+</tr>
+<tr>
+<td>两个独立 DataReader 各自 take</td>
+<td>各收到全部 <strong>77</strong> 帧，交集 <strong>77</strong>（互不影响）</td>
+</tr>
+<tr>
+<td>共用一个 DataReader，两线程 take</td>
+<td>A <strong>100</strong> 帧 &#x2F; B <strong>55</strong> 帧，交集 <strong>0</strong>（互相抢走）</td>
+</tr>
+<tr>
+<td>回调 <code>take()</code> vs <code>read()</code>（KeepLast(1)）</td>
+<td>回调各 198 次，取出样本各 198 个，CPU 均 0%</td>
+</tr>
+<tr>
+<td>回调 <code>take()</code> vs <code>read()</code>（KeepAll）</td>
+<td>回调各 <strong>398</strong> 次；取出样本 <strong>398</strong> vs <strong>34850</strong>；CPU 均 0%</td>
+</tr>
+<tr>
+<td><code>write()</code> 到无订阅端（Volatile）</td>
+<td>frame 0..4 <strong>未送达</strong>，晚到的订阅端只收到之后的帧</td>
+</tr>
+<tr>
+<td><code>write()</code> 到无订阅端（TransientLocal）</td>
+<td>补发 <strong>1</strong> 帧（keyless 单实例只留最新）</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="附录二：完整源代码"><a href="#附录二：完整源代码" class="headerlink" title="附录二：完整源代码"></a>附录二：完整源代码</h2><p>例程全部源码，便于对照正文的行号引用。文件按阅读顺序排列。</p>
+<h3 id="idl-sensor-idl（28-行）"><a href="#idl-sensor-idl（28-行）" class="headerlink" title="idl/sensor.idl（28 行）"></a><code>idl/sensor.idl</code>（28 行）</h3><p>数据类型定义。全部通信内容的唯一来源，<code>idlc</code> 据此生成 C++ 类型。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">// 最小示例数据类型。</span><br><span class="line">//</span><br><span class="line">// 刻意模仿 sentigent_soc 的写法，方便对照：</span><br><span class="line">//   - module 两层嵌套（demo::msg），对应项目里的 hal::msg / neuro_control::msg</span><br><span class="line">//   - 带一个 Header 子结构（时间戳 + 自增帧号），项目里每条消息都有</span><br><span class="line">//   - 定长数组字段，DDS 里定长数组是值语义，不涉及堆分配</span><br><span class="line">//</span><br><span class="line">// 类型名（demo::msg::SensorData）是 DDS 匹配的依据之一：topic 名相同但</span><br><span class="line">// 类型名不同，两端不会 match —— 这就是 rc_input.idl 里那段警告说的坑。</span><br><span class="line"></span><br><span class="line">module demo &#123;</span><br><span class="line">    module msg &#123;</span><br><span class="line"></span><br><span class="line">        struct Header &#123;</span><br><span class="line">            long long timestamp;   // 纳秒</span><br><span class="line">            long long frame_id;    // 自增帧号，用来发现丢帧</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        // topic: &quot;Demo/SensorData&quot;</span><br><span class="line">        struct SensorData &#123;</span><br><span class="line">            Header header;</span><br><span class="line">            float  temperature;    // ℃</span><br><span class="line">            float  gyro[3];        // rad/s，定长数组</span><br><span class="line">            octet  status;         // 0=正常 1=告警</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">    &#125;;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="publisher-cpp（79-行）"><a href="#publisher-cpp（79-行）" class="headerlink" title="publisher.cpp（79 行）"></a><code>publisher.cpp</code>（79 行）</h3><p>发布端。四层实体初始化 + 20Hz 定周期发布循环。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 发布端：20Hz 发布 Demo/SensorData。</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// 对应项目里的 srt::common::Publisher（common/include/dds/publisher.hpp）。</span></span><br><span class="line"><span class="comment">// 那一层封装做的事就是这里的 participant → topic → publisher → writer 四步，</span></span><br><span class="line"><span class="comment">// 外加一个 Dispose()。</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;dds/dds.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;sensor.hpp&quot;</span>          <span class="comment">// idlc 生成</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;cmath&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int64_t</span> <span class="title">nowNs</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> std::chrono::<span class="built_in">duration_cast</span>&lt;std::chrono::nanoseconds&gt;(</span><br><span class="line">        std::chrono::system_clock::<span class="built_in">now</span>().<span class="built_in">time_since_epoch</span>()).<span class="built_in">count</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// ── DDS 四层对象 ────────────────────────────────────────────────────</span></span><br><span class="line">    <span class="comment">// domain 0 = 默认域。同域内的进程才能互相发现（项目里统一 Init(0)）。</span></span><br><span class="line">    dds::<span class="function">domain::DomainParticipant <span class="title">participant</span><span class="params">(<span class="number">0</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Topic = 名字 + 类型 的绑定。两端必须【名字和类型都一致】才 match。</span></span><br><span class="line">    dds::<span class="function">topic::Topic&lt;demo::msg::SensorData&gt; <span class="title">topic</span><span class="params">(participant, <span class="string">&quot;Demo/SensorData&quot;</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    dds::<span class="function">pub::Publisher <span class="title">publisher</span><span class="params">(participant)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// QoS：这里显式设成 BestEffort + KeepLast(1)，即&quot;只要最新一帧，丢了不重传&quot;。</span></span><br><span class="line">    <span class="comment">// 这正是项目里 RC 遥控器那一路的配置（senti_controller.cpp:108）。</span></span><br><span class="line">    <span class="comment">// 高频实时流适合这个：重传一帧过期数据毫无意义，反而挤占带宽。</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// ★ 订阅端必须设成【兼容】的 QoS，否则 topic 名和类型都对也不会 match。</span></span><br><span class="line">    <span class="comment">//   Reliability 的兼容规则：发布端 BestEffort 只能配 BestEffort 订阅端；</span></span><br><span class="line">    <span class="comment">//   发布端 Reliable 则两种订阅端都能配。</span></span><br><span class="line">    dds::pub::qos::DataWriterQos qos;</span><br><span class="line">    qos &lt;&lt; dds::core::policy::Reliability::<span class="built_in">BestEffort</span>()</span><br><span class="line">        &lt;&lt; dds::core::policy::History::<span class="built_in">KeepLast</span>(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    dds::<span class="function">pub::DataWriter&lt;demo::msg::SensorData&gt; <span class="title">writer</span><span class="params">(publisher, topic, qos)</span></span>;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;[PUB] writer ready on Demo/SensorData, 20Hz. Ctrl-C to stop.\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ── 20Hz 发布循环 ───────────────────────────────────────────────────</span></span><br><span class="line">    <span class="comment">// 注意这是&quot;定周期发布&quot;，不是&quot;变化时发布&quot;。整个运控链路都是这个模式：</span></span><br><span class="line">    <span class="comment">// 每一级按自己的节拍重放最新值。好处是没有队列积压，代价是</span></span><br><span class="line">    <span class="comment">// 【上游停发不会自动归零】—— 下游会一直用最后一帧，所以每个环节</span></span><br><span class="line">    <span class="comment">// 都需要显式的&quot;必须发零&quot;约定（见项目里 RC 刹车 / latchVelocityZero）。</span></span><br><span class="line">    <span class="type">int64_t</span> frame = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        demo::msg::SensorData sample;</span><br><span class="line">        sample.<span class="built_in">header</span>().<span class="built_in">timestamp</span>() = <span class="built_in">nowNs</span>();</span><br><span class="line">        sample.<span class="built_in">header</span>().<span class="built_in">frame_id</span>()  = frame;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 造点会变化的数据，方便观察</span></span><br><span class="line">        <span class="type">const</span> <span class="type">float</span> t = <span class="built_in">static_cast</span>&lt;<span class="type">float</span>&gt;(frame) * <span class="number">0.05f</span>;</span><br><span class="line">        sample.<span class="built_in">temperature</span>() = <span class="number">25.0f</span> + <span class="number">5.0f</span> * std::<span class="built_in">sin</span>(t);</span><br><span class="line">        sample.<span class="built_in">gyro</span>()[<span class="number">0</span>] = std::<span class="built_in">sin</span>(t);</span><br><span class="line">        sample.<span class="built_in">gyro</span>()[<span class="number">1</span>] = std::<span class="built_in">cos</span>(t);</span><br><span class="line">        sample.<span class="built_in">gyro</span>()[<span class="number">2</span>] = <span class="number">0.0f</span>;</span><br><span class="line">        sample.<span class="built_in">status</span>()  = (sample.<span class="built_in">temperature</span>() &gt; <span class="number">29.0f</span>) ? <span class="number">1</span> : <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        writer.<span class="built_in">write</span>(sample);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (frame % <span class="number">20</span> == <span class="number">0</span>)   <span class="comment">// ~1Hz 打印</span></span><br><span class="line">        &#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;[PUB] frame=&quot;</span> &lt;&lt; frame</span><br><span class="line">                      &lt;&lt; <span class="string">&quot; temp=&quot;</span> &lt;&lt; sample.<span class="built_in">temperature</span>()</span><br><span class="line">                      &lt;&lt; <span class="string">&quot; status=&quot;</span> &lt;&lt; <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(sample.<span class="built_in">status</span>()) &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        ++frame;</span><br><span class="line">        std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">milliseconds</span>(<span class="number">50</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="subscriber-cpp（166-行）"><a href="#subscriber-cpp（166-行）" class="headerlink" title="subscriber.cpp（166 行）"></a><code>subscriber.cpp</code>（166 行）</h3><p>订阅端。回调只缓存、main 按 5Hz 自己的节拍消费。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 订阅端：演示 DDS 回调线程，以及项目里&quot;回调只缓存、主循环按自己节拍消费&quot;的模式。</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// 运行后观察打印的 thread id：</span></span><br><span class="line"><span class="comment">//   [SUB][main]     main 线程</span></span><br><span class="line"><span class="comment">//   [SUB][callback] on_data_available 所在线程 —— 【不是】main</span></span><br><span class="line"><span class="comment">// 这就是&quot;DDS 回调线程&quot;的含义：你注册的函数由中间件的线程调起。</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// 对应项目里的 srt::common::Subscriber + DdsDataReaderListener</span></span><br><span class="line"><span class="comment">// （common/include/dds/subscriber.hpp、dds_data_reader_listener.hpp）。</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;dds/dds.hpp&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;sensor.hpp&quot;</span>          <span class="comment">// idlc 生成</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;atomic&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;chrono&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;mutex&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sstream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;thread&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// ── 共享缓存：回调线程写，main 线程读 ──────────────────────────────────</span></span><br><span class="line"><span class="comment">// 这是整个例程的重点。回调和主循环在不同线程，所以【必须加锁】。</span></span><br><span class="line"><span class="comment">// 项目里 ControllerSelector::action_mutex_ 保护三路 CommandIntent 缓存，</span></span><br><span class="line"><span class="comment">// 就是同一件事（controller_selector.h:95）。</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">SharedState</span></span><br><span class="line">&#123;</span><br><span class="line">    std::mutex mutex;</span><br><span class="line">    demo::msg::SensorData latest;</span><br><span class="line">    <span class="type">bool</span> has_data = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 计数用 atomic 就够了，不需要锁</span></span><br><span class="line">    std::atomic&lt;<span class="type">int64_t</span>&gt; rx_count&#123;<span class="number">0</span>&#125;;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">SharedState g_state;</span><br><span class="line"></span><br><span class="line"><span class="function">std::string <span class="title">threadIdStr</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    std::ostringstream oss;</span><br><span class="line">    oss &lt;&lt; std::this_thread::<span class="built_in">get_id</span>();</span><br><span class="line">    <span class="keyword">return</span> oss.<span class="built_in">str</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ── Listener：DDS 数据到达时被中间件调用 ───────────────────────────────</span></span><br><span class="line"><span class="comment">// 继承 NoOpDataReaderListener 只覆写 on_data_available，其余状态回调用默认空实现。</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">SensorListener</span> : <span class="keyword">public</span> dds::sub::NoOpDataReaderListener&lt;demo::msg::SensorData&gt;</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">on_data_available</span><span class="params">(dds::sub::DataReader&lt;demo::msg::SensorData&gt; &amp;reader)</span> <span class="keyword">override</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="comment">// ★ 这里运行在 DDS 的接收线程上，不是 main。</span></span><br><span class="line">        <span class="comment">//</span></span><br><span class="line">        <span class="comment">// 因此这个函数里【不能做重活、不能阻塞】：卡住它会拖住该 topic 后续</span></span><br><span class="line">        <span class="comment">// 数据的接收。项目 neuro_control/src/main.cpp:33 记了一次真实事故 ——</span></span><br><span class="line">        <span class="comment">// 一次同步日志写入卡了 934ms，直接影响控制环。</span></span><br><span class="line">        <span class="comment">//</span></span><br><span class="line">        <span class="comment">// 正确做法就是下面这样：take → 拷进缓存 → 立刻返回。</span></span><br><span class="line">        <span class="comment">// 真正的计算留给按自己节拍跑的工作线程（项目里是 40Hz 的 NC_RL）。</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">auto</span> samples = reader.<span class="built_in">take</span>();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">const</span> <span class="keyword">auto</span> &amp;s : samples)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// info().valid() 必须判：DDS 会投递&quot;实例已消失&quot;这类元数据样本，</span></span><br><span class="line">            <span class="comment">// 那种样本的 data() 内容无意义。项目里同样有这个判断</span></span><br><span class="line">            <span class="comment">// （dds_data_reader_listener.hpp:111）。</span></span><br><span class="line">            <span class="keyword">if</span> (!s.<span class="built_in">info</span>().<span class="built_in">valid</span>()) <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">            &#123;</span><br><span class="line">                <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_state.mutex)</span></span>;</span><br><span class="line">                g_state.latest   = s.<span class="built_in">data</span>();</span><br><span class="line">                g_state.has_data = <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="type">const</span> <span class="type">int64_t</span> n = ++g_state.rx_count;</span><br><span class="line">            <span class="keyword">if</span> (n == <span class="number">1</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                std::cout &lt;&lt; <span class="string">&quot;[SUB][callback] FIRST sample, thread=&quot;</span> &lt;&lt; <span class="built_in">threadIdStr</span>()</span><br><span class="line">                          &lt;&lt; <span class="string">&quot;  &lt;-- 注意这个 id 和 main 不同\n&quot;</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;[SUB][main]     thread=&quot;</span> &lt;&lt; <span class="built_in">threadIdStr</span>() &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    dds::<span class="function">domain::DomainParticipant <span class="title">participant</span><span class="params">(<span class="number">0</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// topic 名和类型都必须与发布端完全一致</span></span><br><span class="line">    dds::<span class="function">topic::Topic&lt;demo::msg::SensorData&gt; <span class="title">topic</span><span class="params">(participant, <span class="string">&quot;Demo/SensorData&quot;</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">    dds::<span class="function">sub::Subscriber <span class="title">subscriber</span><span class="params">(participant)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ★ QoS 必须与发布端兼容。发布端是 BestEffort + KeepLast(1)，</span></span><br><span class="line">    <span class="comment">//   这里也设成 BestEffort。若这里改成 Reliable()，则 topic 名和类型</span></span><br><span class="line">    <span class="comment">//   都对，但【收不到任何数据】—— 这是 DDS 最常见的排查陷阱，</span></span><br><span class="line">    <span class="comment">//   项目 rc_input.idl 的注释专门警告过。</span></span><br><span class="line">    <span class="comment">//   想自己验证：把下面 BestEffort() 换成 Reliable() 重编译，会看到</span></span><br><span class="line">    <span class="comment">//   订阅端一直静默。</span></span><br><span class="line">    dds::sub::qos::DataReaderQos qos;</span><br><span class="line">    qos &lt;&lt; dds::core::policy::Reliability::<span class="built_in">BestEffort</span>()</span><br><span class="line">        &lt;&lt; dds::core::policy::History::<span class="built_in">KeepLast</span>(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    SensorListener listener;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 只关心 data_available 这一个状态位。项目里也是这么设的</span></span><br><span class="line">    <span class="comment">// （subscriber.hpp:80）。</span></span><br><span class="line">    dds::core::status::StatusMask mask = dds::core::status::StatusMask::<span class="built_in">none</span>();</span><br><span class="line">    mask |= dds::core::status::StatusMask::<span class="built_in">data_available</span>();</span><br><span class="line"></span><br><span class="line">    dds::<span class="function">sub::DataReader&lt;demo::msg::SensorData&gt; <span class="title">reader</span><span class="params">(subscriber, topic, qos)</span></span>;</span><br><span class="line">    reader.<span class="built_in">listener</span>(&amp;listener, mask);</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;[SUB] reader ready, waiting for data...\n&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ── main 循环：按【自己的】5Hz 节拍消费缓存 ─────────────────────────</span></span><br><span class="line">    <span class="comment">// 发布端 20Hz，这里 5Hz —— 两者解耦，各按自己节拍跑。</span></span><br><span class="line">    <span class="comment">// 这正是项目的核心结构：</span></span><br><span class="line">    <span class="comment">//   HalRobotState 500Hz 到达 → NC 回调只缓存 → NC_RL 40Hz 取用</span></span><br><span class="line">    <span class="comment">//   手柄 HID 事件驱动到达   → reader 线程写 state_ → 控制线程 100Hz 快照</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// 消费频率低于生产频率时，中间的帧就被丢弃了（KeepLast(1) 只留最新）。</span></span><br><span class="line">    <span class="comment">// 观察 frame_id 的跳跃就能看到：每次约 +4。</span></span><br><span class="line">    <span class="type">int64_t</span> prev_frame = <span class="number">-1</span>;</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        demo::msg::SensorData snapshot;</span><br><span class="line">        <span class="type">bool</span> valid = <span class="literal">false</span>;</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(g_state.mutex)</span></span>;</span><br><span class="line">            <span class="keyword">if</span> (g_state.has_data)</span><br><span class="line">            &#123;</span><br><span class="line">                snapshot = g_state.latest;   <span class="comment">// 拷一份出来，尽快放锁</span></span><br><span class="line">                valid = <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!valid)</span><br><span class="line">        &#123;</span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;[SUB][main]     no data yet (发布端起了吗？QoS 对得上吗？)\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="comment">// 端到端延迟：发布端打的时间戳 vs 现在。同机通常几百 us。</span></span><br><span class="line">            <span class="type">const</span> <span class="type">int64_t</span> now = std::chrono::<span class="built_in">duration_cast</span>&lt;std::chrono::nanoseconds&gt;(</span><br><span class="line">                std::chrono::system_clock::<span class="built_in">now</span>().<span class="built_in">time_since_epoch</span>()).<span class="built_in">count</span>();</span><br><span class="line">            <span class="type">const</span> <span class="type">double</span> latency_us = <span class="built_in">static_cast</span>&lt;<span class="type">double</span>&gt;(now - snapshot.<span class="built_in">header</span>().<span class="built_in">timestamp</span>()) / <span class="number">1000.0</span>;</span><br><span class="line"></span><br><span class="line">            <span class="type">const</span> <span class="type">int64_t</span> f = snapshot.<span class="built_in">header</span>().<span class="built_in">frame_id</span>();</span><br><span class="line">            <span class="type">const</span> <span class="type">int64_t</span> gap = (prev_frame &lt; <span class="number">0</span>) ? <span class="number">0</span> : (f - prev_frame);</span><br><span class="line">            prev_frame = f;</span><br><span class="line"></span><br><span class="line">            std::cout &lt;&lt; <span class="string">&quot;[SUB][main]     frame=&quot;</span> &lt;&lt; f</span><br><span class="line">                      &lt;&lt; <span class="string">&quot; (+&quot;</span> &lt;&lt; gap &lt;&lt; <span class="string">&quot;)&quot;</span></span><br><span class="line">                      &lt;&lt; <span class="string">&quot; temp=&quot;</span> &lt;&lt; snapshot.<span class="built_in">temperature</span>()</span><br><span class="line">                      &lt;&lt; <span class="string">&quot; gyro=[&quot;</span> &lt;&lt; snapshot.<span class="built_in">gyro</span>()[<span class="number">0</span>] &lt;&lt; <span class="string">&quot;,&quot;</span> &lt;&lt; snapshot.<span class="built_in">gyro</span>()[<span class="number">1</span>]</span><br><span class="line">                      &lt;&lt; <span class="string">&quot;,&quot;</span> &lt;&lt; snapshot.<span class="built_in">gyro</span>()[<span class="number">2</span>] &lt;&lt; <span class="string">&quot;]&quot;</span></span><br><span class="line">                      &lt;&lt; <span class="string">&quot; status=&quot;</span> &lt;&lt; <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(snapshot.<span class="built_in">status</span>())</span><br><span class="line">                      &lt;&lt; <span class="string">&quot; | rx_total=&quot;</span> &lt;&lt; g_state.rx_count.<span class="built_in">load</span>()</span><br><span class="line">                      &lt;&lt; <span class="string">&quot; latency=&quot;</span> &lt;&lt; latency_us &lt;&lt; <span class="string">&quot;us\n&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">milliseconds</span>(<span class="number">200</span>));  <span class="comment">// 5Hz</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="CMakeLists-txt（113-行）"><a href="#CMakeLists-txt（113-行）" class="headerlink" title="CMakeLists.txt（113 行）"></a><code>CMakeLists.txt</code>（113 行）</h3><p>构建配置。两条依赖解析路径：标准安装（路 A）&#x2F; 预编译库兜底（路 B）。</p>
+<figure class="highlight cmake"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">cmake_minimum_required</span>(VERSION <span class="number">3.16</span>)</span><br><span class="line"><span class="keyword">project</span>(dds_test CXX)</span><br><span class="line"></span><br><span class="line"><span class="keyword">set</span>(CMAKE_CXX_STANDARD <span class="number">17</span>)</span><br><span class="line"><span class="keyword">set</span>(CMAKE_CXX_STANDARD_REQUIRED <span class="keyword">ON</span>)</span><br><span class="line"><span class="keyword">if</span>(<span class="keyword">NOT</span> CMAKE_BUILD_TYPE)</span><br><span class="line">  <span class="keyword">set</span>(CMAKE_BUILD_TYPE Debug)</span><br><span class="line"><span class="keyword">endif</span>()</span><br><span class="line"></span><br><span class="line"><span class="comment"># ─────────────────────────────────────────────────────────────────────────────</span></span><br><span class="line"><span class="comment"># 依赖解析：两条路，优先用标准安装</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#   路 A（推荐）：系统里装好了 CycloneDDS + CycloneDDS-CXX 的 CMake 包。</span></span><br><span class="line"><span class="comment">#                 直接用官方的 idlcxx_generate()，最干净。</span></span><br><span class="line"><span class="comment">#   路 B（兜底）：只有 sentigent_soc/third_party/dds 里的预编译库 +</span></span><br><span class="line"><span class="comment">#                 一个能用的 idlc/idlcxx。手动调 idlc 生成。</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># README.md 里写了怎么装。</span></span><br><span class="line"><span class="comment"># ─────────────────────────────────────────────────────────────────────────────</span></span><br><span class="line"><span class="keyword">find_package</span>(CycloneDDS-CXX QUIET)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span>(CycloneDDS-CXX_FOUND)</span><br><span class="line">  <span class="keyword">message</span>(STATUS <span class="string">&quot;[dds_test] 使用系统安装的 CycloneDDS-CXX (路 A)&quot;</span>)</span><br><span class="line"></span><br><span class="line">  <span class="comment"># 官方提供的 CMake 函数：把 .idl 编译成 C++ 类型，产出一个可链接的 target。</span></span><br><span class="line">  <span class="comment"># WARNINGS no-implicit-extensibility 只是消掉一个与本例无关的告警。</span></span><br><span class="line">  idlcxx_generate(</span><br><span class="line">    <span class="keyword">TARGET</span>  sensor_msg</span><br><span class="line">    FILES   <span class="variable">$&#123;CMAKE_CURRENT_SOURCE_DIR&#125;</span>/idl/sensor.idl</span><br><span class="line">    WARNINGS no-implicit-extensibility</span><br><span class="line">  )</span><br><span class="line">  <span class="keyword">set</span>(DDS_LIBS CycloneDDS-CXX::ddscxx sensor_msg)</span><br><span class="line">  <span class="keyword">set</span>(DDS_INCLUDES <span class="string">&quot;&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">else</span>()</span><br><span class="line">  <span class="keyword">message</span>(STATUS <span class="string">&quot;[dds_test] 未找到 CycloneDDS-CXX 的 CMake 包，回退到预编译库 (路 B)&quot;</span>)</span><br><span class="line"></span><br><span class="line">  <span class="comment"># 复用 sentigent_soc 自带的预编译库。可用 -DSOC_ROOT=... 覆盖。</span></span><br><span class="line">  <span class="keyword">set</span>(SOC_ROOT <span class="string">&quot;/home/hucw/workspace/sentigent_soc&quot;</span> CACHE PATH <span class="string">&quot;sentigent_soc 根目录&quot;</span>)</span><br><span class="line">  <span class="keyword">set</span>(DDS_PREBUILT <span class="string">&quot;$&#123;SOC_ROOT&#125;/third_party/dds&quot;</span>)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span>(<span class="keyword">NOT</span> <span class="keyword">EXISTS</span> <span class="string">&quot;$&#123;DDS_PREBUILT&#125;/include/ddscxx/dds/dds.hpp&quot;</span>)</span><br><span class="line">    <span class="keyword">message</span>(FATAL_ERROR</span><br><span class="line">      <span class="string">&quot;找不到预编译 DDS：$&#123;DDS_PREBUILT&#125;\n&quot;</span></span><br><span class="line">      <span class="string">&quot;请装 CycloneDDS-CXX（见 README.md），或用 -DSOC_ROOT=&lt;路径&gt; 指定。&quot;</span>)</span><br><span class="line">  <span class="keyword">endif</span>()</span><br><span class="line"></span><br><span class="line">  <span class="comment"># 选架构目录</span></span><br><span class="line">  <span class="keyword">if</span>(CMAKE_SYSTEM_PROCESSOR <span class="keyword">MATCHES</span> <span class="string">&quot;aarch64|arm64&quot;</span>)</span><br><span class="line">    <span class="keyword">set</span>(DDS_LIB_DIR <span class="string">&quot;$&#123;DDS_PREBUILT&#125;/lib/aarch64&quot;</span>)</span><br><span class="line">  <span class="keyword">else</span>()</span><br><span class="line">    <span class="keyword">set</span>(DDS_LIB_DIR <span class="string">&quot;$&#123;DDS_PREBUILT&#125;/lib/x86_64&quot;</span>)</span><br><span class="line">  <span class="keyword">endif</span>()</span><br><span class="line"></span><br><span class="line">  <span class="comment"># 找 idlc。装了 cyclonedds-tools 就在 PATH 里；源码装的可能在 ~/.local/bin。</span></span><br><span class="line">  <span class="keyword">find_program</span>(IDLC_EXECUTABLE idlc</span><br><span class="line">    HINTS ENV HOME PATH_SUFFIXES .local/bin</span><br><span class="line">    PATHS /usr/bin /usr/local/bin $ENV&#123;HOME&#125;/.local/bin)</span><br><span class="line">  <span class="keyword">if</span>(<span class="keyword">NOT</span> IDLC_EXECUTABLE)</span><br><span class="line">    <span class="keyword">message</span>(FATAL_ERROR <span class="string">&quot;找不到 idlc。见 README.md「安装 idlc」一节。&quot;</span>)</span><br><span class="line">  <span class="keyword">endif</span>()</span><br><span class="line"></span><br><span class="line">  <span class="comment"># 找 idlcxx 后端插件（生成 C++ 而非 C 的关键；apt 的 cyclonedds-tools 不含它）。</span></span><br><span class="line">  <span class="keyword">find_library</span>(IDLCXX_PLUGIN NAMES cycloneddsidlcxx</span><br><span class="line">    PATHS /usr/lib /usr/local/lib $ENV&#123;HOME&#125;/.local/lib</span><br><span class="line">    PATH_SUFFIXES x86_64-linux-gnu aarch64-linux-gnu)</span><br><span class="line">  <span class="keyword">if</span>(<span class="keyword">NOT</span> IDLCXX_PLUGIN)</span><br><span class="line">    <span class="keyword">message</span>(FATAL_ERROR</span><br><span class="line">      <span class="string">&quot;找到了 idlc 但缺 C++ 后端 libcycloneddsidlcxx。\n&quot;</span></span><br><span class="line">      <span class="string">&quot;apt 的 cyclonedds-tools 只有 C 后端，必须装 cyclonedds-cxx。见 README.md。&quot;</span>)</span><br><span class="line">  <span class="keyword">endif</span>()</span><br><span class="line">  <span class="keyword">message</span>(STATUS <span class="string">&quot;[dds_test] idlc=$&#123;IDLC_EXECUTABLE&#125;  plugin=$&#123;IDLCXX_PLUGIN&#125;&quot;</span>)</span><br><span class="line"></span><br><span class="line">  <span class="comment"># 手动跑 idlc：sensor.idl → sensor.hpp + sensor.cpp</span></span><br><span class="line">  <span class="keyword">set</span>(GEN_DIR <span class="string">&quot;$&#123;CMAKE_CURRENT_BINARY_DIR&#125;/generated&quot;</span>)</span><br><span class="line">  <span class="keyword">file</span>(<span class="keyword">MAKE_DIRECTORY</span> <span class="variable">$&#123;GEN_DIR&#125;</span>)</span><br><span class="line">  <span class="keyword">add_custom_command</span>(</span><br><span class="line">    OUTPUT  <span class="variable">$&#123;GEN_DIR&#125;</span>/sensor.hpp <span class="variable">$&#123;GEN_DIR&#125;</span>/sensor.cpp</span><br><span class="line">    <span class="keyword">COMMAND</span> <span class="variable">$&#123;IDLC_EXECUTABLE&#125;</span> -l <span class="variable">$&#123;IDLCXX_PLUGIN&#125;</span> -o <span class="variable">$&#123;GEN_DIR&#125;</span></span><br><span class="line">            <span class="variable">$&#123;CMAKE_CURRENT_SOURCE_DIR&#125;</span>/idl/sensor.idl</span><br><span class="line">    DEPENDS <span class="variable">$&#123;CMAKE_CURRENT_SOURCE_DIR&#125;</span>/idl/sensor.idl</span><br><span class="line">    COMMENT <span class="string">&quot;[dds_test] idlc: sensor.idl -&gt; sensor.hpp/.cpp&quot;</span></span><br><span class="line">    VERBATIM)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">add_library</span>(sensor_msg STATIC <span class="variable">$&#123;GEN_DIR&#125;</span>/sensor.cpp)</span><br><span class="line">  <span class="keyword">target_include_directories</span>(sensor_msg PUBLIC</span><br><span class="line">    <span class="variable">$&#123;GEN_DIR&#125;</span></span><br><span class="line">    <span class="variable">$&#123;DDS_PREBUILT&#125;</span>/<span class="keyword">include</span>/ddscxx</span><br><span class="line">    <span class="variable">$&#123;DDS_PREBUILT&#125;</span>/<span class="keyword">include</span>)</span><br><span class="line">  <span class="keyword">target_link_directories</span>(sensor_msg PUBLIC <span class="variable">$&#123;DDS_LIB_DIR&#125;</span>)</span><br><span class="line">  <span class="keyword">target_link_libraries</span>(sensor_msg PUBLIC ddscxx ddsc)</span><br><span class="line"></span><br><span class="line">  <span class="comment"># rpath：让可执行文件运行时能找到预编译的 .so，免得每次手动设</span></span><br><span class="line">  <span class="comment"># LD_LIBRARY_PATH。</span></span><br><span class="line">  <span class="keyword">set</span>(CMAKE_BUILD_RPATH <span class="string">&quot;$&#123;DDS_LIB_DIR&#125;&quot;</span>)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">set</span>(DDS_LIBS sensor_msg)</span><br><span class="line">  <span class="keyword">set</span>(DDS_INCLUDES <span class="variable">$&#123;GEN_DIR&#125;</span>)</span><br><span class="line"><span class="keyword">endif</span>()</span><br><span class="line"></span><br><span class="line"><span class="comment"># ─────────────────────────────────────────────────────────────────────────────</span></span><br><span class="line"><span class="comment"># 两个可执行文件</span></span><br><span class="line"><span class="comment"># ─────────────────────────────────────────────────────────────────────────────</span></span><br><span class="line"><span class="keyword">add_executable</span>(publisher  publisher.cpp)</span><br><span class="line"><span class="keyword">add_executable</span>(subscriber subscriber.cpp)</span><br><span class="line"></span><br><span class="line"><span class="keyword">foreach</span>(tgt publisher subscriber)</span><br><span class="line">  <span class="keyword">target_link_libraries</span>(<span class="variable">$&#123;tgt&#125;</span> PRIVATE <span class="variable">$&#123;DDS_LIBS&#125;</span>)</span><br><span class="line">  <span class="keyword">if</span>(DDS_INCLUDES)</span><br><span class="line">    <span class="keyword">target_include_directories</span>(<span class="variable">$&#123;tgt&#125;</span> PRIVATE <span class="variable">$&#123;DDS_INCLUDES&#125;</span>)</span><br><span class="line">  <span class="keyword">endif</span>()</span><br><span class="line">  <span class="keyword">target_compile_options</span>(<span class="variable">$&#123;tgt&#125;</span> PRIVATE -Wall -Wextra)</span><br><span class="line"><span class="keyword">endforeach</span>()</span><br></pre></td></tr></table></figure>
+
+<h3 id="scripts-build-sh（25-行）"><a href="#scripts-build-sh（25-行）" class="headerlink" title="scripts/build.sh（25 行）"></a><code>scripts/build.sh</code>（25 行）</h3><p>构建脚本。首次会自动跑 <code>idlc</code> 生成类型代码。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/usr/bin/env bash</span></span><br><span class="line"><span class="comment"># 构建 DDS 最小例程。</span></span><br><span class="line"><span class="comment">#   ./scripts/build.sh          增量构建</span></span><br><span class="line"><span class="comment">#   ./scripts/build.sh clean    先删 build 再全量构建</span></span><br><span class="line"><span class="built_in">set</span> -euo pipefail</span><br><span class="line"></span><br><span class="line">ROOT=<span class="string">&quot;<span class="subst">$(cd <span class="string">&quot;<span class="subst">$(dirname <span class="string">&quot;<span class="variable">$&#123;BASH_SOURCE[0]&#125;</span>&quot;</span>)</span>/..&quot;</span> &amp;&amp; pwd)</span>&quot;</span></span><br><span class="line">BUILD_DIR=<span class="string">&quot;<span class="variable">$ROOT</span>/build&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [[ <span class="string">&quot;<span class="variable">$&#123;1:-&#125;</span>&quot;</span> == <span class="string">&quot;clean&quot;</span> ]]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;[build] 清理 <span class="variable">$BUILD_DIR</span>&quot;</span></span><br><span class="line">    <span class="built_in">rm</span> -rf <span class="string">&quot;<span class="variable">$BUILD_DIR</span>&quot;</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">mkdir</span> -p <span class="string">&quot;<span class="variable">$ROOT</span>/logs&quot;</span></span><br><span class="line"></span><br><span class="line">cmake -S <span class="string">&quot;<span class="variable">$ROOT</span>&quot;</span> -B <span class="string">&quot;<span class="variable">$BUILD_DIR</span>&quot;</span> -DCMAKE_BUILD_TYPE=Debug</span><br><span class="line">cmake --build <span class="string">&quot;<span class="variable">$BUILD_DIR</span>&quot;</span> -j<span class="string">&quot;<span class="subst">$(nproc)</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;[build] 完成。可执行文件：&quot;</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;  <span class="variable">$BUILD_DIR</span>/publisher&quot;</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;  <span class="variable">$BUILD_DIR</span>/subscriber&quot;</span></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;下一步： ./scripts/run.sh both&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="scripts-run-sh（83-行）"><a href="#scripts-run-sh（83-行）" class="headerlink" title="scripts/run.sh（83 行）"></a><code>scripts/run.sh</code>（83 行）</h3><p>运行脚本。含孤儿进程清理与行缓冲处理。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/usr/bin/env bash</span></span><br><span class="line"><span class="comment"># 运行 DDS 最小例程。日志统一进 logs/。</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment">#   ./scripts/run.sh pub     只跑发布端（前台）</span></span><br><span class="line"><span class="comment">#   ./scripts/run.sh sub     只跑订阅端（前台）</span></span><br><span class="line"><span class="comment">#   ./scripts/run.sh both    两个都后台跑，实时跟随订阅端日志（推荐先用这个）</span></span><br><span class="line"><span class="comment">#   ./scripts/run.sh stop    停掉后台进程</span></span><br><span class="line"><span class="built_in">set</span> -euo pipefail</span><br><span class="line"></span><br><span class="line">ROOT=<span class="string">&quot;<span class="subst">$(cd <span class="string">&quot;<span class="subst">$(dirname <span class="string">&quot;<span class="variable">$&#123;BASH_SOURCE[0]&#125;</span>&quot;</span>)</span>/..&quot;</span> &amp;&amp; pwd)</span>&quot;</span></span><br><span class="line">BUILD_DIR=<span class="string">&quot;<span class="variable">$ROOT</span>/build&quot;</span></span><br><span class="line">LOG_DIR=<span class="string">&quot;<span class="variable">$ROOT</span>/logs&quot;</span></span><br><span class="line"><span class="built_in">mkdir</span> -p <span class="string">&quot;<span class="variable">$LOG_DIR</span>&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [[ ! -x <span class="string">&quot;<span class="variable">$BUILD_DIR</span>/publisher&quot;</span> || ! -x <span class="string">&quot;<span class="variable">$BUILD_DIR</span>/subscriber&quot;</span> ]]; <span class="keyword">then</span></span><br><span class="line">    <span class="built_in">echo</span> <span class="string">&quot;[run] 还没构建，先跑 ./scripts/build.sh&quot;</span> &gt;&amp;2</span><br><span class="line">    <span class="built_in">exit</span> 1</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">stop_all</span></span>() &#123;</span><br><span class="line">    <span class="keyword">for</span> name <span class="keyword">in</span> publisher subscriber; <span class="keyword">do</span></span><br><span class="line">        pidfile=<span class="string">&quot;<span class="variable">$LOG_DIR</span>/<span class="variable">$name</span>.pid&quot;</span></span><br><span class="line">        <span class="keyword">if</span> [[ -f <span class="string">&quot;<span class="variable">$pidfile</span>&quot;</span> ]]; <span class="keyword">then</span></span><br><span class="line">            pid=<span class="string">&quot;<span class="subst">$(cat <span class="string">&quot;<span class="variable">$pidfile</span>&quot;</span>)</span>&quot;</span></span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">kill</span> -0 <span class="string">&quot;<span class="variable">$pid</span>&quot;</span> 2&gt;/dev/null; <span class="keyword">then</span></span><br><span class="line">                <span class="built_in">kill</span> <span class="string">&quot;<span class="variable">$pid</span>&quot;</span> 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line">                <span class="built_in">echo</span> <span class="string">&quot;[run] 已停止 <span class="variable">$name</span> (pid=<span class="variable">$pid</span>)&quot;</span></span><br><span class="line">            <span class="keyword">fi</span></span><br><span class="line">            <span class="built_in">rm</span> -f <span class="string">&quot;<span class="variable">$pidfile</span>&quot;</span></span><br><span class="line">        <span class="keyword">fi</span></span><br><span class="line">    <span class="keyword">done</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 兜底：按可执行文件全路径扫一遍漏网的。</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment"># 这一步不是多余的。pid 文件记错、SIGTERM 没生效、或上一轮脚本被 Ctrl-C</span></span><br><span class="line">    <span class="comment"># 打断，都会留下孤儿进程 —— 而孤儿 publisher 的后果很隐蔽：它和新起的</span></span><br><span class="line">    <span class="comment"># publisher 在【同一个 topic 上同时是 writer】，订阅端会交替收到两者的</span></span><br><span class="line">    <span class="comment"># 数据，frame_id 在两个序列间来回跳。看起来像&quot;DDS 乱序/串数据&quot;，实际是</span></span><br><span class="line">    <span class="comment"># 多了一个发布者。DDS 本身不限制一个 topic 有多少 writer，所以不会报错。</span></span><br><span class="line">    <span class="built_in">local</span> leftover</span><br><span class="line">    leftover=<span class="string">&quot;<span class="subst">$(pgrep -f <span class="string">&quot;^<span class="variable">$BUILD_DIR</span>/(publisher|subscriber)$&quot;</span> 2&gt;/dev/null || true)</span>&quot;</span></span><br><span class="line">    <span class="keyword">if</span> [[ -n <span class="string">&quot;<span class="variable">$leftover</span>&quot;</span> ]]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;[run] 发现孤儿进程，强制清理: <span class="variable">$leftover</span>&quot;</span></span><br><span class="line">        <span class="comment"># shellcheck disable=SC2086</span></span><br><span class="line">        <span class="built_in">kill</span> -9 <span class="variable">$leftover</span> 2&gt;/dev/null || <span class="literal">true</span></span><br><span class="line">    <span class="keyword">fi</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">case</span> <span class="string">&quot;<span class="variable">$&#123;1:-both&#125;</span>&quot;</span> <span class="keyword">in</span></span><br><span class="line">    pub)</span><br><span class="line">        <span class="built_in">exec</span> <span class="built_in">stdbuf</span> -oL <span class="string">&quot;<span class="variable">$BUILD_DIR</span>/publisher&quot;</span> 2&gt;&amp;1 | <span class="built_in">tee</span> <span class="string">&quot;<span class="variable">$LOG_DIR</span>/publisher.log&quot;</span></span><br><span class="line">        ;;</span><br><span class="line">    sub)</span><br><span class="line">        <span class="built_in">exec</span> <span class="built_in">stdbuf</span> -oL <span class="string">&quot;<span class="variable">$BUILD_DIR</span>/subscriber&quot;</span> 2&gt;&amp;1 | <span class="built_in">tee</span> <span class="string">&quot;<span class="variable">$LOG_DIR</span>/subscriber.log&quot;</span></span><br><span class="line">        ;;</span><br><span class="line">    both)</span><br><span class="line">        stop_all</span><br><span class="line">        <span class="comment"># 先起订阅端：DDS 的发现是双向的，谁先起都行，但订阅端先起能</span></span><br><span class="line">        <span class="comment"># 观察到第一帧，便于看清 match 过程。</span></span><br><span class="line">        <span class="comment">#</span></span><br><span class="line">        <span class="comment"># stdbuf -oL 是必须的：stdout 重定向到文件时 libc 默认块缓冲(4KB)，</span></span><br><span class="line">        <span class="comment"># 进程被 kill 时缓冲区内容直接丢失 —— 日志会是空的。行缓冲后每行</span></span><br><span class="line">        <span class="comment"># 立即落盘，tail -f 也才能实时跟随。</span></span><br><span class="line">        <span class="built_in">stdbuf</span> -oL <span class="string">&quot;<span class="variable">$BUILD_DIR</span>/subscriber&quot;</span> &gt; <span class="string">&quot;<span class="variable">$LOG_DIR</span>/subscriber.log&quot;</span> 2&gt;&amp;1 &amp;</span><br><span class="line">        <span class="built_in">echo</span> $! &gt; <span class="string">&quot;<span class="variable">$LOG_DIR</span>/subscriber.pid&quot;</span></span><br><span class="line">        <span class="built_in">sleep</span> 0.3</span><br><span class="line">        <span class="built_in">stdbuf</span> -oL <span class="string">&quot;<span class="variable">$BUILD_DIR</span>/publisher&quot;</span> &gt; <span class="string">&quot;<span class="variable">$LOG_DIR</span>/publisher.log&quot;</span> 2&gt;&amp;1 &amp;</span><br><span class="line">        <span class="built_in">echo</span> $! &gt; <span class="string">&quot;<span class="variable">$LOG_DIR</span>/publisher.pid&quot;</span></span><br><span class="line"></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;[run] 两端已启动。日志： <span class="variable">$LOG_DIR</span>/&quot;</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;[run] 下面跟随订阅端输出，Ctrl-C 退出跟随（进程仍在后台）。&quot;</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;[run] 停止： ./scripts/run.sh stop&quot;</span></span><br><span class="line">        <span class="built_in">echo</span></span><br><span class="line">        <span class="built_in">tail</span> -f <span class="string">&quot;<span class="variable">$LOG_DIR</span>/subscriber.log&quot;</span></span><br><span class="line">        ;;</span><br><span class="line">    stop)</span><br><span class="line">        stop_all</span><br><span class="line">        ;;</span><br><span class="line">    *)</span><br><span class="line">        <span class="built_in">echo</span> <span class="string">&quot;用法: <span class="variable">$0</span> &#123;pub|sub|both|stop&#125;&quot;</span> &gt;&amp;2</span><br><span class="line">        <span class="built_in">exit</span> 1</span><br><span class="line">        ;;</span><br><span class="line"><span class="keyword">esac</span></span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C-C/" rel="tag"># C/C++</a>
+              <a href="/tags/DDS/" rel="tag"># DDS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/08/19/C++_1/" rel="prev" title="一些 C++ 知识">
+      <i class="fa fa-chevron-left"></i> 一些 C++ 知识
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%85%88%E7%9C%8B%E4%B8%80%E4%B8%AA%E5%85%B7%E4%BD%93%E9%97%AE%E9%A2%98"><span class="nav-number">1.</span> <span class="nav-text">1. 先看一个具体问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-DDS-%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9A%E4%B8%89%E7%A7%8D%E8%8C%83%E5%BC%8F%E7%9A%84%E5%AF%B9%E6%AF%94"><span class="nav-number">2.</span> <span class="nav-text">2. DDS 是什么：三种范式的对比</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E2%80%9C%E4%BB%A5%E6%95%B0%E6%8D%AE%E4%B8%BA%E4%B8%AD%E5%BF%83%E2%80%9D-%E7%9A%84%E5%AE%9E%E9%99%85%E5%90%AB%E4%B9%89"><span class="nav-number">2.1.</span> <span class="nav-text">“以数据为中心” 的实际含义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E8%A7%86%E8%A7%92%E8%BD%AC%E6%8D%A2"><span class="nav-number">2.2.</span> <span class="nav-text">一个视角转换</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%85%88%E6%8A%8A%E4%BE%8B%E7%A8%8B%E8%B7%91%E8%B5%B7%E6%9D%A5"><span class="nav-number">3.</span> <span class="nav-text">3. 先把例程跑起来</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B%EF%BC%9AIDL%E3%80%81Topic%E3%80%81%E7%B1%BB%E5%9E%8B%E5%90%8D"><span class="nav-number">4.</span> <span class="nav-text">4. 数据模型：IDL、Topic、类型名</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%86%99-IDL"><span class="nav-number">4.1.</span> <span class="nav-text">为什么要写 IDL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IDL-%E5%88%B0-C-%E7%9A%84%E6%98%A0%E5%B0%84"><span class="nav-number">4.2.</span> <span class="nav-text">IDL 到 C++ 的映射</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Topic-%E5%90%8D%E5%AD%97-%E7%B1%BB%E5%9E%8B"><span class="nav-number">4.3.</span> <span class="nav-text">Topic &#x3D; 名字 + 类型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E5%9B%9B%E5%B1%82%E5%AE%9E%E4%BD%93%EF%BC%9A%E9%82%A3%E5%9B%9B%E8%A1%8C%E5%88%9D%E5%A7%8B%E5%8C%96%E5%90%84%E8%87%AA%E5%9C%A8%E5%81%9A%E4%BB%80%E4%B9%88"><span class="nav-number">5.</span> <span class="nav-text">5. 四层实体：那四行初始化各自在做什么</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DomainParticipant%EF%BC%9A%E5%9F%9F%E6%98%AF%E7%A1%AC%E9%9A%94%E7%A6%BB"><span class="nav-number">5.1.</span> <span class="nav-text">DomainParticipant：域是硬隔离</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Publisher-Subscriber%EF%BC%9A%E5%A4%9A%E6%95%B0%E6%83%85%E5%86%B5%E4%B8%8B%E6%98%AF%E7%BA%AF%E6%A0%B7%E6%9D%BF"><span class="nav-number">5.2.</span> <span class="nav-text">Publisher &#x2F; Subscriber：多数情况下是纯样板</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DataWriter-DataReader%EF%BC%9A%E7%9C%9F%E6%AD%A3%E7%9A%84%E4%B8%BB%E8%A7%92"><span class="nav-number">5.3.</span> <span class="nav-text">DataWriter &#x2F; DataReader：真正的主角</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E5%8F%91%E7%8E%B0%E6%9C%BA%E5%88%B6%EF%BC%9A%E6%B2%A1%E6%9C%89-broker%EF%BC%8C%E4%B8%A4%E7%AB%AF%E6%80%8E%E4%B9%88%E6%89%BE%E5%88%B0%E5%BD%BC%E6%AD%A4"><span class="nav-number">6.</span> <span class="nav-text">6. 发现机制：没有 broker，两端怎么找到彼此</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%95%E5%B1%82%EF%BC%9ARTPS-over-UDP"><span class="nav-number">6.1.</span> <span class="nav-text">底层：RTPS over UDP</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%B6%E6%AE%B5-1%EF%BC%9ASPDP-%E2%80%94%E2%80%94-%E6%89%BE%E5%88%B0%E5%AF%B9%E6%96%B9%E8%BF%9B%E7%A8%8B"><span class="nav-number">6.2.</span> <span class="nav-text">阶段 1：SPDP —— 找到对方进程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%B6%E6%AE%B5-2%EF%BC%9ASEDP-%E2%80%94%E2%80%94-%E4%BA%A4%E6%8D%A2%E7%AB%AF%E7%82%B9%E6%B8%85%E5%8D%95"><span class="nav-number">6.3.</span> <span class="nav-text">阶段 2：SEDP —— 交换端点清单</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E8%AE%BE%E8%AE%A1%E7%BB%86%E8%8A%82%EF%BC%9A%E5%8F%91%E7%8E%B0%E6%95%B0%E6%8D%AE%E5%92%8C%E7%94%A8%E6%88%B7%E6%95%B0%E6%8D%AE%E5%88%86%E5%BC%80%E5%A4%84%E7%90%86"><span class="nav-number">6.4.</span> <span class="nav-text">一个设计细节：发现数据和用户数据分开处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E6%B5%8B%EF%BC%9A%E8%BF%9E%E6%8E%A5%E5%BB%BA%E7%AB%8B%E8%A6%81%E5%A4%9A%E4%B9%85"><span class="nav-number">6.5.</span> <span class="nav-text">实测：连接建立要多久</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%82%A3%E5%BC%80%E5%A4%B4%E7%9A%84%E5%87%A0%E6%AC%A1-no-data-yet-%E6%98%AF%E6%80%8E%E4%B9%88%E6%9D%A5%E7%9A%84%EF%BC%9F"><span class="nav-number">6.6.</span> <span class="nav-text">那开头的几次 no data yet 是怎么来的？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-QoS%EF%BC%9A%E5%8C%B9%E9%85%8D%E6%98%AF%E4%B8%80%E4%BB%BD%E5%A5%91%E7%BA%A6%EF%BC%8C%E4%B8%8D%E6%98%AF%E9%85%8D%E7%BD%AE%E9%A1%B9"><span class="nav-number">7.</span> <span class="nav-text">7. QoS：匹配是一份契约，不是配置项</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%B7%E6%B1%82-%E6%8F%90%E4%BE%9B%E6%A8%A1%E5%9E%8B%EF%BC%88RxO%EF%BC%89"><span class="nav-number">7.1.</span> <span class="nav-text">请求&#x2F;提供模型（RxO）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Reliability%EF%BC%9A%E5%8F%AF%E9%9D%A0%E6%80%A7"><span class="nav-number">7.2.</span> <span class="nav-text">Reliability：可靠性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%AB%98%E9%A2%91%E5%AE%9E%E6%97%B6%E6%B5%81%E8%A6%81%E9%80%89-BestEffort"><span class="nav-number">7.3.</span> <span class="nav-text">为什么高频实时流要选 BestEffort</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%89-QoS-%E7%9A%84%E5%88%A4%E6%96%AD%E6%A0%87%E5%87%86%EF%BC%9A%E4%BC%A0%E7%9A%84%E6%98%AF%E7%8A%B6%E6%80%81%E8%BF%98%E6%98%AF%E4%BA%8B%E4%BB%B6"><span class="nav-number">7.4.</span> <span class="nav-text">选 QoS 的判断标准：传的是状态还是事件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#History%EF%BC%9A%E4%BF%9D%E7%95%99%E5%A4%9A%E5%B0%91%E5%8E%86%E5%8F%B2"><span class="nav-number">7.5.</span> <span class="nav-text">History：保留多少历史</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E4%BA%A7%E5%BF%AB%E4%BA%8E%E6%B6%88%E8%B4%B9%EF%BC%9A%E4%B8%AD%E9%97%B4%E5%B8%A7%E8%A2%AB%E4%B8%A2%E5%BC%83"><span class="nav-number">7.6.</span> <span class="nav-text">生产快于消费：中间帧被丢弃</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E8%AF%AD%E4%B9%89%E7%9A%84%E5%BF%85%E7%84%B6%E5%90%8E%E6%9E%9C%EF%BC%9A%E9%9D%99%E9%BB%98-%E2%89%A0-%E5%BD%92%E9%9B%B6"><span class="nav-number">7.7.</span> <span class="nav-text">状态语义的必然后果：静默 ≠ 归零</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B6%E4%BB%96-RxO-%E7%AD%96%E7%95%A5"><span class="nav-number">7.8.</span> <span class="nav-text">其他 RxO 策略</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#8-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B%EF%BC%9A%E6%95%B4%E4%BB%BD%E4%BE%8B%E7%A8%8B%E6%9C%80%E9%87%8D%E8%A6%81%E7%9A%84%E4%B8%80%E8%8A%82"><span class="nav-number">8.</span> <span class="nav-text">8. 线程模型：整份例程最重要的一节</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E6%B5%8B%EF%BC%9A8-%E6%9D%A1%E7%BA%BF%E7%A8%8B%E5%90%84%E8%87%AA%E7%9A%84%E8%81%8C%E8%B4%A3"><span class="nav-number">8.1.</span> <span class="nav-text">实测：8 条线程各自的职责</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%9E%E8%B0%83%E4%B8%8D%E5%9C%A8%E4%BD%A0%E7%9A%84%E7%BA%BF%E7%A8%8B%E4%B8%8A"><span class="nav-number">8.2.</span> <span class="nav-text">回调不在你的线程上</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%A6%E6%9D%9F%E4%B8%80%EF%BC%9A%E5%9B%9E%E8%B0%83%E4%B8%8E%E4%B8%BB%E5%BE%AA%E7%8E%AF%E5%85%B1%E4%BA%AB%E6%95%B0%E6%8D%AE%EF%BC%8C%E5%BF%85%E9%A1%BB%E5%8A%A0%E9%94%81"><span class="nav-number">8.3.</span> <span class="nav-text">约束一：回调与主循环共享数据，必须加锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%A6%E6%9D%9F%E4%BA%8C%EF%BC%9A%E5%9B%9E%E8%B0%83%E9%87%8C%E7%BB%9D%E5%AF%B9%E4%B8%8D%E8%83%BD%E5%81%9A%E9%87%8D%E6%B4%BB"><span class="nav-number">8.4.</span> <span class="nav-text">约束二：回调里绝对不能做重活</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E4%BA%A7%E8%80%85%E4%B8%8E%E6%B6%88%E8%B4%B9%E8%80%85%E8%8A%82%E6%8B%8D%E8%A7%A3%E8%80%A6"><span class="nav-number">8.5.</span> <span class="nav-text">生产者与消费者节拍解耦</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#info-valid-%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%85%E9%A1%BB%E5%88%A4"><span class="nav-number">8.6.</span> <span class="nav-text">info().valid() 为什么必须判</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#take-vs-read-%EF%BC%9A%E4%B8%80%E4%B8%AA%E5%AE%B9%E6%98%93%E8%B8%A9%E7%9A%84%E5%9D%91"><span class="nav-number">8.7.</span> <span class="nav-text">take() vs read()：一个容易踩的坑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E6%B5%8B%EF%BC%9A%E5%9B%9E%E8%B0%83%E9%87%8C%E7%94%A8-read-%E4%BC%9A%E6%80%8E%E6%A0%B7"><span class="nav-number">8.8.</span> <span class="nav-text">实测：回调里用 read() 会怎样</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9C%9F%E5%AE%9E%E5%8D%B1%E5%AE%B3%E6%98%AF%E9%80%BB%E8%BE%91%E9%94%99%E8%AF%AF%EF%BC%8C%E4%B8%8D%E6%98%AF%E6%80%A7%E8%83%BD%E7%88%86%E7%82%B8"><span class="nav-number">8.9.</span> <span class="nav-text">真实危害是逻辑错误，不是性能爆炸</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-number">8.10.</span> <span class="nav-text">结论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E9%98%B6%E6%A8%A1%E5%BC%8F%EF%BC%9A%E7%8B%AC%E5%8D%A0%E7%BA%BF%E7%A8%8B"><span class="nav-number">8.11.</span> <span class="nav-text">进阶模式：独占线程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#9-%E5%AE%9E%E4%BE%8B%E4%B8%8E-Key%EF%BC%9A%E4%BB%8E%E6%B6%88%E6%81%AF%E7%AE%A1%E9%81%93%E5%88%B0%E5%88%86%E5%B8%83%E5%BC%8F%E8%A1%A8"><span class="nav-number">9.</span> <span class="nav-text">9. 实例与 Key：从消息管道到分布式表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BD%93%E5%89%8D%E7%8A%B6%E6%80%81%EF%BC%9Akeyless"><span class="nav-number">9.1.</span> <span class="nav-text">当前状态：keyless</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E4%B8%8A-key-%E4%BC%9A%E6%80%8E%E6%A0%B7"><span class="nav-number">9.2.</span> <span class="nav-text">加上 key 会怎样</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E6%B5%8B%E5%AF%B9%E7%85%A7"><span class="nav-number">9.3.</span> <span class="nav-text">实测对照</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%99%E4%B8%AA%E8%83%BD%E5%8A%9B%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E7%94%A8"><span class="nav-number">9.4.</span> <span class="nav-text">这个能力什么时候用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#10-%E6%B5%8B%E9%87%8F%E5%BB%B6%E8%BF%9F%EF%BC%9A%E4%B8%80%E4%B8%AA%E6%B5%8B%E9%94%99%E4%BA%86%E7%9A%84%E6%95%B0%E5%AD%97"><span class="nav-number">10.</span> <span class="nav-text">10. 测量延迟：一个测错了的数字</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%B0%E8%B1%A1"><span class="nav-number">10.1.</span> <span class="nav-text">现象</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9C%9F%E5%AE%9E%E6%9C%BA%E5%88%B6%EF%BC%9A%E6%8B%8D%E9%A2%91%EF%BC%88%E7%9B%B8%E4%BD%8D%E6%BC%82%E7%A7%BB%EF%BC%89"><span class="nav-number">10.2.</span> <span class="nav-text">真实机制：拍频（相位漂移）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A3%E7%A1%AE%E7%9A%84%E6%B5%8B%E6%B3%95%EF%BC%9A%E5%9C%A8%E5%9B%9E%E8%B0%83%E9%87%8C%E6%89%93%E7%82%B9"><span class="nav-number">10.3.</span> <span class="nav-text">正确的测法：在回调里打点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%89%E5%B1%82%E6%95%99%E8%AE%AD"><span class="nav-number">10.4.</span> <span class="nav-text">三层教训</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%BA%E5%B8%A6%EF%BC%9A%E8%B7%A8%E6%9C%BA%E5%99%A8%E6%97%B6%E8%BF%99%E4%B8%AA%E5%87%8F%E6%B3%95%E6%A0%B9%E6%9C%AC%E4%B8%8D%E6%88%90%E7%AB%8B"><span class="nav-number">10.5.</span> <span class="nav-text">顺带：跨机器时这个减法根本不成立</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#11-%E9%9D%99%E9%BB%98%E5%A4%B1%E6%95%88%EF%BC%9ADDS-%E6%9C%80%E5%8F%8D%E7%9B%B4%E8%A7%89%E7%9A%84%E5%9C%B0%E6%96%B9"><span class="nav-number">11.</span> <span class="nav-text">11. 静默失效：DDS 最反直觉的地方</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%8E%E4%B9%88%E4%B8%BB%E5%8A%A8%E5%8F%91%E7%8E%B0%E2%80%9D%E6%B2%A1%E8%BF%9E%E4%B8%8A%E2%80%9D"><span class="nav-number">11.1.</span> <span class="nav-text">怎么主动发现”没连上”</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%82%E5%AF%9F%E5%8F%91%E7%8E%B0%E8%BF%87%E7%A8%8B%E7%9A%84%E5%B7%A5%E5%85%B7"><span class="nav-number">11.2.</span> <span class="nav-text">观察发现过程的工具</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E9%9A%90%E8%94%BD%E7%9A%84%E5%9D%91%EF%BC%9A%E5%A4%9A%E4%B8%AA%E5%8F%91%E5%B8%83%E8%80%85"><span class="nav-number">11.3.</span> <span class="nav-text">一个隐蔽的坑：多个发布者</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E6%BC%94%E8%BF%9B%E7%9A%84%E5%9D%91%EF%BC%9A%E5%8F%AF%E6%89%A9%E5%B1%95%E6%80%A7"><span class="nav-number">11.4.</span> <span class="nav-text">版本演进的坑：可扩展性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#12-%E9%80%9F%E6%9F%A5%E8%A1%A8%E4%B8%8E%E5%8A%A8%E6%89%8B%E5%AE%9E%E9%AA%8C"><span class="nav-number">12.</span> <span class="nav-text">12. 速查表与动手实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9D%99%E9%BB%98%E5%A4%B1%E6%95%88%E6%8E%92%E6%9F%A5%E6%B8%85%E5%8D%95"><span class="nav-number">12.1.</span> <span class="nav-text">静默失效排查清单</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5%E4%B8%80%E5%8F%A5%E8%AF%9D%E6%80%BB%E7%BB%93"><span class="nav-number">12.2.</span> <span class="nav-text">核心概念一句话总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%BA%E8%AE%AE%E5%8A%A8%E6%89%8B%E5%81%9A%E7%9A%84%E5%AE%9E%E9%AA%8C"><span class="nav-number">12.3.</span> <span class="nav-text">建议动手做的实验</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%E5%BD%95%E4%B8%80%EF%BC%9A%E6%9C%AC%E6%96%87%E5%AE%9E%E6%B5%8B%E6%95%B0%E6%8D%AE%E6%B1%87%E6%80%BB"><span class="nav-number">13.</span> <span class="nav-text">附录一：本文实测数据汇总</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%E5%BD%95%E4%BA%8C%EF%BC%9A%E5%AE%8C%E6%95%B4%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="nav-number">14.</span> <span class="nav-text">附录二：完整源代码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#idl-sensor-idl%EF%BC%8828-%E8%A1%8C%EF%BC%89"><span class="nav-number">14.1.</span> <span class="nav-text">idl&#x2F;sensor.idl（28 行）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#publisher-cpp%EF%BC%8879-%E8%A1%8C%EF%BC%89"><span class="nav-number">14.2.</span> <span class="nav-text">publisher.cpp（79 行）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#subscriber-cpp%EF%BC%88166-%E8%A1%8C%EF%BC%89"><span class="nav-number">14.3.</span> <span class="nav-text">subscriber.cpp（166 行）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CMakeLists-txt%EF%BC%88113-%E8%A1%8C%EF%BC%89"><span class="nav-number">14.4.</span> <span class="nav-text">CMakeLists.txt（113 行）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#scripts-build-sh%EF%BC%8825-%E8%A1%8C%EF%BC%89"><span class="nav-number">14.5.</span> <span class="nav-text">scripts&#x2F;build.sh（25 行）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#scripts-run-sh%EF%BC%8883-%E8%A1%8C%EF%BC%89"><span class="nav-number">14.6.</span> <span class="nav-text">scripts&#x2F;run.sh（83 行）</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">82</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'Ov23liistS5Y3k9rr8rY',
+      clientSecret: 'e34ec40459ac4070e884271ae281f6d2315d1d98',
+      repo        : 'hccc1203.github.io',
+      owner       : 'hccc1203',
+      admin       : ['hccc1203'],
+      id          : '1ed81e56914e56f7626aa45f2156800b',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+<script src="/js/typewriter.js"></script>
+<script src="/js/dark-mode.js"></script>
+<script src="/js/particles.js"></script>
+
+</body>
+</html>
