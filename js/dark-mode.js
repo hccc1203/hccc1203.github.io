@@ -40,8 +40,21 @@
     apply(true);
   } else if (stored === 'light') {
     apply(false);
+  } else {
+    // 未手动选择过时跟随系统，并监听系统切换
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    apply(mq.matches);
+    var onSysChange = function (e) {
+      var s = null;
+      try { s = localStorage.getItem(KEY); } catch (err) { /* ignore */ }
+      if (s === null) apply(e.matches);
+    };
+    if (mq.addEventListener) {
+      mq.addEventListener('change', onSysChange);
+    } else if (mq.addListener) {
+      mq.addListener(onSysChange);
+    }
   }
 
-  // 未手动选择过时跟随系统（darkmode: true 的 prefers-color-scheme 行为）
   document.body.appendChild(btn);
 })();
