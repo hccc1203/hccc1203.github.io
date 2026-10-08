@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1.2.4/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="整理了一些可能会问到的常见问题（sim2real相关）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="面试回答汇总(1) Sim2real、机器人系统开发">
+<meta property="og:url" content="https://hccc1203.github.io/2026/10/08/JobQA-1/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="整理了一些可能会问到的常见问题（sim2real相关）">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-10-08T13:58:22.000Z">
+<meta property="article:modified_time" content="2026-10-08T14:44:20.456Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="26秋招">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/10/08/JobQA-1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>面试回答汇总(1) Sim2real、机器人系统开发 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/hccc1203" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/10/08/JobQA-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          面试回答汇总(1) Sim2real、机器人系统开发
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-08 21:58:22" itemprop="dateCreated datePublished" datetime="2026-10-08T21:58:22+08:00">2026-10-08</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="机器人系统相关"><a href="#机器人系统相关" class="headerlink" title="机器人系统相关"></a>机器人系统相关</h2><p><strong>Q1.为什么在机器人系统设计中使用 DDS，而不是直接使用共享内存？</strong></p>
+<blockquote>
+<p>A：DDS 提供了发布订阅机制，进程之间通过 Topic 传输数据，不需要相互持有对象或直接依赖对方的实现。对我们的控制架构来说，各个模块有独立职责，用 DDS 可以降低模块耦合，方便后续修改和扩展。DDS 还支持 QoS 配置，例如可靠性、历史深度和数据有效期。不过 DDS 不一定比共享内存延迟更低。如果对极低延迟、确定性有很高要求，共享内存或者进程内通信可能更合适，最终需要根据数据量和实测延迟决定。</p>
+</blockquote>
+<h2 id="强化学习策略实机部署"><a href="#强化学习策略实机部署" class="headerlink" title="强化学习策略实机部署"></a>强化学习策略实机部署</h2><p><strong>Q2.一个强化学习策略从训练完成到真实机器人运行，需要经过哪些步骤？</strong></p>
+<blockquote>
+<p>A：首先训练端导出策略网络，例如 ONNX 模型。部署端加载模型并初始化推理 Session，然后按照训练端定义构建 Observation，包括机体姿态、角速度、关节位置速度、历史 Action 和机器人运动指令等。Observation 经过归一化、历史帧堆叠后输入神经网络，获得模型输出的 Action。Action 还需要经过缩放和必要的限幅，转换为实际控制目标，例如关节目标位置，再由底层控制器产生电机指令。最后需要在实机上检查策略频率、控制延迟、观测数据一致性以及异常处理机制。</p>
+</blockquote>
+<p><strong>Q3.你接触过的强化学习策略有哪些 Observation？</strong></p>
+<blockquote>
+<p>A：我接触过的策略使用历史观测，单帧 34 维，历史长度为 10，最终组成 340 维输入。单帧主要包含机体角速度、重力投影、运动速度、关节状态、历史动作和运动模式等信息。使用历史观测的原因之一，是单帧状态可能不足以反映系统动态变化，历史信息可以帮助策略推断部分难以直接观测的动态状态。</p>
+</blockquote>
+<p><strong>Q4.为什么使用重力投影，而不是直接输入 Roll、Pitch、Yaw？</strong></p>
+<blockquote>
+<p>A：重力投影能描述机器人相对于重力方向的倾斜姿态，而且不依赖绝对航向角。对于平衡控制来说，它通常比直接使用欧拉角更适合作为姿态相关观测。但具体是否还需要 Yaw 相关信息，取决于任务的运动目标和坐标系设计。</p>
+</blockquote>
+<p><strong>Q5.ONNX 模型的输出是什么？为什么不可以直接用于控制电机？</strong></p>
+<blockquote>
+<p>A：神经网络输出的 Action 不一定是实际物理量，它可能是归一化动作，也可能表示默认关节位置附近的偏移量。如果输出定义为关节位置偏移，需要通过动作缩放恢复为目标位置，然后底层关节控制器再根据目标位置、实际位置和实际速度计算控制力矩，如果直接把归一化输出作为电机位置或者力矩，就会产生量纲和控制语义错误。</p>
+</blockquote>
+<p><strong>Q6.为什么 RL 推理频率是 40 Hz，电机控制频率却可能更高？</strong></p>
+<blockquote>
+<p>A：因为强化学习策略通常负责生成相对高层的关节目标，而底层电机控制器负责以更高频率跟踪这些目标。例如，Policy 40 Hz，每 25 ms 更新一次 Action；底层控制器可以在这段时间内使用最近一次有效目标，继续运行高频关节闭环。这样能够降低网络推理的实时计算负担，同时保留底层控制的快速响应能力。但这也意味着策略输出的保持方式、控制延迟和执行器响应会影响实际控制效果，训练时最好考虑这些因素。</p>
+</blockquote>
+<h2 id="Sim2real-专项问题"><a href="#Sim2real-专项问题" class="headerlink" title="Sim2real 专项问题"></a>Sim2real 专项问题</h2><p><strong>Q7.什么是 Sim2real？你在项目中做了哪些工作？</strong></p>
+<blockquote>
+<p>A：Sim2real 是将仿真环境中开发或训练的控制策略迁移到真实机器人上运行的过程。难点主要是仿真和真实机器人的差异，包括动力学模型不准确、执行器响应延迟、传感器噪声和控制链路时延等。我在项目中主要负责部署侧，没有直接参与训练端的系统辨识和域随机化。我的工作是把训练好的 ONNX 策略接入 RK3588 的运控框架，完成模型加载、推理实例管理和底层关节控制链路的适配，同时处理不同运动策略之间的状态衔接。我认为部署侧很重要的一点是保证训练时的控制语义和实机执行时的控制语义一致，否则即使策略本身训练得很好，也可能无法正常运行。</p>
+</blockquote>
+<p><strong>Q8.什么是 Sim2real gap？有哪些具体表现？</strong></p>
+<blockquote>
+<p>A：Sim-to-Real Gap 就是仿真系统和真实物理系统之间存在的差异。比如仿真中的关节电机能快速响应目标位置，但真实电机存在驱动器延迟、力矩限制和机械摩擦。另外，仿真传感器通常比较理想，而实机 IMU、编码器会有测量噪声、偏置和时间同步误差。这些差异会导致同一个 Action 在仿真和实机上产生不同的运动结果，严重时可能造成机器人震荡甚至摔倒。</p>
+</blockquote>
+<p><strong>Q9.如果你部署的 Policy 在仿真中正常，但实机一直震荡，你怎么排查？</strong></p>
+<blockquote>
+<p>A：一、先确认机器人是否安全，必要时停机，降低动作幅度。二、检查关节顺序、符号、单位、坐标系及 Action 缩放。三、检查 Observation 是否与训练一致。四、检查策略频率、历史帧间隔以及输入数据是否过期。五、检查关节 PD 参数、力矩饱和和电机响应。六、记录仿真和实机相同测试条件下的数据，定位差异。</p>
+</blockquote>
+<p><strong>Q10.有哪些因素会造成sim2real gap？</strong></p>
+<blockquote>
+<p>A：动力学模型误差、执行器差异、接触模型误差、传感器与状态估计误差、控制系统差异、策略部署不一致等等。</p>
+</blockquote>
+<h2 id="多策略在线仲裁与热切换"><a href="#多策略在线仲裁与热切换" class="headerlink" title="多策略在线仲裁与热切换"></a>多策略在线仲裁与热切换</h2><p><strong>Q11.为什么需要多策略热切换？</strong></p>
+<blockquote>
+<p>A：轮腿机器人在不同运动阶段需要不同的控制行为，例如站立、坐下和摔倒恢复。如果每次切换运动模式都销毁当前模型，再同步加载新的 ONNX 模型，就可能在加载期间造成推理中断，影响控制实时性。因此可以提前加载需要使用的策略实例，切换时只修改当前参与推理的实例。这样能够避免切换阶段重复进行模型加载，降低切换耗时。但仅仅切换模型实例还不够，还要处理两个策略之间 Observation 历史、控制目标和状态机的衔接。</p>
+</blockquote>
+<h2 id="MCU-架构、LQR-VMC-与实时控制"><a href="#MCU-架构、LQR-VMC-与实时控制" class="headerlink" title="MCU 架构、LQR&#x2F;VMC 与实时控制"></a>MCU 架构、LQR&#x2F;VMC 与实时控制</h2><p><strong>Q12.如何保证 MCU 控制循环的实时性？</strong></p>
+<blockquote>
+<p>A：首先要明确控制周期，比如目标 1 kHz，对应每个周期 1 ms。<br>然后统计关键控制模块的执行时间，包括状态更新、运动学计算、控制算法和指令下发。需要保证这些任务能够在周期截止时间之前完成，同时避免控制循环中出现不确定耗时的操作，例如阻塞式通信、动态内存分配或大量日志输出。还要关注中断优先级、共享数据访问方式，以及系统在高负载情况下的最坏执行时间。</p>
+</blockquote>
+<p><strong>Q13.LQR 和 PID 有什么区别？为什么轮腿机器人使用 LQR？</strong></p>
+<blockquote>
+<p>A：PID 通常基于控制误差进行反馈，结构比较直观，适合大量单输入单输出控制问题。LQR 是基于状态空间模型的最优状态反馈控制方法，考虑多个状态量和控制输入之间的耦合。例如轮腿机器人平衡时，机体倾角、倾角速度、轮子位置和速度之间存在耦合。LQR 通过选择状态权重 Q 和控制权重 R，求得反馈矩阵 K。它的优势在于能够系统性地处理多状态耦合问题，但效果依赖模型准确性、工作点和控制约束。</p>
+</blockquote>
+<p><strong>Q14.VMC是什么？为什么需要雅可比矩阵？</strong></p>
+<blockquote>
+<p>A：VMC 是虚拟模型控制，可以在机器人机体和足端等任务空间中设计虚拟力或力矩，再映射到实际关节执行器上。例如希望轮腿机器人的腿部产生某个支撑方向的力，就需要将任务空间的力转换为髋关节和膝关节的驱动力矩。雅可比矩阵描述关节速度和任务空间速度之间的映射。对于轮腿机器人的 VMC，任务空间还可能采用虚拟腿长和虚拟腿角度，此时广义力可以表示为腿部轴向力与虚拟腿力矩，但必须注意坐标定义和量纲。</p>
+</blockquote>
+<p><strong>Q15.什么是逆 VMC？为什么要用它？</strong></p>
+<blockquote>
+<p>A：与通过虚拟力计算关节力矩不同，逆向映射可以根据关节力矩估算任务空间对应的广义力。如果雅可比奇异、系统存在额外约束，或者关节力矩包含重力、摩擦与惯性补偿等分量，就不能直接把结果当作真实地面接触力。对于真实机器人，还需要结合动力学、接触状态及传感器反馈估计外部作用力。</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/26%E7%A7%8B%E6%8B%9B/" rel="tag"># 26秋招</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/09/03/DDS%E5%85%A5%E9%97%A8%E6%8C%87%E5%8D%97/" rel="prev" title="DDS入门指南">
+      <i class="fa fa-chevron-left"></i> DDS入门指南
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%BA%E5%99%A8%E4%BA%BA%E7%B3%BB%E7%BB%9F%E7%9B%B8%E5%85%B3"><span class="nav-number">1.</span> <span class="nav-text">机器人系统相关</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0%E7%AD%96%E7%95%A5%E5%AE%9E%E6%9C%BA%E9%83%A8%E7%BD%B2"><span class="nav-number">2.</span> <span class="nav-text">强化学习策略实机部署</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sim2real-%E4%B8%93%E9%A1%B9%E9%97%AE%E9%A2%98"><span class="nav-number">3.</span> <span class="nav-text">Sim2real 专项问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E7%AD%96%E7%95%A5%E5%9C%A8%E7%BA%BF%E4%BB%B2%E8%A3%81%E4%B8%8E%E7%83%AD%E5%88%87%E6%8D%A2"><span class="nav-number">4.</span> <span class="nav-text">多策略在线仲裁与热切换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MCU-%E6%9E%B6%E6%9E%84%E3%80%81LQR-VMC-%E4%B8%8E%E5%AE%9E%E6%97%B6%E6%8E%A7%E5%88%B6"><span class="nav-number">5.</span> <span class="nav-text">MCU 架构、LQR&#x2F;VMC 与实时控制</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">83</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'Ov23liistS5Y3k9rr8rY',
+      clientSecret: 'e34ec40459ac4070e884271ae281f6d2315d1d98',
+      repo        : 'hccc1203.github.io',
+      owner       : 'hccc1203',
+      admin       : ['hccc1203'],
+      id          : 'a3c5db0b4edcbff8bf9db84824c5c98e',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+<script src="/js/typewriter.js"></script>
+<script src="/js/dark-mode.js"></script>
+<script src="/js/particles.js"></script>
+
+</body>
+</html>
