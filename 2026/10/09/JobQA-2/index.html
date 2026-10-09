@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1.2.4/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="某智驾公司 AI 算法实习生一面面经技术问题整理">
+<meta property="og:type" content="article">
+<meta property="og:title" content="某智驾公司 AI 算法实习生一面面经｜技术问题整理">
+<meta property="og:url" content="https://hccc1203.github.io/2026/10/09/JobQA-2/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="某智驾公司 AI 算法实习生一面面经技术问题整理">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-10-09T08:18:02.000Z">
+<meta property="article:modified_time" content="2026-10-09T08:43:28.794Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="26秋招">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/10/09/JobQA-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>某智驾公司 AI 算法实习生一面面经｜技术问题整理 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/hccc1203" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/10/09/JobQA-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          某智驾公司 AI 算法实习生一面面经｜技术问题整理
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-09 16:18:02" itemprop="dateCreated datePublished" datetime="2026-10-09T16:18:02+08:00">2026-10-09</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h4 id="一、项目架构与技术选型（自主行进智能车）"><a href="#一、项目架构与技术选型（自主行进智能车）" class="headerlink" title="一、项目架构与技术选型（自主行进智能车）"></a>一、项目架构与技术选型（自主行进智能车）</h4><p>Q1.介绍一下自主行进智能车项目，包括整体系统架构与实现方案。</p>
+<p>Q2.你在这个项目中承担什么角色？是否是主要负责人？</p>
+<p>Q3.如果项目主要由你来做，当时进行技术选型主要考虑了哪些因素？</p>
+<p>Q4.为什么选择多线程架构？相对于原先的串行处理方式，有什么考虑？</p>
+<p>Q5.为什么没有使用 ROS，而选择自行搭建多线程处理框架？</p>
+<p>Q6.视觉模型是在 CPU 上运行，还是在 NPU 上运行？</p>
+<p>Q7.模型是谁训练的？你负责模型训练，还是负责部署与系统集成？</p>
+<h4 id="二、上下位机通信与异常处理"><a href="#二、上下位机通信与异常处理" class="headerlink" title="二、上下位机通信与异常处理"></a>二、上下位机通信与异常处理</h4><p>Q8.上下位机之间通过串口发送的数据主要是什么？是不是控制命令？</p>
+<p>Q9.上下位机通信有哪些异常处理或保护机制？</p>
+<h4 id="三、视觉感知、路径跟踪与避障"><a href="#三、视觉感知、路径跟踪与避障" class="headerlink" title="三、视觉感知、路径跟踪与避障"></a>三、视觉感知、路径跟踪与避障</h4><p>Q10.这辆自主行进智能车具备导航功能吗？只能前进后退，还是也能转弯？</p>
+<p>Q11.车辆主要依靠识别赛道线行驶吗？是否需要全局导航或建图？</p>
+<p>Q12.YOLO 在系统中承担什么任务？是用于车道线检测，还是标志物识别？</p>
+<p>Q13.除了车道线跟踪和标志物识别，这个比赛还要求车辆完成哪些任务？</p>
+<p>Q14.避障时的路径规划是如何实现的？</p>
+<p>Q15.赛道有几条车道？如果唯一车道上出现障碍物，车辆怎么绕行？</p>
+<p>Q16.如果障碍物放在车道正中间，车辆会怎么处理？</p>
+<h4 id="四、车辆动力学与项目复盘"><a href="#四、车辆动力学与项目复盘" class="headerlink" title="四、车辆动力学与项目复盘"></a>四、车辆动力学与项目复盘</h4><p>Q17.你觉得这个项目中有哪些地方做得不够好？</p>
+<p>Q18.与排名更高的队伍相比，你认为差距在哪里？</p>
+<p>Q19.车身重心的高低，对车辆控制的关键影响是什么？</p>
+<h4 id="五、下位机控制架构"><a href="#五、下位机控制架构" class="headerlink" title="五、下位机控制架构"></a>五、下位机控制架构</h4><p>Q20.TC264 下位机采用什么软件控制架构？是否是裸机逻辑控制？</p>
+<p>Q21.下位机是否主要通过接收中断获取命令，再控制电机执行？</p>
+<p>Q22.为什么下位机没有采用实时操作系统？</p>
+<h4 id="六、轮腿机器人与强化学习-Policy-部署"><a href="#六、轮腿机器人与强化学习-Policy-部署" class="headerlink" title="六、轮腿机器人与强化学习 Policy 部署"></a>六、轮腿机器人与强化学习 Policy 部署</h4><p>Q23.当前轮腿机器人实习工作，主要是负责强化学习策略（Policy）的部署吗？</p>
+<p>Q24.你提到的 Policy“无缝切换”，具体指什么？</p>
+<p>Q25.从一个 Policy 切换到另一个 Policy，具体是怎么实现的？</p>
+<p>Q26.例如从行走切换到坐下，切换过程是怎样的？</p>
+<p>Q27.如何判断机器人已经坐下？</p>
+<p>Q28.你提到的电机控制“无跳变”，具体是什么意思？</p>
+<p>Q29.如何实现 Policy 切换时的“无跳变”？</p>
+<p>Q30.这里的切换处理，相当于插值吗？</p>
+<p>Q31.SoC 上的运控任务为什么只分配了部分 CPU 核心？其他核心还承担哪些任务？</p>
+<h4 id="七、MCU-系统与代码重构"><a href="#七、MCU-系统与代码重构" class="headerlink" title="七、MCU 系统与代码重构"></a>七、MCU 系统与代码重构</h4><p>Q32.轮腿机器人 MCU 侧运行实时操作系统吗？</p>
+<p>Q33.你所说的 MCU 代码重构，具体重构了哪些内容？</p>
+<p>Q34.这项重构工作是你主动发现问题后提出的，还是 Leader 安排的？</p>
+<h4 id="八、AI-辅助开发与代码质量"><a href="#八、AI-辅助开发与代码质量" class="headerlink" title="八、AI 辅助开发与代码质量"></a>八、AI 辅助开发与代码质量</h4><p>Q35.如果使用 AI 来重构代码，你如何保证重构质量？</p>
+<p>Q36.你具体是怎么进行代码 Review 的？</p>
+<p>Q37.你们目前主要使用什么 AI 模型或编程工具？</p>
+<h4 id="九、故障排查与调试"><a href="#九、故障排查与调试" class="headerlink" title="九、故障排查与调试"></a>九、故障排查与调试</h4><p>Q38.你有没有遇到过比较难定位的崩溃或 Bug？</p>
+<p>Q39.能否举一个花费较长时间分析、定位和解决的具体问题？</p>
+<h4 id="十、编程语言与实时系统基础"><a href="#十、编程语言与实时系统基础" class="headerlink" title="十、编程语言与实时系统基础"></a>十、编程语言与实时系统基础</h4><p>Q40.你主要使用 C++ 开发吗？还是 C 和 C++ 都使用？</p>
+<p>Q41.之前笔试中有一道题没有完成，是因为不太会吗？</p>
+<p>Q42.你对现代 C++ 的掌握情况如何？</p>
+<p>Q43.你对实时操作系统了解多少？</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/26%E7%A7%8B%E6%8B%9B/" rel="tag"># 26秋招</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/08/JobQA-1/" rel="prev" title="面试回答汇总(1) Sim2real、机器人系统开发">
+      <i class="fa fa-chevron-left"></i> 面试回答汇总(1) Sim2real、机器人系统开发
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/10/10/JobQA-3/" rel="next" title="某公司机器人运动控制工程师一面面经｜技术问题整理">
+      某公司机器人运动控制工程师一面面经｜技术问题整理 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E9%A1%B9%E7%9B%AE%E6%9E%B6%E6%9E%84%E4%B8%8E%E6%8A%80%E6%9C%AF%E9%80%89%E5%9E%8B%EF%BC%88%E8%87%AA%E4%B8%BB%E8%A1%8C%E8%BF%9B%E6%99%BA%E8%83%BD%E8%BD%A6%EF%BC%89"><span class="nav-number">1.</span> <span class="nav-text">一、项目架构与技术选型（自主行进智能车）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E4%B8%8A%E4%B8%8B%E4%BD%8D%E6%9C%BA%E9%80%9A%E4%BF%A1%E4%B8%8E%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">二、上下位机通信与异常处理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E8%A7%86%E8%A7%89%E6%84%9F%E7%9F%A5%E3%80%81%E8%B7%AF%E5%BE%84%E8%B7%9F%E8%B8%AA%E4%B8%8E%E9%81%BF%E9%9A%9C"><span class="nav-number">3.</span> <span class="nav-text">三、视觉感知、路径跟踪与避障</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%BD%A6%E8%BE%86%E5%8A%A8%E5%8A%9B%E5%AD%A6%E4%B8%8E%E9%A1%B9%E7%9B%AE%E5%A4%8D%E7%9B%98"><span class="nav-number">4.</span> <span class="nav-text">四、车辆动力学与项目复盘</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E4%B8%8B%E4%BD%8D%E6%9C%BA%E6%8E%A7%E5%88%B6%E6%9E%B6%E6%9E%84"><span class="nav-number">5.</span> <span class="nav-text">五、下位机控制架构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E8%BD%AE%E8%85%BF%E6%9C%BA%E5%99%A8%E4%BA%BA%E4%B8%8E%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0-Policy-%E9%83%A8%E7%BD%B2"><span class="nav-number">6.</span> <span class="nav-text">六、轮腿机器人与强化学习 Policy 部署</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%83%E3%80%81MCU-%E7%B3%BB%E7%BB%9F%E4%B8%8E%E4%BB%A3%E7%A0%81%E9%87%8D%E6%9E%84"><span class="nav-number">7.</span> <span class="nav-text">七、MCU 系统与代码重构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%AB%E3%80%81AI-%E8%BE%85%E5%8A%A9%E5%BC%80%E5%8F%91%E4%B8%8E%E4%BB%A3%E7%A0%81%E8%B4%A8%E9%87%8F"><span class="nav-number">8.</span> <span class="nav-text">八、AI 辅助开发与代码质量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B9%9D%E3%80%81%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E4%B8%8E%E8%B0%83%E8%AF%95"><span class="nav-number">9.</span> <span class="nav-text">九、故障排查与调试</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%81%E3%80%81%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E4%B8%8E%E5%AE%9E%E6%97%B6%E7%B3%BB%E7%BB%9F%E5%9F%BA%E7%A1%80"><span class="nav-number">10.</span> <span class="nav-text">十、编程语言与实时系统基础</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">85</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'Ov23liistS5Y3k9rr8rY',
+      clientSecret: 'e34ec40459ac4070e884271ae281f6d2315d1d98',
+      repo        : 'hccc1203.github.io',
+      owner       : 'hccc1203',
+      admin       : ['hccc1203'],
+      id          : 'f1e29fe005ce76debb53dd6cbe351447',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+<script src="/js/typewriter.js"></script>
+<script src="/js/dark-mode.js"></script>
+<script src="/js/particles.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1.2.4/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="某计算机公司机器人运动控制工程师，面试官问题整理">
+<meta property="og:type" content="article">
+<meta property="og:title" content="某公司机器人运动控制工程师一面面经｜技术问题整理">
+<meta property="og:url" content="https://hccc1203.github.io/2026/10/10/JobQA-3/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="某计算机公司机器人运动控制工程师，面试官问题整理">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-10-10T08:18:02.000Z">
+<meta property="article:modified_time" content="2026-10-09T08:46:27.591Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="26秋招">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/10/10/JobQA-3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>某公司机器人运动控制工程师一面面经｜技术问题整理 | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/hccc1203" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/10/10/JobQA-3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          某公司机器人运动控制工程师一面面经｜技术问题整理
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-10-10 16:18:02" itemprop="dateCreated datePublished" datetime="2026-10-10T16:18:02+08:00">2026-10-10</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="某公司机器人运动控制工程师一面面经｜技术问题整理"><a href="#某公司机器人运动控制工程师一面面经｜技术问题整理" class="headerlink" title="某公司机器人运动控制工程师一面面经｜技术问题整理"></a>某公司机器人运动控制工程师一面面经｜技术问题整理</h2><h3 id="一、智能车项目与个人贡献"><a href="#一、智能车项目与个人贡献" class="headerlink" title="一、智能车项目与个人贡献"></a>一、智能车项目与个人贡献</h3><p>Q1.介绍一下你获得全国特等奖的自主行进智能车项目：团队有几个人？你是什么角色？主要负责了哪些工作？</p>
+<p>Q2.项目使用的百度 EdgeBoard 是什么 SoC 平台？底层芯片来自哪家厂商？</p>
+<p>Q3.你在大二就担任项目负责人，之前有编程基础吗？高中接触过嵌入式开发吗？参加过哪些相关竞赛？</p>
+<p>Q4.在赛题和指定硬件相近的情况下，你认为你们拿到全国特等奖的决定性技术因素是什么？具体做了哪些更优秀的设计或优化？</p>
+<p>Q5.项目使用的是赛事官方提供的示例代码，还是你们自行实现的？多线程架构是在什么基础上开发的？</p>
+<p>Q6.上、下位机代码都是你写的吗？与上一届的项目代码相比，有哪些继承和重写？</p>
+<h3 id="二、Linux-多线程、数据同步与死锁"><a href="#二、Linux-多线程、数据同步与死锁" class="headerlink" title="二、Linux 多线程、数据同步与死锁"></a>二、Linux 多线程、数据同步与死锁</h3><p>Q7.你提到由串行改为多线程，具体是针对哪些任务做并行化？一共划分了几个线程？</p>
+<p>Q8.图像采集、基础赛道识别和 AI 推理分别在不同线程中运行，线程之间如何进行数据同步？</p>
+<p>Q9.图像数据是怎样分发给不同处理线程的？是否使用了多个队列？</p>
+<p>Q10.基础赛道识别与 AI 推理速率不同，如何处理不同帧的结果之间存在时间差的问题？</p>
+<p>Q11.如果用时间戳做同步，能解决 AI 推理速度较慢带来的延迟吗？这样是否又需要等待推理完成？</p>
+<p>Q12.如果基础赛道识别始终不等待 AI 推理，那么两路结果是怎样共同参与后续处理的？如果等待，会怎样影响原来的并行收益？</p>
+<p>Q13.原来的串行程序是采集一帧、推理处理完成后才采集下一帧吗？多线程改造具体改变了哪一部分执行流程？</p>
+<p>Q14.多线程与线程安全队列中可能出现死锁。什么情况下会发生死锁？请用两个线程、两把锁举例说明。</p>
+<p>Q15.出现死锁后应当如何解决或避免？除了统一加锁顺序，还有没有其他方法？</p>
+<h3 id="三、嵌入式下位机与运动控制"><a href="#三、嵌入式下位机与运动控制" class="headerlink" title="三、嵌入式下位机与运动控制"></a>三、嵌入式下位机与运动控制</h3><p>Q16.智能车是完全由 EdgeBoard 控制的吗？是否有 MCU 下位机？TC264 下位机由谁负责开发？</p>
+<p>Q17.对这辆自主行进智能车来说，电控部分的技术难点是什么？在电机速度闭环、转向控制等方面采用了什么控制方法？</p>
+<p>Q18.介绍一下自主行进自行车项目，它的平衡结构及工作方式是什么？</p>
+<p>Q19.自行车项目是不是你主导的？你具体负责上位机还是下位机、平衡还是整车控制？</p>
+<p>Q20.自行车上位机负责哪些功能？是否需要视觉识别？</p>
+<p>Q21.自行车使用几个电机？分别负责什么动作？你负责控制哪个电机？</p>
+<h3 id="四、视觉识别、云台控制与通信"><a href="#四、视觉识别、云台控制与通信" class="headerlink" title="四、视觉识别、云台控制与通信"></a>四、视觉识别、云台控制与通信</h3><p>Q22.介绍一下简易自行瞄准装置，项目要实现什么功能？你负责哪些模块？</p>
+<p>Q23.瞄准装置使用了什么视觉识别算法？</p>
+<p>Q24.云台采用什么控制算法？如何实现云台控制？</p>
+<p>Q25.RK3588 板卡和云台硬件是比赛方提供、自行采购，还是自行设计集成的？</p>
+<p>Q26.项目中是否有自己开发的硬件，例如 PCB、转接板或扩展板？这些板卡分别起什么作用？</p>
+<p>Q27.RK3588 与 MCU 使用什么方式通信？主要发送什么数据？</p>
+<p>Q28.竞赛对使用的上位机计算平台有指定型号或选型限制吗？</p>
+<p>Q29.你认为云台控制项目最主要的技术难点是什么？控制方案是怎样确定或调整的？</p>
+<p>Q30.自行车和云台项目是否使用了 IMU？哪些项目使用、哪些没有使用？</p>
+<h3 id="五、硬件能力、Linux-驱动及其他经历"><a href="#五、硬件能力、Linux-驱动及其他经历" class="headerlink" title="五、硬件能力、Linux 驱动及其他经历"></a>五、硬件能力、Linux 驱动及其他经历</h3><p>Q31.你的硬件开发能力怎么样？有没有画过 PCB？能做到什么程度？</p>
+<p>Q32.简历中写了嵌入式 Linux 驱动开发经验，实际接触过哪些平台和开发内容？</p>
+<p>Q33.简历上另外一段人工智能算法竞赛经历是什么？与自主行进智能车项目有什么关系？</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/26%E7%A7%8B%E6%8B%9B/" rel="tag"># 26秋招</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/09/JobQA-2/" rel="prev" title="某智驾公司 AI 算法实习生一面面经｜技术问题整理">
+      <i class="fa fa-chevron-left"></i> 某智驾公司 AI 算法实习生一面面经｜技术问题整理
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%90%E5%85%AC%E5%8F%B8%E6%9C%BA%E5%99%A8%E4%BA%BA%E8%BF%90%E5%8A%A8%E6%8E%A7%E5%88%B6%E5%B7%A5%E7%A8%8B%E5%B8%88%E4%B8%80%E9%9D%A2%E9%9D%A2%E7%BB%8F%EF%BD%9C%E6%8A%80%E6%9C%AF%E9%97%AE%E9%A2%98%E6%95%B4%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text">某公司机器人运动控制工程师一面面经｜技术问题整理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%99%BA%E8%83%BD%E8%BD%A6%E9%A1%B9%E7%9B%AE%E4%B8%8E%E4%B8%AA%E4%BA%BA%E8%B4%A1%E7%8C%AE"><span class="nav-number">1.1.</span> <span class="nav-text">一、智能车项目与个人贡献</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8C%E3%80%81Linux-%E5%A4%9A%E7%BA%BF%E7%A8%8B%E3%80%81%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5%E4%B8%8E%E6%AD%BB%E9%94%81"><span class="nav-number">1.2.</span> <span class="nav-text">二、Linux 多线程、数据同步与死锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%B5%8C%E5%85%A5%E5%BC%8F%E4%B8%8B%E4%BD%8D%E6%9C%BA%E4%B8%8E%E8%BF%90%E5%8A%A8%E6%8E%A7%E5%88%B6"><span class="nav-number">1.3.</span> <span class="nav-text">三、嵌入式下位机与运动控制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E8%A7%86%E8%A7%89%E8%AF%86%E5%88%AB%E3%80%81%E4%BA%91%E5%8F%B0%E6%8E%A7%E5%88%B6%E4%B8%8E%E9%80%9A%E4%BF%A1"><span class="nav-number">1.4.</span> <span class="nav-text">四、视觉识别、云台控制与通信</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E7%A1%AC%E4%BB%B6%E8%83%BD%E5%8A%9B%E3%80%81Linux-%E9%A9%B1%E5%8A%A8%E5%8F%8A%E5%85%B6%E4%BB%96%E7%BB%8F%E5%8E%86"><span class="nav-number">1.5.</span> <span class="nav-text">五、硬件能力、Linux 驱动及其他经历</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">85</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+<script src="//cdn.busuanzi.cc/busuanzi/3.6.9/busuanzi.min.js" defer></script>
+  <span class="footer-counter">
+    <span id="busuanzi_container_site_pv">
+      <i class="fa fa-eye"></i>
+      <span id="busuanzi_page_pv"></span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span id="busuanzi_container_site_uv">
+      <i class="fa fa-user"></i>
+      <span id="busuanzi_page_uv"></span>
+    </span>
+  </span>
+
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'Ov23liistS5Y3k9rr8rY',
+      clientSecret: 'e34ec40459ac4070e884271ae281f6d2315d1d98',
+      repo        : 'hccc1203.github.io',
+      owner       : 'hccc1203',
+      admin       : ['hccc1203'],
+      id          : '685ae227e04fffb42b065ae59afdb517',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+<script src="/js/typewriter.js"></script>
+<script src="/js/dark-mode.js"></script>
+<script src="/js/particles.js"></script>
+
+</body>
+</html>
