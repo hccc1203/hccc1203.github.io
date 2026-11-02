@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1.2.4/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"hccc1203.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":false,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+
+
+  <meta name="description" content="从贝尔曼公式到迭代，从有模型到无模型。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="强化学习的数学原理(1)">
+<meta property="og:url" content="https://hccc1203.github.io/2026/11/02/rl-math-1/index.html">
+<meta property="og:site_name" content="Hcc的Blog">
+<meta property="og:description" content="从贝尔曼公式到迭代，从有模型到无模型。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://hccc1203.github.io/source%5Cimg%5Crl-math%5C1.jpg">
+<meta property="article:published_time" content="2026-11-02T13:03:51.000Z">
+<meta property="article:modified_time" content="2026-11-02T13:09:12.553Z">
+<meta property="article:author" content="Hcc">
+<meta property="article:tag" content="强化学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://hccc1203.github.io/source%5Cimg%5Crl-math%5C1.jpg">
+
+<link rel="canonical" href="https://hccc1203.github.io/2026/11/02/rl-math-1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>强化学习的数学原理(1) | Hcc的Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hcc的Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-fw fa-user"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/hccc1203" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://hccc1203.github.io/2026/11/02/rl-math-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Hcc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hcc的Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          强化学习的数学原理(1)
+        </h1>
+
+        <div class="post-meta">
+        
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-11-02 21:03:51" itemprop="dateCreated datePublished" datetime="2026-11-02T21:03:51+08:00">2026-11-02</time>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><p><strong>Markov Decision Process，MDP 马尔可夫决策过程</strong></p>
+<ul>
+<li><strong>state</strong>：状态</li>
+<li><strong>action</strong>：表示每个状态下可以做的行为</li>
+<li><strong>policy</strong>：规定在某个状态下做某个action的概率</li>
+</ul>
+<p>用条件概率来表示 action 和 policy。</p>
+<ul>
+<li><strong>reward</strong>：一个标量，可以为正也可以为负，一般情况下正表示奖励，负表示惩罚。</li>
+<li><strong>return</strong>：一个循环过程中所有的 reward 的和</li>
+<li><strong>discounted_return</strong>：使用 gama 值计算后的一轮的奖励之和：$G_t&#x3D;\sum_{k&#x3D;t}^{T-1}\gamma^{k-t}r_{k+1}$</li>
+</ul>
+<p><strong>episode</strong>：智能体从环境重置开始，到任务结束或达到时间限制为止的一段交互过程。</p>
+<p><strong>状态转移概率</strong>:$P(s_{t+1}|s_t,a_t)$，表示给定当前状态和动作后，进入下一状态的概率。</p>
+<p>马尔可夫具有无记忆性。</p>
+<p>但这里的“无记忆”很容易产生误解。</p>
+<p>它不是说机器人不能记录历史，也不是说控制器不能使用上一时刻动作，而是说：</p>
+<blockquote>
+<p>如果当前状态已经包含了预测未来所需的全部信息，那么在已知当前状态和动作后，过去的历史不会再提供额外的预测信息。</p>
+</blockquote>
+<h2 id="贝尔曼公式"><a href="#贝尔曼公式" class="headerlink" title="贝尔曼公式"></a>贝尔曼公式</h2><p>一个状态的 value 依赖于其他状态的 value。</p>
+<p><strong>state_value（状态价值）</strong>:在某个状态 s 下，按照策略 $\pi$ 继续执行，未来预计能够获得多少累计奖励。</p>
+<p>$$<br>\boxed{v_\pi(s)&#x3D;\mathbb{E}[G_t\mid S_t&#x3D;s]}<br>$$</p>
+<blockquote>
+<p>Return 是一次实际轨迹获得的累计奖励，而 State Value 是所有可能轨迹的 Return 的期望。</p>
+</blockquote>
+<p>贝尔曼公式描述了不同状态间的 state_value 的关系。</p>
+<p>贝尔曼期望方程，描述了在给定策略下，当前状态价值等于即时奖励的期望与折扣后的下一状态价值期望之和。</p>
+<p>$$<br>\boxed{v_\pi(s)&#x3D;\sum_a\pi(a|s)\left[\sum_r p(r|s,a)r+\gamma\sum_{s’}p(s’|s,a)v_\pi(s’)\right]}<br>$$</p>
+<p><strong>核心理解：</strong></p>
+<ol>
+<li>$\sum_a\pi(a|s)$：根据策略对所有可能动作求期望。</li>
+<li>$\sum_rp(r|s,a)r$：计算执行动作后的期望即时奖励。</li>
+<li>$\sum_{s’}p(s’|s,a)v_\pi(s’)$：计算下一状态的期望价值。</li>
+<li>$\gamma$：折扣因子，用来降低未来奖励的权重。</li>
+<li>贝尔曼方程建立了当前状态价值与下一状态价值之间的递归关系。</li>
+</ol>
+<p>为了简化贝尔曼方程，可以定义：</p>
+<ol>
+<li><p>策略下的期望及时奖励</p>
+<p>$$<br>r_\pi(s)&#x3D;\sum_a\pi(a|s)\sum_rp(r|s,a)r<br>$$</p>
+</li>
+<li><p>策略下的状态转移概率</p>
+<p>$$<br>p_\pi(s’|s)&#x3D;\sum_a\pi(a|s)p(s’|s,a)<br>$$</p>
+</li>
+<li><p>可以得到简化后的贝尔曼期望方程：</p>
+<p>$$<br>v_\pi(s)&#x3D;r_\pi(s)+\gamma\sum_{s’}p_\pi(s’|s)v_\pi(s’)<br>$$</p>
+</li>
+</ol>
+<p>求解 state value，用于 policy evaluation，在实际应用中常常使用迭代解，不求逆矩阵，反复更新状态价值，逐渐逼近真实结果。</p>
+<p>原来的贝尔曼方程为$v_\pi&#x3D;r_\pi+\gamma P_\pi v_\pi$，我们改写为$v_{k+1}&#x3D;r_\pi+\gamma P_\pi v_k$。其中，$v_\pi$ 表示需要求出的真正的状态价值向量，$v_k$ 表示第 k 次迭代时，对状态价值的估计，$v_{k+1}$ 表示根据当前估计计算出的下一次估计。</p>
+<p>迭代法的核心思想就是：先猜一个初始状态价值，然后不断代入贝尔曼方程进行更新。</p>
+<p><img src="/source%5Cimg%5Crl-math%5C1.jpg" alt="alt text"></p>
+<p><strong>Action value</strong>：表示从一个状态出发并执行某一个动作的最终得分期望。</p>
+<p>一个状态的 State Valie，等于在该状态下所有可能动作的 Action Value，按照策略选择概率进行加权平均。</p>
+<p>$$<br>q_\pi(s,a)&#x3D;\mathbb E_\pi[G_t\mid S_t&#x3D;s,A_t&#x3D;a]<br>$$</p>
+<p>通俗来说，如果机器人现在处于状态 $s$，首先指定执行动作 $a$，之后一直遵循策略 $\pi$，预计总共能获得多少累计奖励。Action Value 并不是只评价当前动作的即时 Reward，而是评价执行这个动作之后的长期收益。</p>
+<h2 id="贝尔曼最优公式"><a href="#贝尔曼最优公式" class="headerlink" title="贝尔曼最优公式"></a>贝尔曼最优公式</h2><p>之前的贝尔曼期望方程解决的是：给定一个策略，如何计算它的 State Value？</p>
+<p>而贝尔曼最优方程要解决的是：如果策略还不知道，怎样找到能够使 State Value 最大的最优策略？这正是强化学习的核心目标之一。</p>
+<p>$$<br>v(s)&#x3D;\max_\pi\sum_a\pi(a|s)\left[\sum_r p(r|s,a)r+\gamma\sum_{s’}p(s’|s,a)v(s’)\right]<br>$$</p>
+<p>简化后可以写为</p>
+<p>$$<br>v(s)&#x3D;\max_\pi\sum_a\pi(a|s)q(s,a)<br>$$</p>
+<p>在寻找最优策略时，可以把对策略 $\pi$ 的最大化，转换为对动作 $a$ 的最大化。对于标准的有限动作 MDP，至少存在一个确定性的最优策略：在每个状态下，直接选择 Action Value 最大的动作，即：</p>
+<p>$$<br>\max_\pi\sum_a\pi(a|s)q(s,a)&#x3D;\max_{a\in A(s)}q(s,a)<br>$$</p>
+<p>原因：策略概率之和为 1，所有动作价值的加权平均不能超过最大动作价值。</p>
+<p><strong>贝尔曼最优算子：</strong></p>
+<p>$$<br>f(v):&#x3D;\max_\pi(r_\pi+\gamma P_\pi v)<br>$$</p>
+<p>其中 $f$ 接收一个状态价值向量，并返回经过一次贝尔曼最优更新后的价值向量。最终经过多次迭代后可以得到：</p>
+<p>$$<br>{v_*&#x3D;f(v_*)}<br>$$</p>
+<p>此时再使用贝尔曼最优算子进行更新，价值不会改变。</p>
+<p><strong>不动点（Fixed Point）</strong>：如果把某个值 $x$ 输入函数 $f$，得到的结果仍然是 $x$，那么 $x$ 就是函数 $f$ 的不动点，形如 $f(x)&#x3D;x$</p>
+<p>与贝尔曼最优方程的联系，$v_*&#x3D;f(v_*)$ 中 $f$ 是贝尔曼最优算子，这说明：最优状态价值 $v_*$，就是贝尔曼最优算子 $f$ 的一个不动点。当我们得到真正的最优价值向量时，再使用贝尔曼最优算子进行更新，价值不会改变。</p>
+<p><strong>压缩映射（Contraction Mapping）</strong>：定义如下：</p>
+<p>$$<br>|f(x_1)-f(x_2)|\leq\gamma|x_1-x_2|<br>$$</p>
+<p>其中 $0 &lt; \gamma &lt; 1$，整个公式的意思是：任意两个输入经过函数 $f$ 后，它们之间的距离最多是原来距离的 $\gamma$ 倍，压缩映射函数可以保证收敛。</p>
+<p>更一般地，如果 $f$ 是完备度量空间上的压缩映射，那么它存在唯一不动点，并且从任意初始值开始反复迭代都会收敛到该不动点。这就是巴拿赫不动点定理（Banach Fixed-point Theorem）。</p>
+<p>与贝尔曼最优公式的关系，对于有限状态的折扣 MDP，可以证明得到</p>
+<p>$$<br>|f(v_1)-f(v_2)|<em>\infty\leq\gamma|v_1-v_2|</em>\infty<br>$$</p>
+<p>因此我们可以通过 ${v_{k+1}&#x3D;f(v_k)}$ 不断迭代，最终收敛到唯一的最优状态价值 $v_*$ 。</p>
+<blockquote>
+<p>**一句话总结：**贝尔曼最优方程定义了需要求解的不动点；压缩映射性质保证这个不动点唯一，并且反复迭代可以逐渐接近它。这就是价值迭代算法能够收敛的数学依据。</p>
+</blockquote>
+<h2 id="价值迭代和策略迭代"><a href="#价值迭代和策略迭代" class="headerlink" title="价值迭代和策略迭代"></a>价值迭代和策略迭代</h2><h3 id="价值迭代"><a href="#价值迭代" class="headerlink" title="价值迭代"></a>价值迭代</h3><p>价值迭代公式如下：</p>
+<p>$$<br>v_{k+1}&#x3D;\max_\pi(r_\pi+\gamma P_\pi v_k)<br>$$</p>
+<p>这个可以分解为两步：</p>
+<p><strong>1、根据当前价值估计 $v_k$，选择使一步贝尔曼更新结果最大的策略。</strong></p>
+<p>$$<br>\pi_{k+1}&#x3D;\arg\max_\pi(r_\pi+\gamma P_\pi v_k)<br>$$</p>
+<p><strong>2、使用更新后的策略，计算新的价值估计：</strong></p>
+<p>$$<br>v_{k+1}&#x3D;r_{\pi_{k+1}}+\gamma P_{\pi_{k+1}}v_k<br>$$</p>
+<p>重复执行以上两步，直到价值估计收敛。</p>
+<p>值得注意的是：</p>
+<ul>
+<li>$v_k$ 是第 $k$ 次迭代时的价值估计，不一定是某个策略准确的状态价值函数。</li>
+<li>$\pi_{k+1}$ 是相对于当前 $v_k$ 的贪心策略，不一定已经是全局最优策略。</li>
+<li>对于有限折扣 MDP，价值迭代可以收敛到唯一的最优状态价值 $v_*$。</li>
+</ul>
+<h4 id="强化学习：Value-Iteration（价值迭代）实例详解"><a href="#强化学习：Value-Iteration（价值迭代）实例详解" class="headerlink" title="强化学习：Value Iteration（价值迭代）实例详解"></a>强化学习：Value Iteration（价值迭代）实例详解</h4><h5 id="1-问题描述"><a href="#1-问题描述" class="headerlink" title="1. 问题描述"></a>1. 问题描述</h5><p>考虑一个由四个状态组成的 Grid World（网格世界），使用价值迭代算法求解最优状态价值函数及最优策略。</p>
+<p>环境如下：</p>
+<table>
+<thead>
+<tr>
+<th align="center">$s_1$</th>
+<th align="center">$s_2$ 🟨</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">$s_3$</td>
+<td align="center">$s_4$ 🎯</td>
+</tr>
+</tbody></table>
+<p>其中：</p>
+<ul>
+<li>$s_1,s_3$：普通状态。</li>
+<li>$s_2$：禁止区域（Forbidden Area）。</li>
+<li>$s_4$：目标区域（Target）。</li>
+<li>智能体可以选择上下左右移动或保持不动，共五种动作。</li>
+</ul>
+<p>奖励规则：</p>
+<p>$$<br>r_{\text{boundary}}&#x3D;-1<br>$$</p>
+<p>$$<br>r_{\text{forbidden}}&#x3D;-1<br>$$</p>
+<p>$$<br>r_{\text{target}}&#x3D;+1<br>$$</p>
+<p>普通移动的奖励为 0，折扣因子为：</p>
+<p>$$<br>\gamma&#x3D;0.9<br>$$</p>
+<blockquote>
+<p><strong>目标：找到能够使未来累计折扣奖励最大的策略。</strong></p>
+</blockquote>
+<h5 id="2-价值迭代的基本原理"><a href="#2-价值迭代的基本原理" class="headerlink" title="2. 价值迭代的基本原理"></a>2. 价值迭代的基本原理</h5><p>贝尔曼最优方程：</p>
+<p>$$<br>v_*(s)&#x3D;\max_a\left[r(s,a)+\gamma\sum_{s’}p(s’|s,a)v_*(s’)\right]<br>$$</p>
+<p>由于当前例子中的状态转移是确定性的，因此可以简化为：</p>
+<p>$$<br>v_*(s)&#x3D;\max_a[r(s,a)+\gamma v_*(s’)]<br>$$</p>
+<p>其中 $s’$ 为执行动作 $a$ 后到达的下一状态。</p>
+<p>但最优状态价值 $v_*$ 是未知的，所以需要通过迭代逐渐逼近：</p>
+<p>$$<br>\boxed{v_{k+1}(s)&#x3D;\max_a[r(s,a)+\gamma v_k(s’)]}<br>$$</p>
+<p>定义基于当前价值估计的动作价值：</p>
+<p>$$<br>q_k(s,a)&#x3D;r(s,a)+\gamma v_k(s’)<br>$$</p>
+<p>于是可以将价值迭代分为两个步骤。</p>
+<p><strong>Step 1：Policy Update（策略更新）</strong></p>
+<p>$$<br>\pi_{k+1}(s)\in\arg\max_a q_k(s,a)<br>$$</p>
+<p>选择当前动作价值最大的动作。</p>
+<p><strong>Step 2：Value Update（价值更新）</strong></p>
+<p>$$<br>v_{k+1}(s)&#x3D;\max_a q_k(s,a)<br>$$</p>
+<p>将最大动作价值作为新的状态价值估计。</p>
+<p>两个步骤不断重复，直到价值收敛。</p>
+<h5 id="3-第一次迭代：-k-0"><a href="#3-第一次迭代：-k-0" class="headerlink" title="3. 第一次迭代：$k&#x3D;0$"></a>3. 第一次迭代：$k&#x3D;0$</h5><h6 id="3-1-初始化价值"><a href="#3-1-初始化价值" class="headerlink" title="3.1 初始化价值"></a>3.1 初始化价值</h6><p>设定：</p>
+<p>$$<br>v_0(s_1)&#x3D;v_0(s_2)&#x3D;v_0(s_3)&#x3D;v_0(s_4)&#x3D;0<br>$$</p>
+<p>即：</p>
+<p>$$<br>v_0&#x3D;<br>\begin{bmatrix}<br>0\0\0\0<br>\end{bmatrix}<br>$$</p>
+<p><strong>为什么可以初始化为 0？</strong></p>
+<p>因为 $v_0$ 只是状态价值的初始估计，不代表真实的 State Value。</p>
+<p>对于有限状态且 $0\leq\gamma&lt;1$ 的折扣 MDP，价值迭代从任意有限初始价值向量出发，最终都可以收敛到唯一的最优状态价值。</p>
+<p>初始化为 0 的另一个好处是方便理解：</p>
+<p>$$<br>q_0(s,a)&#x3D;r(s,a)+\gamma\times0&#x3D;r(s,a)<br>$$</p>
+<p>也就是说，第一次迭代只需要考虑即时奖励。</p>
+<h6 id="3-2-构建-Q-table"><a href="#3-2-构建-Q-table" class="headerlink" title="3.2 构建 Q-table"></a>3.2 构建 Q-table</h6><p>根据奖励规则和动作对应的状态转移，得到：</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th align="right">$a_1$</th>
+<th align="right">$a_2$</th>
+<th align="right">$a_3$</th>
+<th align="right">$a_4$</th>
+<th align="right">$a_5$</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$s_1$</td>
+<td align="right">-1</td>
+<td align="right">-1</td>
+<td align="right"><strong>0</strong></td>
+<td align="right">-1</td>
+<td align="right"><strong>0</strong></td>
+</tr>
+<tr>
+<td>$s_2$</td>
+<td align="right">-1</td>
+<td align="right">-1</td>
+<td align="right"><strong>1</strong></td>
+<td align="right">0</td>
+<td align="right">-1</td>
+</tr>
+<tr>
+<td>$s_3$</td>
+<td align="right">0</td>
+<td align="right"><strong>1</strong></td>
+<td align="right">-1</td>
+<td align="right">-1</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td>$s_4$</td>
+<td align="right">-1</td>
+<td align="right">-1</td>
+<td align="right">-1</td>
+<td align="right">0</td>
+<td align="right"><strong>1</strong></td>
+</tr>
+</tbody></table>
+<p>其中每个元素表示：</p>
+<p>$$<br>q_0(s,a)&#x3D;r(s,a)<br>$$</p>
+<h6 id="3-3-Policy-Update"><a href="#3-3-Policy-Update" class="headerlink" title="3.3 Policy Update"></a>3.3 Policy Update</h6><p>选择每个状态下 Q 值最大的动作：</p>
+<p>$$<br>\begin{aligned}<br>\pi_1(s_1)&amp;&#x3D;a_5\<br>\pi_1(s_2)&amp;&#x3D;a_3\<br>\pi_1(s_3)&amp;&#x3D;a_2\<br>\pi_1(s_4)&amp;&#x3D;a_5<br>\end{aligned}<br>$$</p>
+<p>其中 $s_1$ 的 $a_3$ 和 $a_5$ 都具有相同的最大 Q 值 0，暂时选择 $a_5$。</p>
+<h6 id="3-4-Value-Update"><a href="#3-4-Value-Update" class="headerlink" title="3.4 Value Update"></a>3.4 Value Update</h6><p>将每行最大的 Q 值作为新的状态价值：</p>
+<p>$$<br>\begin{aligned}<br>v_1(s_1)&amp;&#x3D;0\<br>v_1(s_2)&amp;&#x3D;1\<br>v_1(s_3)&amp;&#x3D;1\<br>v_1(s_4)&amp;&#x3D;1<br>\end{aligned}<br>$$</p>
+<p>因此：</p>
+<p>$$<br>\boxed{<br>v_1&#x3D;<br>\begin{bmatrix}<br>0\1\1\1<br>\end{bmatrix}<br>}<br>$$</p>
+<blockquote>
+<p><strong>此时 $v_1$ 表示从各状态出发，未来一步能够获得的最大即时奖励。</strong></p>
+</blockquote>
+<h5 id="4-第二次迭代：-k-1"><a href="#4-第二次迭代：-k-1" class="headerlink" title="4. 第二次迭代：$k&#x3D;1$"></a>4. 第二次迭代：$k&#x3D;1$</h5><p>现在已经得到：</p>
+<p>$$<br>v_1&#x3D;<br>\begin{bmatrix}<br>0\1\1\1<br>\end{bmatrix}<br>$$</p>
+<p>将 $v_1$ 代入：</p>
+<p>$$<br>q_1(s,a)&#x3D;r(s,a)+\gamma v_1(s’)<br>$$</p>
+<h6 id="4-1-为什么可以将-v-1-代回-Q-table？"><a href="#4-1-为什么可以将-v-1-代回-Q-table？" class="headerlink" title="4.1 为什么可以将 $v_1$ 代回 Q-table？"></a>4.1 为什么可以将 $v_1$ 代回 Q-table？</h6><p>因为第一次迭代只考虑了一步奖励，而第二次迭代需要考虑未来两步的累计奖励。</p>
+<p>例如，从 $s_1$ 向下移动到 $s_3$：</p>
+<p>$$<br>s_1\xrightarrow{r&#x3D;0}s_3<br>$$</p>
+<p>第一轮计算时：</p>
+<p>$$<br>q_0(s_1,a_3)&#x3D;0+\gamma v_0(s_3)&#x3D;0<br>$$</p>
+<p>但第一轮更新后，已知：</p>
+<p>$$<br>v_1(s_3)&#x3D;1<br>$$</p>
+<p>说明从 $s_3$ 出发，下一步最多能够获得奖励 1。</p>
+<p>所以重新计算：</p>
+<p>$$<br>\begin{aligned}<br>q_1(s_1,a_3)<br>&amp;&#x3D;0+\gamma v_1(s_3)\<br>&amp;&#x3D;0+0.9\times1\<br>&amp;&#x3D;0.9<br>\end{aligned}<br>$$</p>
+<p>虽然从 $s_1$ 到 $s_3$ 没有即时奖励，但由于 $s_3$ 具有未来收益，$s_1$ 也开始具有价值。</p>
+<p>这正是贝尔曼方程的递归思想：</p>
+<blockquote>
+<p><strong>下一状态的价值，会通过折扣因子影响当前状态的价值。</strong></p>
+</blockquote>
+<h6 id="4-2-Policy-Update"><a href="#4-2-Policy-Update" class="headerlink" title="4.2 Policy Update"></a>4.2 Policy Update</h6><p>根据新的 Q-table，各状态的最优动作变为：</p>
+<p>$$<br>\begin{aligned}<br>\pi_2(s_1)&amp;&#x3D;a_3\<br>\pi_2(s_2)&amp;&#x3D;a_3\<br>\pi_2(s_3)&amp;&#x3D;a_2\<br>\pi_2(s_4)&amp;&#x3D;a_5<br>\end{aligned}<br>$$</p>
+<p>其中 $s_1$ 的最优动作从第一次迭代的 $a_5$ 变成了 $a_3$。</p>
+<p>原因是算法开始考虑未来奖励，而不只是当前一步。</p>
+<h6 id="4-3-Value-Update"><a href="#4-3-Value-Update" class="headerlink" title="4.3 Value Update"></a>4.3 Value Update</h6><p>对四个状态分别计算：</p>
+<p>$$<br>v_2(s_1)&#x3D;0+\gamma v_1(s_3)&#x3D;0.9<br>$$</p>
+<p>$$<br>v_2(s_2)&#x3D;1+\gamma v_1(s_4)&#x3D;1.9<br>$$</p>
+<p>$$<br>v_2(s_3)&#x3D;1+\gamma v_1(s_4)&#x3D;1.9<br>$$</p>
+<p>$$<br>v_2(s_4)&#x3D;1+\gamma v_1(s_4)&#x3D;1.9<br>$$</p>
+<p>因此：</p>
+<p>$$<br>\boxed{<br>v_2&#x3D;<br>\begin{bmatrix}<br>0.9\1.9\1.9\1.9<br>\end{bmatrix}<br>}<br>$$</p>
+<p>此时 $v_2$ 表示考虑未来两步时，各个状态能够获得的最大累计折扣奖励。</p>
+<h5 id="5-第三次迭代：-k-2"><a href="#5-第三次迭代：-k-2" class="headerlink" title="5. 第三次迭代：$k&#x3D;2$"></a>5. 第三次迭代：$k&#x3D;2$</h5><p>已知：</p>
+<p>$$<br>v_2&#x3D;<br>\begin{bmatrix}<br>0.9\1.9\1.9\1.9<br>\end{bmatrix}<br>$$</p>
+<p>继续代入贝尔曼更新公式：</p>
+<p>$$<br>v_3(s)&#x3D;\max_a[r(s,a)+\gamma v_2(s’)]<br>$$</p>
+<h6 id="5-1-计算-s-1-的状态价值"><a href="#5-1-计算-s-1-的状态价值" class="headerlink" title="5.1 计算 $s_1$ 的状态价值"></a>5.1 计算 $s_1$ 的状态价值</h6><p>根据当前最优动作：</p>
+<p>$$<br>s_1\rightarrow s_3\rightarrow s_4\rightarrow s_4<br>$$</p>
+<p>对应奖励序列：</p>
+<table>
+<thead>
+<tr>
+<th>步数</th>
+<th>状态转移</th>
+<th align="right">即时奖励</th>
+<th align="right">折扣奖励</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>$s_1\to s_3$</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>$s_3\to s_4$</td>
+<td align="right">+1</td>
+<td align="right">$\gamma$</td>
+</tr>
+<tr>
+<td>3</td>
+<td>$s_4\to s_4$</td>
+<td align="right">+1</td>
+<td align="right">$\gamma^2$</td>
+</tr>
+</tbody></table>
+<p>因此：</p>
+<p>$$<br>\begin{aligned}<br>v_3(s_1)<br>&amp;&#x3D;0+\gamma v_2(s_3)\<br>&amp;&#x3D;\gamma(1+\gamma)\<br>&amp;&#x3D;\gamma+\gamma^2\<br>&amp;&#x3D;0.9+0.81\<br>&amp;&#x3D;\boxed{1.71}<br>\end{aligned}<br>$$</p>
+<h6 id="5-2-计算其他状态"><a href="#5-2-计算其他状态" class="headerlink" title="5.2 计算其他状态"></a>5.2 计算其他状态</h6><p>对于 $s_2$：</p>
+<p>$$<br>v_3(s_2)&#x3D;1+0.9\times1.9&#x3D;2.71<br>$$</p>
+<p>对于 $s_3$：</p>
+<p>$$<br>v_3(s_3)&#x3D;1+0.9\times1.9&#x3D;2.71<br>$$</p>
+<p>对于 $s_4$：</p>
+<p>$$<br>v_3(s_4)&#x3D;1+0.9\times1.9&#x3D;2.71<br>$$</p>
+<p>所以：</p>
+<p>$$<br>\boxed{<br>v_3&#x3D;<br>\begin{bmatrix}<br>1.71\2.71\2.71\2.71<br>\end{bmatrix}<br>}<br>$$</p>
+<p>此时价值估计已经包含未来三步的累计折扣奖励。</p>
+<h5 id="6-持续迭代与收敛"><a href="#6-持续迭代与收敛" class="headerlink" title="6. 持续迭代与收敛"></a>6. 持续迭代与收敛</h5><p>按照相同规则继续迭代：</p>
+<p>$$<br>v_{k+1}(s)&#x3D;\max_a[r(s,a)+\gamma v_k(s’)]<br>$$</p>
+<p>前几次结果如下：</p>
+<table>
+<thead>
+<tr>
+<th>迭代次数</th>
+<th align="right">$v_k(s_1)$</th>
+<th align="right">$v_k(s_2)$</th>
+<th align="right">$v_k(s_3)$</th>
+<th align="right">$v_k(s_4)$</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$k&#x3D;0$</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr>
+<td>$k&#x3D;1$</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">1</td>
+</tr>
+<tr>
+<td>$k&#x3D;2$</td>
+<td align="right">0.9</td>
+<td align="right">1.9</td>
+<td align="right">1.9</td>
+<td align="right">1.9</td>
+</tr>
+<tr>
+<td>$k&#x3D;3$</td>
+<td align="right">1.71</td>
+<td align="right">2.71</td>
+<td align="right">2.71</td>
+<td align="right">2.71</td>
+</tr>
+<tr>
+<td>$k&#x3D;4$</td>
+<td align="right">2.439</td>
+<td align="right">3.439</td>
+<td align="right">3.439</td>
+<td align="right">3.439</td>
+</tr>
+<tr>
+<td>$k\to\infty$</td>
+<td align="right"><strong>9</strong></td>
+<td align="right"><strong>10</strong></td>
+<td align="right"><strong>10</strong></td>
+<td align="right"><strong>10</strong></td>
+</tr>
+</tbody></table>
+<p>对于本例的最优动作路径，当 $k\geq1$ 时：</p>
+<p>$$<br>v_k(s_2)&#x3D;v_k(s_3)&#x3D;v_k(s_4)<br>&#x3D;\sum_{i&#x3D;0}^{k-1}\gamma^i<br>$$</p>
+<p>即：</p>
+<p>$$<br>\boxed{<br>v_k(s_2)&#x3D;\frac{1-\gamma^k}{1-\gamma}<br>}<br>$$</p>
+<p>对于 $s_1$，当 $k\geq2$ 时：</p>
+<p>$$<br>v_k(s_1)&#x3D;\gamma+\gamma^2+\cdots+\gamma^{k-1}<br>$$</p>
+<p>即：</p>
+<p>$$<br>\boxed{<br>v_k(s_1)&#x3D;\frac{\gamma(1-\gamma^{k-1})}{1-\gamma}<br>}<br>$$</p>
+<p>因为：</p>
+<p>$$<br>0&lt;\gamma&lt;1<br>$$</p>
+<p>所以：</p>
+<p>$$<br>\lim_{k\to\infty}\gamma^k&#x3D;0<br>$$</p>
+<p>因此：</p>
+<p>$$<br>\lim_{k\to\infty}v_k(s_1)<br>&#x3D;\frac{\gamma}{1-\gamma}&#x3D;9<br>$$</p>
+<p>其余三个状态：</p>
+<p>$$<br>\lim_{k\to\infty}v_k(s_i)<br>&#x3D;\frac{1}{1-\gamma}&#x3D;10,\quad i&#x3D;2,3,4<br>$$</p>
+<p>最终得到：</p>
+<p>$$<br>\boxed{<br>v_*&#x3D;<br>\begin{bmatrix}<br>9\10\10\10<br>\end{bmatrix}<br>}<br>$$</p>
+<blockquote>
+<p>值得注意的是：本例在第二次迭代时，选出的策略就已经是最优策略，但价值估计还没有收敛。<strong>策略已经最优，并不意味着 Value 已经计算准确。</strong></p>
+</blockquote>
+<h5 id="7-为什么价值迭代能够收敛？"><a href="#7-为什么价值迭代能够收敛？" class="headerlink" title="7. 为什么价值迭代能够收敛？"></a>7. 为什么价值迭代能够收敛？</h5><p>定义贝尔曼最优算子：</p>
+<p>$$<br><a href="s">T_*v</a>&#x3D;\max_a\left[r(s,a)+\gamma\sum_{s’}p(s’|s,a)v(s’)\right]<br>$$</p>
+<p>价值迭代为：</p>
+<p>$$<br>v_{k+1}&#x3D;T_*v_k<br>$$</p>
+<p>在有限状态、$0\leq\gamma&lt;1$ 的标准 MDP 中，贝尔曼最优算子满足压缩映射性质：</p>
+<p>$$<br>|T_*u-T_*v|<em>\infty<br>\leq\gamma|u-v|</em>\infty<br>$$</p>
+<p>因此：</p>
+<p>$$<br>|v_k-v_*|<em>\infty<br>\leq\gamma^k|v_0-v</em>*|_\infty<br>$$</p>
+<p>当 $k\to\infty$：</p>
+<p>$$<br>\boxed{v_k\to v_*}<br>$$</p>
+<p>所以价值迭代能够逐渐收敛到唯一的最优状态价值。</p>
+<h5 id="8-总结"><a href="#8-总结" class="headerlink" title="8. 总结"></a>8. 总结</h5><p>通过这个例子，可以明确几个概念。</p>
+<p><strong>1. $v_k$ 是什么？</strong></p>
+<p>它表示第 $k$ 次迭代时，每个状态的价值估计，不一定是某个固定策略的准确 State Value。</p>
+<p><strong>2. 为什么初始化 $v_0&#x3D;0$？</strong></p>
+<p>因为算法需要一个初始估计。对于折扣 MDP，可以从任意有限初值开始。初始化为 0 可以让前几次迭代具有清晰的有限步回报解释。</p>
+<p><strong>3. 为什么可以把 $v_1$ 代回 Q-table？</strong></p>
+<p>因为 $v_1$ 已经包含未来一步的最优奖励信息，将其代回贝尔曼方程，就能进一步计算未来两步的最优累计奖励。</p>
+<p><strong>4. 每次迭代究竟做了什么？</strong></p>
+<p>在 $v_0&#x3D;0$ 的条件下：</p>
+<ul>
+<li>$v_1$：考虑未来 1 步。</li>
+<li>$v_2$：考虑未来 2 步。</li>
+<li>$v_3$：考虑未来 3 步。</li>
+<li>$v_k$：考虑未来 $k$ 步。</li>
+<li>$v_*$：考虑无限时间范围内的最优累计折扣奖励。</li>
+</ul>
+<p><strong>5. 价值迭代的核心公式</strong></p>
+<p>$$<br>\boxed{<br>v_{k+1}(s)&#x3D;\max_a<br>\left[<br>r(s,a)+\gamma\sum_{s’}p(s’|s,a)v_k(s’)<br>\right]<br>}<br>$$</p>
+<p>价值迭代的本质，就是利用贝尔曼方程，把未来状态的价值不断向前传播，最终获得最优状态价值和最优策略。</p>
+<blockquote>
+<p><strong>核心理解：第一次迭代只考虑即时奖励，后续迭代逐步考虑更远的未来奖励，直到状态价值收敛。</strong></p>
+</blockquote>
+<h3 id="策略迭代"><a href="#策略迭代" class="headerlink" title="策略迭代"></a>策略迭代</h3><p>策略迭代与价值迭代的最终目标相同：找到最优策略和最优状态价值。但实现思路不同，价值迭代通过不断更新价值估计，并根据价值估计选择最优动作，而策略迭代则是先准确评价当前策略，再根据评价结果改变策略，重复进行。</p>
+<p>首先给定一个初始策略 $\pi_0$，可以随机初始化，然后反复执行以下两个步骤：</p>
+<h4 id="1、策略评估（Policy-Evaluation）"><a href="#1、策略评估（Policy-Evaluation）" class="headerlink" title="1、策略评估（Policy Evaluation）"></a>1、策略评估（Policy Evaluation）</h4><p>使用贝尔曼期望方程的矩阵形式，计算 $v_{\pi_k}$，也就是当前策略的状态价值矩阵。</p>
+<p>$$<br>v_{\pi_k}&#x3D;r_{\pi_k}+\gamma P_{\pi_k}v_{\pi_k}<br>$$</p>
+<h4 id="2、策略改进（Policy-Improvement）"><a href="#2、策略改进（Policy-Improvement）" class="headerlink" title="2、策略改进（Policy Improvement）"></a>2、策略改进（Policy Improvement）</h4><p>公式为：</p>
+<p>$$<br>\pi_{k+1}&#x3D;\arg\max_\pi(r_\pi+\gamma P_\pi v_{\pi_k})<br>$$</p>
+<p>这一步的意思是现在我们已经知道了当前策略的状态价值，尝试寻找一个比它更好的策略。我们该如何寻找呢？</p>
+<p>对于每个状态 $s$，计算所有动作的价值，然后选择其中最大的，就是策略改进。</p>
+<p>$$<br>\pi_{k+1}(s)\in\arg\max_a q_{\pi_k}(s,a)<br>$$</p>
+<p>对于有限折扣 MDP，在准确策略评估和适当的并列动作处理下，策略迭代可以得到最优策略。</p>
+<h3 id="截断策略迭代"><a href="#截断策略迭代" class="headerlink" title="截断策略迭代"></a>截断策略迭代</h3><p>截断策略迭代与策略迭代不同的地方在于：策略迭代必须迭代计算出当前策略的准确状态价值，再去根据这份准确状态价值计算更优策略；截断策略迭代则是先大致评估一下当前策略好不好，然后尝试改进策略，再评估、再改进。</p>
+<p>假设截断次数为 3,那么就是固定当前策略，做三次价值评估，然后改进策略</p>
+<p>$$<br>u^{(j+1)}&#x3D;T_{\pi_k}u^{(j)},\quad j&#x3D;0,1,2<br>$$</p>
+<blockquote>
+<p>**特点：**不等价值完全收敛，就进行下一次策略改进。</p>
+</blockquote>
+<h2 id="蒙特卡洛强化学习方法"><a href="#蒙特卡洛强化学习方法" class="headerlink" title="蒙特卡洛强化学习方法"></a>蒙特卡洛强化学习方法</h2><p>Action Value 的不需要环境模型的表达方式：</p>
+<p>$$<br>q_{\pi_k}(s,a)&#x3D;\mathbb E[G_t|S_t&#x3D;s,A_t&#x3D;a]<br>$$</p>
+<p>其含义为在状态 $s$ 下执行动作 $a$，之后遵循策略 $\pi_k$，未来累计折扣奖励 $G_t$ 的数学期望。其中：</p>
+<p>$$<br>G_t&#x3D;R_{t+1}+\gamma R_{t+2}+\gamma^2R_{t+3}+\cdots<br>$$</p>
+<p>我们可以直接收集直接交互得到的 Return，不需要事先知道状态转移概率和奖励概率。注意：这里通过有限样本计算的是期望的估计值，不一定等于真实的 Action Value。</p>
+<p>实现无模型强化学习的思路：利用第二种表达方式，根据采样数据或交互经验来估计 Action Value。</p>
+<h3 id="MC-Basic"><a href="#MC-Basic" class="headerlink" title="MC Basic"></a>MC Basic</h3><p>该算法分为两个步骤：</p>
+<h4 id="1、策略评估（Policy-Evaluation）-1"><a href="#1、策略评估（Policy-Evaluation）-1" class="headerlink" title="1、策略评估（Policy Evaluation）"></a>1、策略评估（Policy Evaluation）</h4><p>从状态 $s$ 开始，先执行指定动作 $a$，然后一直遵循当前策略 $\pi_k$，重复运行多个 Episode。然后将得到的 Return 累加求平均，对应公式：</p>
+<p>$$<br>q_{\pi_k}(s,a)\approx\frac{1}{N}\sum_{i&#x3D;1}^{N}G_t^{(i)}<br>$$</p>
+<h4 id="2、策略改进（Policy-Inprovement）"><a href="#2、策略改进（Policy-Inprovement）" class="headerlink" title="2、策略改进（Policy Inprovement）"></a>2、策略改进（Policy Inprovement）</h4><p>计算完所有动作的 Q-value 后，选择最大的：</p>
+<p>$$<br>a_k^*(s)&#x3D;\arg\max_a q_{\pi_k}(s,a)<br>$$</p>
+<p>然后将新策略设置为:</p>
+<p>$$<br>\pi_{k+1}(a|s)&#x3D;\begin{cases}1,&amp;a&#x3D;a_k^<em>(s)\0,&amp;a\neq a_k^</em>(s)\end{cases}<br>$$</p>
+<p>也就是把策略更新成贪心策略。</p>
+<h3 id="MC-Exploring"><a href="#MC-Exploring" class="headerlink" title="MC Exploring"></a>MC Exploring</h3><p>在 MC Basic 中，一个 Episode 的数据只能用一次，这未免有些浪费，其实我们可以重复多次利用一次 Episode 中的数据。</p>
+<p>假设有这样一条 Episode 轨迹</p>
+<p>$$<br>s_1\xrightarrow{a_2}s_2\xrightarrow{a_4}s_1\xrightarrow{a_2}s_2\xrightarrow{a_3}s_5\xrightarrow{a_1}\cdots<br>$$</p>
+<p>状态—动作对每出现一次称为一次 Visit（访问）。注意在这条轨迹中 $(s_1,a_2)$ 出现了两次。</p>
+<h4 id="1、First-Visit-MC（首次访问）"><a href="#1、First-Visit-MC（首次访问）" class="headerlink" title="1、First-Visit MC（首次访问）"></a>1、First-Visit MC（首次访问）</h4><p>对于一个 Episode：每个状态—动作对只使用第一次出现时的 Return。</p>
+<h4 id="2、Every-Visit-MC（每次访问）"><a href="#2、Every-Visit-MC（每次访问）" class="headerlink" title="2、Every-Visit MC（每次访问）"></a>2、Every-Visit MC（每次访问）</h4><p>与 First-Visit 不同：同一个状态-动作对每出现一次，就用一次对应的 Return，因此，上面的 $(s_1,a_2)$ 出现了两次，就会提供两个 Return 样本。</p>
+<p>同样的，对于什么时候更新策略，我们也有两种选择：</p>
+<p>**1、批量更新：**收集许多 Episode，计算 Q-value 的平均值，再更新策略。</p>
+<p>**2、逐 Episode 更新：**每完成一个 Episode，就用这次轨迹的 Return 更新 Q-value，然后尝试改进策略。</p>
+<p>MC Exploring Starts 算法就是为了解决 MC Basic 中对状态—动作对的采样不够充分、一条轨迹没有被充分利用的问题。</p>
+<p>首先明确，这个算法最终想得到的是 在状态 $s$ 执行动作 $a$，之后按照策略 $\pi$ 运行，未来预计能得到多少累计折扣奖励？但是我们不知道环境模型，因此只能通过实际运行得到奖励，再估计 Q-value。</p>
+<h4 id="Step-1：随机选择初始状态-动作对"><a href="#Step-1：随机选择初始状态-动作对" class="headerlink" title="Step 1：随机选择初始状态-动作对"></a>Step 1：随机选择初始状态-动作对</h4><p>每次开始新的 Episode 时，随机选择一个起始状态和动作，但有一个要求：每个允许的状态-动作对都必须有非零概率被选作起点，这是 Exploring Starts 的核心假设。</p>
+<h4 id="Step-2：生成一条-Episode"><a href="#Step-2：生成一条-Episode" class="headerlink" title="Step 2：生成一条 Episode"></a>Step 2：生成一条 Episode</h4><p>按照当前策略运行，得到</p>
+<p>$$<br>s_0,a_0,r_1,s_1,a_1,r_2,\ldots,s_T<br>$$</p>
+<h4 id="Step-3：从后往前计算-Return"><a href="#Step-3：从后往前计算-Return" class="headerlink" title="Step 3：从后往前计算 Return"></a>Step 3：从后往前计算 Return</h4><p>$$<br>g\leftarrow\gamma g+r_{t+1}<br>$$</p>
+<p>Return 本身存在递归关系，如果已知下一时刻的 Return，那么当前时刻的 Return 就可以直接算出来。</p>
+<h4 id="Step-4：将-Return-存起来，再求平均"><a href="#Step-4：将-Return-存起来，再求平均" class="headerlink" title="Step 4：将 Return 存起来，再求平均"></a>Step 4：将 Return 存起来，再求平均</h4><p>对于第一次访问的状态—动作对：</p>
+<p>$$<br>Returns(s_t,a_t) \leftarrow Returns(s_t,a_t)+g<br>$$</p>
+<p>再计算历史 Return 的平均值：</p>
+<p>$$<br>q(s_t,a_t)&#x3D;\operatorname{average}(Returns(s_t,a_t))<br>$$</p>
+<h4 id="Step-5：改进策略"><a href="#Step-5：改进策略" class="headerlink" title="Step 5：改进策略"></a>Step 5：改进策略</h4><p>选择：</p>
+<p>$$<br>a^*(s)&#x3D;\arg\max_aq(s,a)<br>$$</p>
+<h3 id="Monte-Carlo：First-Visit-与-Q-value-求平均的区别"><a href="#Monte-Carlo：First-Visit-与-Q-value-求平均的区别" class="headerlink" title="Monte Carlo：First-Visit 与 Q-value 求平均的区别"></a>Monte Carlo：First-Visit 与 Q-value 求平均的区别</h3><h4 id="一、容易混淆的问题"><a href="#一、容易混淆的问题" class="headerlink" title="一、容易混淆的问题"></a>一、容易混淆的问题</h4><p>在 MC Exploring Starts（探索性起点蒙特卡洛算法）中，Step 4 使用 First-Visit（首次访问）规则更新 Q-value。</p>
+<p>容易产生一个疑问：</p>
+<p><strong>既然只计算首次访问的 Return，那么求平均时，分母是不是始终为 1？</strong></p>
+<p>答案：<strong>不是。</strong></p>
+<p>First-Visit 限制的是<strong>单个 Episode 内同一个状态—动作对的采样次数</strong>，而 Q-value 的平均值是根据<strong>多个 Episode 累积的有效 Return 样本</strong>计算的。</p>
+<h4 id="二、First-Visit-的真正含义"><a href="#二、First-Visit-的真正含义" class="headerlink" title="二、First-Visit 的真正含义"></a>二、First-Visit 的真正含义</h4><p>First-Visit 指的是：</p>
+<blockquote>
+<p>在单个 Episode 中，对于同一个状态—动作对 $(s,a)$，只使用它第一次出现时对应的 Return 更新 Q-value。</p>
+</blockquote>
+<p>假设一个 Episode 的状态—动作序列为：</p>
+<p>$$<br>(s_1,a_2)\rightarrow(s_2,a_3)\rightarrow(s_1,a_2)\rightarrow(s_3,a_1)<br>$$</p>
+<p>其中 $(s_1,a_2)$ 出现了两次。</p>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>状态—动作对</th>
+<th>是否首次访问</th>
+<th>是否使用 Return</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$t&#x3D;0$</td>
+<td>$(s_1,a_2)$</td>
+<td>是</td>
+<td>使用</td>
+</tr>
+<tr>
+<td>$t&#x3D;1$</td>
+<td>$(s_2,a_3)$</td>
+<td>是</td>
+<td>使用</td>
+</tr>
+<tr>
+<td>$t&#x3D;2$</td>
+<td>$(s_1,a_2)$</td>
+<td>否</td>
+<td>跳过</td>
+</tr>
+<tr>
+<td>$t&#x3D;3$</td>
+<td>$(s_3,a_1)$</td>
+<td>是</td>
+<td>使用</td>
+</tr>
+</tbody></table>
+<p>因此，在当前 Episode 中，$(s_1,a_2)$ 只贡献一个有效 Return 样本。</p>
+<p>但这不意味着后续 Episode 不能再次采集 $(s_1,a_2)$ 的 Return。</p>
+<h4 id="三、多个-Episode-如何计算-Q-value？"><a href="#三、多个-Episode-如何计算-Q-value？" class="headerlink" title="三、多个 Episode 如何计算 Q-value？"></a>三、多个 Episode 如何计算 Q-value？</h4><p>假设需要估计：</p>
+<p>$$<br>Q^\pi(s_1,a_2)<br>$$</p>
+<p>连续采集三个 Episode：</p>
+<table>
+<thead>
+<tr>
+<th>Episode</th>
+<th align="right">$(s_1,a_2)$ 出现次数</th>
+<th align="right">有效 Return</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Episode 1</td>
+<td align="right">3</td>
+<td align="right">10</td>
+</tr>
+<tr>
+<td>Episode 2</td>
+<td align="right">2</td>
+<td align="right">8</td>
+</tr>
+<tr>
+<td>Episode 3</td>
+<td align="right">1</td>
+<td align="right">12</td>
+</tr>
+</tbody></table>
+<p>按照 First-Visit 规则，每个 Episode 最多提供一个有效 Return。</p>
+<p>因此：</p>
+<p>$$<br>Returns(s_1,a_2)&#x3D;[10,8,12]<br>$$</p>
+<p>计算 Q-value：</p>
+<p>$$<br>\boxed{<br>\hat Q^\pi(s_1,a_2)&#x3D;\frac{10+8+12}{3}&#x3D;10<br>}<br>$$</p>
+<p>注意，分母是 3，而不是 1，也不是总访问次数 6。</p>
+<blockquote>
+<p><strong>分母代表该状态—动作对累计获得的有效 Return 样本数量。</strong></p>
+</blockquote>
+<h4 id="四、Step-4-的公式如何理解？"><a href="#四、Step-4-的公式如何理解？" class="headerlink" title="四、Step 4 的公式如何理解？"></a>四、Step 4 的公式如何理解？</h4><p>PPT 中的第一行：</p>
+<p>$$<br>Returns(s_t,a_t)\leftarrow Returns(s_t,a_t)+g<br>$$</p>
+<p>表示：</p>
+<p>将当前 Episode 中首次访问 $(s_t,a_t)$ 得到的 Return $g$，添加到该状态—动作对的历史 Return 集合中。</p>
+<p>第二行：</p>
+<p>$$<br>\boxed{<br>Q(s_t,a_t)&#x3D;average(Returns(s_t,a_t))<br>}<br>$$</p>
+<p>表示：</p>
+<p>对该状态—动作对所有已收集的有效 Return 计算平均值。</p>
+<p>例如：</p>
+<p><strong>第一次采样：</strong></p>
+<p>$$<br>Returns&#x3D;[10]<br>$$</p>
+<p>$$<br>Q&#x3D;\frac{10}{1}&#x3D;10<br>$$</p>
+<p><strong>第二次采样：</strong></p>
+<p>$$<br>Returns&#x3D;[10,8]<br>$$</p>
+<p>$$<br>Q&#x3D;\frac{10+8}{2}&#x3D;9<br>$$</p>
+<p><strong>第三次采样：</strong></p>
+<p>$$<br>Returns&#x3D;[10,8,12]<br>$$</p>
+<p>$$<br>Q&#x3D;\frac{10+8+12}{3}&#x3D;10<br>$$</p>
+<p>每获得一个新的有效样本，就可以重新计算该状态—动作对的 Q-value。</p>
+<h4 id="五、First-Visit-与-Every-Visit-的区别"><a href="#五、First-Visit-与-Every-Visit-的区别" class="headerlink" title="五、First-Visit 与 Every-Visit 的区别"></a>五、First-Visit 与 Every-Visit 的区别</h4><table>
+<thead>
+<tr>
+<th>比较</th>
+<th>First-Visit MC</th>
+<th>Every-Visit MC</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>单个 Episode 内首次出现</td>
+<td>使用</td>
+<td>使用</td>
+</tr>
+<tr>
+<td>单个 Episode 内重复出现</td>
+<td>跳过</td>
+<td>使用</td>
+</tr>
+<tr>
+<td>不同 Episode 中再次出现</td>
+<td>使用</td>
+<td>使用</td>
+</tr>
+<tr>
+<td>Q-value 的计算</td>
+<td>有效 Return 的平均值</td>
+<td>所有访问对应 Return 的平均值</td>
+</tr>
+</tbody></table>
+<p>二者都可以通过样本平均来估计动作价值。</p>
+<p>区别仅在于<strong>每个 Episode 中哪些 Return 被纳入样本集合</strong>。</p>
+<h4 id="六、总结"><a href="#六、总结" class="headerlink" title="六、总结"></a>六、总结</h4><p>需要明确区分三个概念：</p>
+<p><strong>1. Episode</strong></p>
+<p>智能体从初始状态开始，到终止条件满足时形成的一段完整交互轨迹。</p>
+<p><strong>2. First-Visit</strong></p>
+<p>在单个 Episode 内，同一个状态—动作对只使用首次访问对应的 Return。</p>
+<p><strong>3. Q-value</strong></p>
+<p>在状态 $s$ 执行动作 $a$，之后按照策略 $\pi$ 行动，未来累计折扣奖励的数学期望：</p>
+<p>$$<br>Q^\pi(s,a)&#x3D;\mathbb E_\pi[G_t\mid S_t&#x3D;s,A_t&#x3D;a]<br>$$</p>
+<p>在 First-Visit MC 中，通过有效 Return 样本的平均值进行估计：</p>
+<p>$$<br>\boxed{<br>\hat Q^\pi(s,a)&#x3D;\frac{1}{N(s,a)}<br>\sum_{i&#x3D;1}^{N(s,a)}G^{(i)}(s,a)<br>}<br>$$</p>
+<p>其中 $N(s,a)$ 表示该状态—动作对累计获得的有效样本数，而不是某个 Episode 内的访问次数。</p>
+<blockquote>
+<p><strong>核心结论：First-Visit 是“每个 Episode 最多采样一次”，不是“整个训练过程只采样一次”。Q-value 需要跨多个 Episode 累积有效 Return 样本，再计算平均值。</strong></p>
+</blockquote>
+<p>另外，当策略在采样过程中持续更新时，历史 Return 可能来自不同版本的策略，因此平均值不一定是某个固定策略 $Q^\pi$ 的无偏估计。蒙特卡洛控制算法还需要考虑充分探索及收敛条件。</p>
+<h3 id="soft-policy"><a href="#soft-policy" class="headerlink" title="soft policy"></a>soft policy</h3><p>接下来我们学习如何使用 ε-greedy（ε-贪心策略）替代 Exploring Starts，让蒙特卡洛算法在不需要指定随机起点的情况下，仍然能够探索不同的动作。</p>
+<p>如果在一个状态下，所有可选动作的概率都大于 0，那么这个策略就是软策略。之前的 Exploring Starts 中，为了充分估计每个 $Q(s,a)$，我们需要让每个状态—动作对都有机会被采样，我们用的方法是：随机指定 Episode 的起始状态—动作对。Soft Policy 则换了一种思路：不必随机指定每次 Episode 的起点，而是在运行过程中让每个动作都有被选中的机会。</p>
+<p>但这里有一个前提：各个状态本身必须是可达的。如果某个状态根本无法到达，仅仅让动作概率大于 0，也无法访问那个状态。</p>
+<h3 id="ε-greedy"><a href="#ε-greedy" class="headerlink" title="ε-greedy"></a>ε-greedy</h3><p>ε-greedy 是一种具体的 Soft Policy，其基本思想是以 $1-\varepsilon$ 的概率，选择当前 Q-value 最大的动作，以 $\varepsilon$ 的概率，在所有可选动作中均匀随机选择。</p>
+<p>$$<br>\pi(a|s)&#x3D;\begin{cases}1-\varepsilon+\dfrac{\varepsilon}{|\mathcal A(s)|},&amp; a&#x3D;a^<em>\[8pt]\dfrac{\varepsilon}{|\mathcal A(s)|},&amp; a\neq a^</em>\end{cases}<br>$$</p>
+<p>其中，ε 是探索概率，$|\mathcal A(s)|$ 是状态 $s$ 下可选动作的数量，$a^*$ 表示当前 Q-value 最大的动作。</p>
+<p>我们可以将 ε-greedy 加入 MC 算法。之前 MC Exploring Starts 的策略改进是：</p>
+<p>$$<br>a^*(s)&#x3D;\arg\max_a Q(s,a)<br>$$</p>
+<p>然后：</p>
+<p>$$<br>\pi(a^*|s)&#x3D;1<br>$$</p>
+<p>也就是说，只选择当前最优动作。</p>
+<p>现在不一样了。</p>
+<p>虽然我们依然会寻找：</p>
+<p>$$<br>\boxed{a^*(s)&#x3D;\arg\max_a Q(s,a)}<br>$$</p>
+<p>但是不再把这个动作的选择概率直接设置为 1。</p>
+<p>而是改成：</p>
+<p>$$<br>\pi_{\text{new}}(a|s)&#x3D;<br>\begin{cases}<br>1-\varepsilon+\dfrac{\varepsilon}{|\mathcal A(s)|},<br>&amp;a&#x3D;a^<em>(s)\[8pt]<br>\dfrac{\varepsilon}{|\mathcal A(s)|},<br>&amp;a\neq a^</em>(s)<br>\end{cases}<br>$$</p>
+<p>这样即使目前某个动作最好，其他动作仍然有机会被探索。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>通过前面的学习，可以将强化学习的基本思路概括为：<strong>建立状态与动作的关系，评价策略的长期收益，再通过不断改进策略，使智能体获得尽可能大的累计奖励。</strong></p>
+<h3 id="1-强化学习的基本概念"><a href="#1-强化学习的基本概念" class="headerlink" title="1. 强化学习的基本概念"></a>1. 强化学习的基本概念</h3><p>强化学习可以使用马尔可夫决策过程（MDP）进行描述，主要包含状态（State）、动作（Action）、奖励（Reward）、状态转移概率以及策略（Policy）。</p>
+<p>智能体根据当前状态选择动作，与环境交互并获得奖励，形成一条条 Episode。</p>
+<p>强化学习的目标不是简单地最大化某一步的 Reward，而是最大化未来累计折扣奖励的期望：</p>
+<p>$$<br>G_t&#x3D;\sum_{k&#x3D;t}^{T-1}\gamma^{k-t}R_{k+1}<br>$$</p>
+<p>其中，折扣因子 $\gamma$ 用于控制未来奖励对当前决策的影响。</p>
+<h3 id="2-价值函数与贝尔曼方程"><a href="#2-价值函数与贝尔曼方程" class="headerlink" title="2. 价值函数与贝尔曼方程"></a>2. 价值函数与贝尔曼方程</h3><p>为了评价一个策略，引入了两种价值函数：</p>
+<ul>
+<li><strong>State Value $V^\pi(s)$</strong>：在状态 $s$ 下，按照策略 $\pi$ 行动，未来累计折扣奖励的期望。</li>
+<li><strong>Action Value $Q^\pi(s,a)$</strong>：在状态 $s$ 下先执行指定动作 $a$，之后按照策略 $\pi$ 行动，未来累计折扣奖励的期望。</li>
+</ul>
+<p>两者满足：</p>
+<p>$$<br>V^\pi(s)&#x3D;\sum_a\pi(a|s)Q^\pi(s,a)<br>$$</p>
+<p>贝尔曼方程进一步建立了当前状态价值与未来状态价值之间的递归关系：</p>
+<p>$$<br>\pi(s)&#x3D;r_\pi(s)+\gamma\sum_{s’}p_\pi(s’|s)V^\pi(s’)<br>$$</p>
+<p>其核心思想是：<strong>当前状态的价值由即时奖励和未来状态的价值共同决定。</strong></p>
+<p>贝尔曼最优方程则通过最大化动作价值寻找最优价值函数。对于折扣因子 $0\leq\gamma&lt;1$ 的有限 MDP，贝尔曼最优算子具有压缩映射性质，因此可以通过反复迭代逐渐收敛到唯一的最优状态价值。</p>
+<h3 id="3-价值迭代与策略迭代"><a href="#3-价值迭代与策略迭代" class="headerlink" title="3. 价值迭代与策略迭代"></a>3. 价值迭代与策略迭代</h3><p>寻找最优策略主要涉及两个过程：</p>
+<ul>
+<li><strong>Policy Evaluation（策略评估）</strong>：计算或估计当前策略的价值。</li>
+<li><strong>Policy Improvement（策略改进）</strong>：利用价值估计选择更好的动作，更新策略。</li>
+</ul>
+<p>价值迭代（Value Iteration）通过反复应用贝尔曼最优更新，逐渐逼近最优状态价值：</p>
+<p>$$<br>V_{k+1}(s)&#x3D;\max_a\left[r(s,a)+\gamma\sum_{s’}p(s’|s,a)V_k(s’)\right]<br>$$</p>
+<p>策略迭代（Policy Iteration）则先评价当前策略，再根据价值函数改进策略，不断重复。</p>
+<p>截断策略迭代（Truncated Policy Iteration）不要求每次策略评估完全收敛，而是在进行有限次价值更新后就尝试改进策略，从而减少计算量。</p>
+<p>这几种方法体现了一个共同的思想：</p>
+<blockquote>
+<p><strong>不断交替进行策略评估与策略改进，逐渐寻找更优策略。</strong></p>
+</blockquote>
+<p>这种思想也被称为广义策略迭代（Generalized Policy Iteration，GPI）。</p>
+<h3 id="4-从-Model-Based-到-Model-Free"><a href="#4-从-Model-Based-到-Model-Free" class="headerlink" title="4. 从 Model-Based 到 Model-Free"></a>4. 从 Model-Based 到 Model-Free</h3><p>前面学习的贝尔曼方程和动态规划算法通常需要已知环境的状态转移概率与奖励模型。</p>
+<p>但在实际环境中，这些信息往往难以准确获得。</p>
+<p>因此可以采用 Model-Free（无模型）强化学习方法：不显式计算环境转移概率，而是通过智能体与环境交互获得的数据估计价值函数。</p>
+<p>蒙特卡洛方法（Monte Carlo，MC）就是其中一种方法：</p>
+<p>$$<br>\hat Q^\pi(s,a)&#x3D;\frac{1}{N}\sum_{i&#x3D;1}^{N}G^{(i)}<br>$$</p>
+<p>即利用同一个状态—动作对对应的多个 Return 样本，计算平均值来估计 Q-value。</p>
+<h3 id="5-蒙特卡洛方法的改进"><a href="#5-蒙特卡洛方法的改进" class="headerlink" title="5. 蒙特卡洛方法的改进"></a>5. 蒙特卡洛方法的改进</h3><p>MC Basic 通过收集多个 Episode 估计动作价值，再进行策略改进。</p>
+<p>为了更充分地利用 Episode 中的数据，引入两种方法：</p>
+<ul>
+<li><strong>First-Visit MC</strong>：在每个 Episode 内，同一个状态—动作对只使用第一次访问对应的 Return。</li>
+<li><strong>Every-Visit MC</strong>：使用该状态—动作对每一次访问对应的 Return。</li>
+</ul>
+<p>其中，First-Visit 的含义不是整个训练过程只采样一次，而是每个 Episode 内最多采样一次。Q-value 的平均值仍然需要跨多个 Episode 累积有效 Return 样本。</p>
+<p>在策略更新方面，可以收集大量 Episode 后统一更新，也可以每完成一个 Episode 就更新价值估计并尝试改进策略。</p>
+<p>MC Exploring Starts 进一步利用随机初始状态—动作对保证探索机会，但要求能够从任意状态—动作对开始 Episode，这在实际环境中往往难以实现。</p>
+<h3 id="6-Soft-Policy-与-ε-Greedy"><a href="#6-Soft-Policy-与-ε-Greedy" class="headerlink" title="6. Soft Policy 与 ε-Greedy"></a>6. Soft Policy 与 ε-Greedy</h3><p>为减少对 Exploring Starts 的依赖，引入 Soft Policy（软策略），即每个合法动作都具有非零的选择概率。</p>
+<p>ε-Greedy 是一种常见的软策略：</p>
+<p>$$<br>\pi(a|s)&#x3D;<br>\begin{cases}<br>1-\varepsilon+\dfrac{\varepsilon}{|\mathcal A(s)|},&amp;a&#x3D;a^<em>\[6pt]<br>\dfrac{\varepsilon}{|\mathcal A(s)|},&amp;a\neq a^</em><br>\end{cases}<br>$$</p>
+<p>它通过平衡两种行为实现策略改进：</p>
+<ul>
+<li><strong>Exploration（探索）</strong>：尝试其他动作，获得新的经验。</li>
+<li><strong>Exploitation（利用）</strong>：选择当前估计价值最高的动作。</li>
+</ul>
+<p>当 $\varepsilon&#x3D;0$ 时，策略完全贪心；当 $\varepsilon&#x3D;1$ 时，策略均匀随机选择动作。</p>
+<p>ε-Greedy 能够使所有合法动作保持被选择的可能性，但充分探索所有状态仍需要满足环境可达性等条件。</p>
+<h3 id="7-最终理解"><a href="#7-最终理解" class="headerlink" title="7. 最终理解"></a>7. 最终理解</h3><p>从 MDP 到蒙特卡洛强化学习，整个学习过程实际上回答了几个逐步深入的问题：</p>
+<ol>
+<li><strong>如何描述强化学习问题？</strong> 使用 MDP 定义状态、动作、奖励和策略。</li>
+<li><strong>如何评价一个状态或动作？</strong> 使用 State Value、Action Value 和 Return。</li>
+<li><strong>如何计算价值函数？</strong> 使用贝尔曼方程建立递归关系。</li>
+<li><strong>如何寻找最优策略？</strong> 通过价值迭代、策略迭代以及策略评估与改进。</li>
+<li><strong>不知道环境模型怎么办？</strong> 利用实际采样的 Return 估计价值函数。</li>
+<li><strong>如何提高数据利用率？</strong> 使用 First-Visit、Every-Visit 及逐 Episode 更新。</li>
+<li><strong>如何避免探索不足？</strong> 使用 Exploring Starts 或 ε-Greedy 等探索机制。</li>
+</ol>
+<p><strong>归根结底，强化学习的核心可以概括为：</strong></p>
+<p>$$<br>\boxed{<br>\text{与环境交互}<br>\rightarrow<br>\text{收集经验}<br>\rightarrow<br>\text{估计价值}<br>\rightarrow<br>\text{改进策略}<br>\rightarrow<br>\text{继续交互}<br>}<br>$$</p>
+<p>前面学习的动态规划和蒙特卡洛方法虽然获取价值估计的方式不同，但都围绕策略评估与策略改进展开。</p>
+<p>这也为后续学习时序差分学习（TD Learning）、价值函数近似、策略梯度（Policy Gradient）和 Actor-Critic 等强化学习算法建立了基础。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0/" rel="tag"># 强化学习</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/10/15/JobQA-4/" rel="prev" title="英维克 嵌入式软件工程师 ｜技术问题整理">
+      <i class="fa fa-chevron-left"></i> 英维克 嵌入式软件工程师 ｜技术问题整理
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">基本概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B4%9D%E5%B0%94%E6%9B%BC%E5%85%AC%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">贝尔曼公式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B4%9D%E5%B0%94%E6%9B%BC%E6%9C%80%E4%BC%98%E5%85%AC%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">贝尔曼最优公式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%B7%E5%80%BC%E8%BF%AD%E4%BB%A3%E5%92%8C%E7%AD%96%E7%95%A5%E8%BF%AD%E4%BB%A3"><span class="nav-number">4.</span> <span class="nav-text">价值迭代和策略迭代</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%B7%E5%80%BC%E8%BF%AD%E4%BB%A3"><span class="nav-number">4.1.</span> <span class="nav-text">价值迭代</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0%EF%BC%9AValue-Iteration%EF%BC%88%E4%BB%B7%E5%80%BC%E8%BF%AD%E4%BB%A3%EF%BC%89%E5%AE%9E%E4%BE%8B%E8%AF%A6%E8%A7%A3"><span class="nav-number">4.1.1.</span> <span class="nav-text">强化学习：Value Iteration（价值迭代）实例详解</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0"><span class="nav-number">4.1.1.1.</span> <span class="nav-text">1. 问题描述</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-%E4%BB%B7%E5%80%BC%E8%BF%AD%E4%BB%A3%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86"><span class="nav-number">4.1.1.2.</span> <span class="nav-text">2. 价值迭代的基本原理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-%E7%AC%AC%E4%B8%80%E6%AC%A1%E8%BF%AD%E4%BB%A3%EF%BC%9A-k-0"><span class="nav-number">4.1.1.3.</span> <span class="nav-text">3. 第一次迭代：$k&#x3D;0$</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#3-1-%E5%88%9D%E5%A7%8B%E5%8C%96%E4%BB%B7%E5%80%BC"><span class="nav-number">4.1.1.3.1.</span> <span class="nav-text">3.1 初始化价值</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#3-2-%E6%9E%84%E5%BB%BA-Q-table"><span class="nav-number">4.1.1.3.2.</span> <span class="nav-text">3.2 构建 Q-table</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#3-3-Policy-Update"><span class="nav-number">4.1.1.3.3.</span> <span class="nav-text">3.3 Policy Update</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#3-4-Value-Update"><span class="nav-number">4.1.1.3.4.</span> <span class="nav-text">3.4 Value Update</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#4-%E7%AC%AC%E4%BA%8C%E6%AC%A1%E8%BF%AD%E4%BB%A3%EF%BC%9A-k-1"><span class="nav-number">4.1.1.4.</span> <span class="nav-text">4. 第二次迭代：$k&#x3D;1$</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#4-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E5%8F%AF%E4%BB%A5%E5%B0%86-v-1-%E4%BB%A3%E5%9B%9E-Q-table%EF%BC%9F"><span class="nav-number">4.1.1.4.1.</span> <span class="nav-text">4.1 为什么可以将 $v_1$ 代回 Q-table？</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#4-2-Policy-Update"><span class="nav-number">4.1.1.4.2.</span> <span class="nav-text">4.2 Policy Update</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#4-3-Value-Update"><span class="nav-number">4.1.1.4.3.</span> <span class="nav-text">4.3 Value Update</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#5-%E7%AC%AC%E4%B8%89%E6%AC%A1%E8%BF%AD%E4%BB%A3%EF%BC%9A-k-2"><span class="nav-number">4.1.1.5.</span> <span class="nav-text">5. 第三次迭代：$k&#x3D;2$</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#5-1-%E8%AE%A1%E7%AE%97-s-1-%E7%9A%84%E7%8A%B6%E6%80%81%E4%BB%B7%E5%80%BC"><span class="nav-number">4.1.1.5.1.</span> <span class="nav-text">5.1 计算 $s_1$ 的状态价值</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#5-2-%E8%AE%A1%E7%AE%97%E5%85%B6%E4%BB%96%E7%8A%B6%E6%80%81"><span class="nav-number">4.1.1.5.2.</span> <span class="nav-text">5.2 计算其他状态</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#6-%E6%8C%81%E7%BB%AD%E8%BF%AD%E4%BB%A3%E4%B8%8E%E6%94%B6%E6%95%9B"><span class="nav-number">4.1.1.6.</span> <span class="nav-text">6. 持续迭代与收敛</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#7-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BB%B7%E5%80%BC%E8%BF%AD%E4%BB%A3%E8%83%BD%E5%A4%9F%E6%94%B6%E6%95%9B%EF%BC%9F"><span class="nav-number">4.1.1.7.</span> <span class="nav-text">7. 为什么价值迭代能够收敛？</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#8-%E6%80%BB%E7%BB%93"><span class="nav-number">4.1.1.8.</span> <span class="nav-text">8. 总结</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AD%96%E7%95%A5%E8%BF%AD%E4%BB%A3"><span class="nav-number">4.2.</span> <span class="nav-text">策略迭代</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1%E3%80%81%E7%AD%96%E7%95%A5%E8%AF%84%E4%BC%B0%EF%BC%88Policy-Evaluation%EF%BC%89"><span class="nav-number">4.2.1.</span> <span class="nav-text">1、策略评估（Policy Evaluation）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2%E3%80%81%E7%AD%96%E7%95%A5%E6%94%B9%E8%BF%9B%EF%BC%88Policy-Improvement%EF%BC%89"><span class="nav-number">4.2.2.</span> <span class="nav-text">2、策略改进（Policy Improvement）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%88%AA%E6%96%AD%E7%AD%96%E7%95%A5%E8%BF%AD%E4%BB%A3"><span class="nav-number">4.3.</span> <span class="nav-text">截断策略迭代</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%92%99%E7%89%B9%E5%8D%A1%E6%B4%9B%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0%E6%96%B9%E6%B3%95"><span class="nav-number">5.</span> <span class="nav-text">蒙特卡洛强化学习方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#MC-Basic"><span class="nav-number">5.1.</span> <span class="nav-text">MC Basic</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1%E3%80%81%E7%AD%96%E7%95%A5%E8%AF%84%E4%BC%B0%EF%BC%88Policy-Evaluation%EF%BC%89-1"><span class="nav-number">5.1.1.</span> <span class="nav-text">1、策略评估（Policy Evaluation）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2%E3%80%81%E7%AD%96%E7%95%A5%E6%94%B9%E8%BF%9B%EF%BC%88Policy-Inprovement%EF%BC%89"><span class="nav-number">5.1.2.</span> <span class="nav-text">2、策略改进（Policy Inprovement）</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MC-Exploring"><span class="nav-number">5.2.</span> <span class="nav-text">MC Exploring</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1%E3%80%81First-Visit-MC%EF%BC%88%E9%A6%96%E6%AC%A1%E8%AE%BF%E9%97%AE%EF%BC%89"><span class="nav-number">5.2.1.</span> <span class="nav-text">1、First-Visit MC（首次访问）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2%E3%80%81Every-Visit-MC%EF%BC%88%E6%AF%8F%E6%AC%A1%E8%AE%BF%E9%97%AE%EF%BC%89"><span class="nav-number">5.2.2.</span> <span class="nav-text">2、Every-Visit MC（每次访问）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Step-1%EF%BC%9A%E9%9A%8F%E6%9C%BA%E9%80%89%E6%8B%A9%E5%88%9D%E5%A7%8B%E7%8A%B6%E6%80%81-%E5%8A%A8%E4%BD%9C%E5%AF%B9"><span class="nav-number">5.2.3.</span> <span class="nav-text">Step 1：随机选择初始状态-动作对</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Step-2%EF%BC%9A%E7%94%9F%E6%88%90%E4%B8%80%E6%9D%A1-Episode"><span class="nav-number">5.2.4.</span> <span class="nav-text">Step 2：生成一条 Episode</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Step-3%EF%BC%9A%E4%BB%8E%E5%90%8E%E5%BE%80%E5%89%8D%E8%AE%A1%E7%AE%97-Return"><span class="nav-number">5.2.5.</span> <span class="nav-text">Step 3：从后往前计算 Return</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Step-4%EF%BC%9A%E5%B0%86-Return-%E5%AD%98%E8%B5%B7%E6%9D%A5%EF%BC%8C%E5%86%8D%E6%B1%82%E5%B9%B3%E5%9D%87"><span class="nav-number">5.2.6.</span> <span class="nav-text">Step 4：将 Return 存起来，再求平均</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Step-5%EF%BC%9A%E6%94%B9%E8%BF%9B%E7%AD%96%E7%95%A5"><span class="nav-number">5.2.7.</span> <span class="nav-text">Step 5：改进策略</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Monte-Carlo%EF%BC%9AFirst-Visit-%E4%B8%8E-Q-value-%E6%B1%82%E5%B9%B3%E5%9D%87%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">5.3.</span> <span class="nav-text">Monte Carlo：First-Visit 与 Q-value 求平均的区别</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E5%AE%B9%E6%98%93%E6%B7%B7%E6%B7%86%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">5.3.1.</span> <span class="nav-text">一、容易混淆的问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8C%E3%80%81First-Visit-%E7%9A%84%E7%9C%9F%E6%AD%A3%E5%90%AB%E4%B9%89"><span class="nav-number">5.3.2.</span> <span class="nav-text">二、First-Visit 的真正含义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%A4%9A%E4%B8%AA-Episode-%E5%A6%82%E4%BD%95%E8%AE%A1%E7%AE%97-Q-value%EF%BC%9F"><span class="nav-number">5.3.3.</span> <span class="nav-text">三、多个 Episode 如何计算 Q-value？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9B%9B%E3%80%81Step-4-%E7%9A%84%E5%85%AC%E5%BC%8F%E5%A6%82%E4%BD%95%E7%90%86%E8%A7%A3%EF%BC%9F"><span class="nav-number">5.3.4.</span> <span class="nav-text">四、Step 4 的公式如何理解？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%94%E3%80%81First-Visit-%E4%B8%8E-Every-Visit-%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">5.3.5.</span> <span class="nav-text">五、First-Visit 与 Every-Visit 的区别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-number">5.3.6.</span> <span class="nav-text">六、总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#soft-policy"><span class="nav-number">5.4.</span> <span class="nav-text">soft policy</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%CE%B5-greedy"><span class="nav-number">5.5.</span> <span class="nav-text">ε-greedy</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-number">6.1.</span> <span class="nav-text">1. 强化学习的基本概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E4%BB%B7%E5%80%BC%E5%87%BD%E6%95%B0%E4%B8%8E%E8%B4%9D%E5%B0%94%E6%9B%BC%E6%96%B9%E7%A8%8B"><span class="nav-number">6.2.</span> <span class="nav-text">2. 价值函数与贝尔曼方程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E4%BB%B7%E5%80%BC%E8%BF%AD%E4%BB%A3%E4%B8%8E%E7%AD%96%E7%95%A5%E8%BF%AD%E4%BB%A3"><span class="nav-number">6.3.</span> <span class="nav-text">3. 价值迭代与策略迭代</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E4%BB%8E-Model-Based-%E5%88%B0-Model-Free"><span class="nav-number">6.4.</span> <span class="nav-text">4. 从 Model-Based 到 Model-Free</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E8%92%99%E7%89%B9%E5%8D%A1%E6%B4%9B%E6%96%B9%E6%B3%95%E7%9A%84%E6%94%B9%E8%BF%9B"><span class="nav-number">6.5.</span> <span class="nav-text">5. 蒙特卡洛方法的改进</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-Soft-Policy-%E4%B8%8E-%CE%B5-Greedy"><span class="nav-number">6.6.</span> <span class="nav-text">6. Soft Policy 与 ε-Greedy</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-%E6%9C%80%E7%BB%88%E7%90%86%E8%A7%A3"><span class="nav-number">6.7.</span> <span class="nav-text">7. 最终理解</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Hcc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">87</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Hcc</span>
+
+
+
+
+</div>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="/js/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'default',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'Ov23liistS5Y3k9rr8rY',
+      clientSecret: 'e34ec40459ac4070e884271ae281f6d2315d1d98',
+      repo        : 'hccc1203.github.io',
+      owner       : 'hccc1203',
+      admin       : ['hccc1203'],
+      id          : '51ba9bf052ef09c6e36b4141f283e35f',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+<script src="/js/typewriter.js"></script>
+<script src="/js/dark-mode.js"></script>
+<script src="/js/particles.js"></script>
+
+</body>
+</html>
