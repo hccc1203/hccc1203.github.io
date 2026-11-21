@@ -1,0 +1,491 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+  
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0" theme-name="Stellar" theme-version="2.0.0">
+  
+  
+  <meta name="generator" content="Hexo 8.1.2">
+  <meta http-equiv="x-dns-prefetch-control" content="on">
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  <title data-stellar-page-meta="">Linux驱动学习日记(14) pinctrl 和 gpio 子系统实验 - HCC's Blog</title>
+  <script data-stellar-script="core">
+    (function () {
+      var key = 'stellar:v2:leftbar-state';
+      var fallback = "expanded";
+      try {
+        var value = localStorage.getItem(key);
+        document.documentElement.dataset.leftbarState = value === 'collapsed' || value === 'expanded' ? value : fallback;
+      } catch (error) {
+        document.documentElement.dataset.leftbarState = fallback;
+      }
+    })();
+  </script>
+
+  <meta name="description" content="学习 Linux 环境下 pinctrl 和 gpio 子系统" data-stellar-page-meta="">
+<meta property="og:type" content="article" data-stellar-page-meta="">
+<meta property="og:title" content="Linux驱动学习日记(14) pinctrl 和 gpio 子系统实验" data-stellar-page-meta="">
+<meta property="og:url" content="https://www.hcc1203.top/posts/linux_driver/linux-driver-learn-14/" data-stellar-page-meta="">
+<meta property="og:site_name" content="HCC's Blog" data-stellar-page-meta="">
+<meta property="og:description" content="学习 Linux 环境下 pinctrl 和 gpio 子系统" data-stellar-page-meta="">
+<meta property="og:locale" content="zh_CN" data-stellar-page-meta="">
+<meta property="og:image" content="https://www.hcc1203.top/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/14/%E6%88%90%E5%8A%9F%E5%88%9B%E5%BB%BA%E8%8A%82%E7%82%B9.png" data-stellar-page-meta="">
+<meta property="article:author" content="HCC" data-stellar-page-meta="">
+<meta property="article:published_time" content="2026-03-02T02:10:37.000Z" data-stellar-page-meta="">
+<meta property="article:modified_time" content="2026-11-21T08:47:58.000Z" data-stellar-page-meta="">
+<meta property="article:tag" content="Linux" data-stellar-page-meta="">
+<meta property="article:tag" content="驱动开发" data-stellar-page-meta="">
+<meta name="twitter:card" content="summary" data-stellar-page-meta="">
+<meta name="twitter:image" content="https://www.hcc1203.top/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/14/%E6%88%90%E5%8A%9F%E5%88%9B%E5%BB%BA%E8%8A%82%E7%82%B9.png" data-stellar-page-meta=""><meta name="twitter:title" content="Linux驱动学习日记(14) pinctrl 和 gpio 子系统实验" data-stellar-page-meta="">
+  
+  
+  <meta name="keywords" content="Linux,驱动开发" data-stellar-page-meta="">
+
+  <!-- feed -->
+  
+
+  <link rel="preload" href="/css/main.css?v=2.0.0" as="style">
+  <link rel="stylesheet" href="/css/main.css?v=2.0.0">
+  <style>:root{--text-loading:"正在加载";--text-loading-error:"加载失败，请稍后重试。"}</style>
+
+
+  
+
+  
+
+  <script type="application/ld+json" data-stellar-page-meta="">{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"HCC","sameAs":[]},"dateCreated":"2026-03-02T10:10:37+08:00","dateModified":"2026-11-21T16:47:58+08:00","datePublished":"2026-03-02T10:10:37+08:00","description":"学习 Linux 环境下 pinctrl 和 gpio 子系统","headline":"Linux驱动学习日记(14) pinctrl 和 gpio 子系统实验","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.hcc1203.top/posts/linux_driver/linux-driver-learn-14/"},"publisher":{"@type":"Organization","name":"HCC","sameAs":[]},"url":"https://www.hcc1203.top/posts/linux_driver/linux-driver-learn-14/","image":["/img/linux驱动开发/14/成功创建节点.png"],"keywords":"Linux, 驱动开发","thumbnailUrl":"/img/linux驱动开发/14/成功创建节点.png"}</script>
+  <style>
+  @media (min-width: 1181px) {
+    body[data-page-type="index"] .site-shell:not([data-regions~="rightbar"]) .site-main {
+      max-width: var(--width-main-wiki-list);
+    }
+  }
+
+  .post-list.post .post-card .post-title {
+    text-wrap: balance;
+  }
+</style>
+
+
+  <link rel="stylesheet" href="/css/stellar-icons.css?v=7c185ad1a9a79674">
+  <link rel="preload" as="script" href="/js/stellar-icons.js?v=39c6ac17e854ffe2">
+  
+  
+</head>
+<body data-page-type="content" data-page-layout="post" data-article-style="story" data-text-indent=""><div data-stellar-runtime-region="" id="site-cover" class="site-cover"></div><div class="site-shell" id="start" data-regions="leftbar rightbar"><div class="site-workspace">
+<aside data-stellar-runtime-region="" id="leftbar-region" class="site-region site-region--leftbar" data-region="leftbar" aria-label="Leftbar"><div class="site-region__surface ui-surface"><div class="site-region__decoration" aria-hidden="true"></div><div class="site-region__viewport"><header class="site-region__header site-region__zone site-region__zone--top">
+    <div class="widget-instance widget-instance--brand" data-widget-id="leftbar:fixed:brand" data-presentation="leftbar" data-leftbar-rail="">
+<header class="brand-header brand-header--regular brand-header--site"><div class="brand-wrap"><a class="brand-title" href="/"><div class="brand-name">HCC's Blog</div><div class="brand-tagline cap">技术笔记</div></a></div><div class="brand-search">
+
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<button class="ui-collection__item ui-interactive card-hover card-hover--spotlight search-trigger has-hover-surface" type="button" title="搜索" aria-label="搜索" data-shell-action="open-search" data-search-instance="leftbar-brand-search" data-search-domain="blog" data-search-domain-label="博客" data-search-domain-blog="true">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">搜索</span>
+      
+      
+    </span>
+  
+  <kbd class="search-shortcut" aria-hidden="true">⌘K</kbd>
+
+  
+</button>
+
+  
+</div>
+
+
+</div></header>
+</div>
+  </header>
+  <div class="site-region__body site-region__zone site-region__zone--body">
+    <div class="widget-instance widget-instance--menu" data-widget-id="leftbar:fixed:menu" data-presentation="leftbar" data-leftbar-rail="">
+
+
+<nav class="menu dis-select">
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight is-active" href="/" title="文章" aria-current="page">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M5.879 2.879C5 3.757 5 5.172 5 8v8c0 2.828 0 4.243.879 5.121C6.757 22 8.172 22 11 22h2c2.828 0 4.243 0 5.121-.879C19 20.243 19 18.828 19 16V8c0-2.828 0-4.243-.879-5.121C17.243 2 15.828 2 13 2h-2c-2.828 0-4.243 0-5.121.879M8.25 17a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75M9 12.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zM8.25 9A.75.75 0 0 1 9 8.25h6a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 9" clip-rule="evenodd"></path><path fill="currentColor" d="M5.235 4.058C5 4.941 5 6.177 5 8v8c0 1.823 0 3.058.235 3.942L5 19.924c-.975-.096-1.631-.313-2.121-.803C2 18.243 2 16.828 2 14v-4c0-2.829 0-4.243.879-5.121c.49-.49 1.146-.707 2.121-.803zm13.53 15.884C19 19.058 19 17.822 19 16V8c0-1.823 0-3.059-.235-3.942l.235.018c.975.096 1.631.313 2.121.803C22 5.757 22 7.17 22 9.999v4c0 2.83 0 4.243-.879 5.122c-.49.49-1.146.707-2.121.803z" opacity=".5"></path></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">文章</span>
+      
+      
+    </span>
+  
+  
+  <span class="ui-collection__indicator"></span>
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/about/" title="关于">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20" opacity=".5"></path><path d="M12 6a3 3 0 1 0 0 6a3 3 0 0 0 0-6m0 7.5c-3.04 0-5.5 1.57-5.5 3.5c0 .65.28 1.26.77 1.77A7.96 7.96 0 0 0 12 20.5a7.96 7.96 0 0 0 4.73-1.73c.49-.51.77-1.12.77-1.77c0-1.93-2.46-3.5-5.5-3.5"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">关于</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+</div>
+
+</nav>
+
+</div>
+    <div class="widgets widget-stack widget-stack--leftbar widget-stack--body"></div>
+  </div>
+  <footer class="site-region__footer">
+    
+    <div class="site-region__system ui-collection" data-layout="inline" data-variant="nav" data-density="compact">
+      <div class="site-region__settings"><div class="widget-instance widget-instance--settings" data-widget-id="leftbar:fixed:settings" data-presentation="leftbar" data-leftbar-rail="">
+<a class="settings-widget ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/settings/" data-profile-provider="" data-profile-identity-enabled="false" data-profile-fallback-avatar="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg" data-settings-placement="leftbar" data-settings-label="设置" aria-label="设置" title="设置">
+  <span class="settings-widget__avatar" aria-hidden="true">
+    <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><path fill-rule="evenodd" d="M12.4277 2C11.3139 2 10.2995 2.6007 8.27081 3.80211L7.58466 4.20846C5.55594 5.40987 4.54158 6.01057 3.98466 7C3.42773 7.98943 3.42773 9.19084 3.42773 11.5937V12.4063C3.42773 14.8092 3.42773 16.0106 3.98466 17C4.54158 17.9894 5.55594 18.5901 7.58466 19.7915L8.27081 20.1979C10.2995 21.3993 11.3139 22 12.4277 22C13.5416 22 14.5559 21.3993 16.5847 20.1979L17.2708 19.7915C19.2995 18.5901 20.3139 17.9894 20.8708 17C21.4277 16.0106 21.4277 14.8092 21.4277 12.4063V11.5937C21.4277 9.19084 21.4277 7.98943 20.8708 7C20.3139 6.01057 19.2995 5.40987 17.2708 4.20846L16.5847 3.80211C14.5559 2.6007 13.5416 2 12.4277 2Z" clip-rule="evenodd" opacity=".5"></path><path d="M12.4277 8.25C10.3567 8.25 8.67773 9.92893 8.67773 12C8.67773 14.0711 10.3567 15.75 12.4277 15.75C14.4988 15.75 16.1777 14.0711 16.1777 12C16.1777 9.92893 14.4988 8.25 12.4277 8.25Z"></path></g></svg></span>
+  </span>
+  <span class="settings-widget__name ui-collection__title">设置</span>
+</a>
+</div></div>
+      <button type="button" class="leftbar-state-toggle ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only" aria-label="Collapse leftbar" aria-expanded="true" data-shell-action="toggle-leftbar"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M3.172 4.172C2 5.343 2 7.229 2 11v2c0 3.771 0 5.657 1.172 6.828S6.229 21 10 21h5V3h-5C6.229 3 4.343 3 3.172 4.172" clip-rule="evenodd" opacity=".5"></path><path fill="currentColor" d="M5.5 9.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zm1 4a.75.75 0 0 0 0 1.5h4a.75.75 0 0 0 0-1.5zM22 13v-2c0-3.771 0-5.657-1.172-6.828c-.974-.975-3.192-1.139-5.828-1.166v17.988c2.636-.027 4.854-.191 5.828-1.166C22 18.657 22 16.771 22 13"></path></svg></span></button>
+    </div>
+  </footer></div></div></aside>
+<main data-stellar-runtime-region="" class="site-main" id="main">
+
+
+<div class="article-banner-wrap slide-up"><div class="article banner top">
+  <div class="content">
+    
+    <div class="top bread-nav footnote"><div class="top-row"><div class="left" id="breadcrumb"><a class="cap breadcrumb" href="/">主页</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">文章</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/">学习日志</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/Linux%E9%A9%B1%E5%8A%A8/">Linux驱动</a>
+</div><div class="right"><span class="cap reading">5653 字 · 预计阅读 19 分钟</span></div></div><div class="meta-row">
+<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2026-03-02T02:10:37.000Z">2026-03-02</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2026-11-21T08:47:58.000Z">2026-11-21</time></span></div>
+</div></div>
+    
+    <div class="bottom only-title">
+      
+      <div class="text-area">
+        <h1 class="text title"><span>Linux驱动学习日记(14) pinctrl 和 gpio 子系统实验</span></h1>
+        
+      </div>
+    </div>
+    
+  </div>
+  </div></div>
+<article class="md-text content slide-up"><h2 id="pinctrl-子系统"><a href="#pinctrl-子系统" class="headerlink" title="pinctrl 子系统" data-stellar-navigation=""></a>pinctrl 子系统</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介" data-stellar-navigation=""></a>简介</h3><p>Linux 驱动讲究驱动分离和分层，pinctrl 和 gpio 子系统就是驱动分离与分层思想下的产物，驱动分离与分层其实就是按照面向对象编程的设计思想而设计的设备驱动框架。</p>
+<p>我们先来回顾一下 LED 的驱动流程：<br>①、修改设备树，添加相应的节点，节点里面的重点是设置 reg 属性，reg 属性包含了 GPIO 相关寄存器。<br>②、获取 reg属性中 IOMUXC_SW_MUX_CTL_PAD_GPIO1_IO03 和 IOMUXC_SW_PAD_CTL_PAD_GPIO1_IO03 这两个寄存器地址，并初始化。<br>③、在②中将 GPIO1_IO03这个 PIN 复用为了 GPIO 功能，因此需要设置 GPIO_IO03 这个 GPIO 相关的寄存器，也就是 GPIO1_DR 和 GPIO1_GDIR 两个寄存器。<br>总结一下，②中完成对 GPIO1_IO03 这个 pin 的初始化，设置这个 pin 的复用功能，③中完成这个 GPIO 的初始化，设置 GPIO 为输入、输出等。因此 Linux 内核针对 PIN 的配置推出了 pinctrl 子系统，对于 GPIO 的配置推出了 gpio 子系统。<br>大多数 SOC 的 pin 都是支持复用的，此外我们还需要配置 pin 的电器属性，比如上/下拉、速度、驱动能力等等。传统的配置 pin 的方式就是直接操作相应的寄存器，但是这种配置方式比较繁琐。pinctrrl 子系统就是为了更好的配置而引入的，pinctrl 子系统的主要工作内容如下</p>
+<pre><code>①、获取设备树中 pin 信息。
+②、根据获取到的 pin 信息来设置 pin 的复用功能
+③、根据获取到的 pin 信息来设置 pin 的电气特性，比如上/下拉、速度、驱动能力等。
+</code></pre><p>对于我们使用者来讲，著需要在设备树里面设置好某个 pin 的相关属性即可，其他的初始化工作均由 pinctrl 子系统来完成，pinctrl 子系统源码目录为 drivers/pinctrl。</p>
+<h3 id="I-MX6ULL-的-pinctrl-子系统驱动"><a href="#I-MX6ULL-的-pinctrl-子系统驱动" class="headerlink" title="I.MX6ULL 的 pinctrl 子系统驱动" data-stellar-navigation=""></a>I.MX6ULL 的 pinctrl 子系统驱动</h3><p>要使用 pinctrl 子系统，我们需要在设备树里面配置 PIN 的配置信息，毕竟 pinctrl 子系统要根据你提供的信息来配置 PIN 功能，一般会在设备梳理创建一个节点来描述 PIN 的配置信息。打开 imx6ul.dtsi，找到一个叫做 iomuxc 的节点，如下所示：</p>
+<pre><code>iomuxc: pinctrl@20e0000 {
+    compatible = "fsl,imx6ul-iomuxc";
+    reg = &lt;0x020e0000 0x4000&gt;;
+};
+</code></pre><p>这里的 <strong>0x020e0000</strong> 指的是 IOMUXC 寄存器块的物理机地址，换句话说，CPU 内部有一块专门控制“引脚复用”的寄存器区域，它在 SoC 的内存映射空间里，从 0x020E0000 开始。在 ARM SoC 里，所有外设都是“内存映射”的。CPU 访问外设 ≈ 访问一段特殊地址的内存。设备树中的</p>
+<pre><code>reg = &lt;0x020e0000 0x4000&gt;;
+</code></pre><p>意思是这个硬件块从 0x020E0000 开始，占用 0x4000 字节（16KB）。打开之前修改过的 imx6ull-hcw-emmc.dtsi，找到如下内容：</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&amp;iomuxc {</span><br><span class="line">    pinctrl-names = "default";</span><br><span class="line"></span><br><span class="line">    pinctrl_camera_clock: cameraclockgrp {</span><br><span class="line">        fsl,pins = &lt;</span><br><span class="line">            MX6UL_PAD_CSI_MCLK__CSI_MCLK    0x1b088</span><br><span class="line">        &gt;;</span><br><span class="line">    };</span><br><span class="line">······</span><br></pre></td></tr></tbody></table></figure>
+<p>这段代码就是向 iomuxc 节点追加数据，不同的外设使用的 PIN 不同，因此将某个外设所使用的所有 PIN 都组织在一个子节点里面。因此，可以得到完整的 iomuxc 节点，如下所示：</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">iomuxc: pinctrl@20e0000 {</span><br><span class="line">    compatible = "fsl,imx6ul-iomuxc";</span><br><span class="line">    reg = &lt;0x020e0000 0x4000&gt;;</span><br><span class="line">    pinctrl-names = "default";</span><br><span class="line"></span><br><span class="line">    pinctrl_camera_clock: cameraclockgrp {</span><br><span class="line">        fsl,pins = &lt;</span><br><span class="line">            MX6UL_PAD_CSI_MCLK__CSI_MCLK    0x1b088</span><br><span class="line">        &gt;;</span><br><span class="line">    };</span><br><span class="line">    pinctrl_csi1: csi1grp {</span><br><span class="line">        fsl,pins = &lt;</span><br><span class="line">            MX6UL_PAD_CSI_PIXCLK__CSI_PIXCLK 0x1b088</span><br><span class="line">            MX6UL_PAD_CSI_VSYNC__CSI_VSYNC 0x1b088</span><br><span class="line">            MX6UL_PAD_CSI_HSYNC__CSI_HSYNC 0x1b088</span><br><span class="line">            MX6UL_PAD_CSI_DATA00__CSI_DATA02 0x1b088</span><br><span class="line">            MX6UL_PAD_CSI_DATA01__CSI_DATA03 0x1b088</span><br><span class="line">            MX6UL_PAD_CSI_DATA02__CSI_DATA04 0x1b088</span><br><span class="line">            MX6UL_PAD_CSI_DATA03__CSI_DATA05 0x1b088</span><br><span class="line">            MX6UL_PAD_CSI_DATA04__CSI_DATA06 0x1b088</span><br><span class="line">            MX6UL_PAD_CSI_DATA05__CSI_DATA07 0x1b088</span><br><span class="line">            MX6UL_PAD_CSI_DATA06__CSI_DATA08 0x1b088</span><br><span class="line">            MX6UL_PAD_CSI_DATA07__CSI_DATA09 0x1b088</span><br><span class="line">        &gt;;</span><br><span class="line">    };</span><br><span class="line">·············</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>代码中，compatible 属性值为“fsl,imx6ul-iomuxc”，前面讲解设备树的时候说过，Linux 内核会根据 compatbile 属性值来查找对应的驱动文件，所以我们在 Linux 内核源码中全局搜索字符串“fsl,imx6ul-iomuxc”就会找到 I.MX6ULL 这颗 SOC 的 pinctrl 驱动文件。这里的 pinctrl-names = “default”; 意味着这个控制器有一个默认状态组。外设如果引用 pinctrl-0，通常会用这个状态。<br>接下来我们来看这一句</p>
+<pre><code>MX6UL_PAD_CSI_MCLK__CSI_MCLK    0x1b088
+</code></pre><p>我们来拆解他，第一部分 MX6UL_PAD_CSI_MCLK__CSI_MCLK，这个宏定义在 imx6ull-pinfunc.h，这个宏已经告诉内核，这个 PAD 的 MUX 寄存器位置，PAD 控制寄存器位置，应该写哪个 MUX 模式，输入选择值。其结构为</p>
+<pre><code>物理引脚名__功能名
+</code></pre><p>后面的 0x1b088 为电气属性。</p>
+<h3 id="在设备树中添加-pinctrl-节点模板"><a href="#在设备树中添加-pinctrl-节点模板" class="headerlink" title="在设备树中添加 pinctrl 节点模板" data-stellar-navigation=""></a>在设备树中添加 pinctrl 节点模板</h3><p>我们已经简单了解了 pinctrl 子系统，接下来我们尝试一下在设备树中添加某个外设的 PIN 信息。这里我们虚拟一个名为 “test” 的设备，test 使用了 GPIO1_IO00 这个 PIN 的 GPIO 功能，pinctrl 节点添加过程如下：</p>
+<p><strong>1、创建对应的节点</strong><br>同一个外设的 PIN 都放到一个节点里面，打开 imx6ull-hcw-emmc.dts,在 iomuxc 节点中的 imx6ul-evk 子节点下添加 pinctrl_test 节点，添加完成后如下所示</p>
+<pre><code>pinctrl_test: testgrp
+{
+
+}
+</code></pre><p><strong>2、添加“fsl,pins”属性</strong><br>设备树是通过属性来保存信息的，因此我们需要添加一个属性，属性名字一定要为 “fsl,pins”，因为对于 I.MX 系列SOC而言，pinctrl 驱动程序是通过读取 “fsl,pins” 属性值来获取 PIN 的配置信息，完成后如下所示:</p>
+<pre><code>pinctrl_test: testgrp
+{
+    fsl,pins = &lt;
+
+    &gt;;
+}
+</code></pre><p><strong>3、在“fsl,pins”属性中添加 PIN 配置信息</strong><br>最后在 “fsl,pins” 属性中添加具体的 PIN 配置信息，完成后如下所示：</p>
+<pre><code>pinctrl_test: testgrp
+{
+    fsl,pins = &lt;
+        MX6UL_PAD_GPIO1_IO00__GPIO1_IO00  config
+    &gt;;
+}
+</code></pre><p>至此，我们已经在 imx6ull-hcw-emmc.dtsi 文件中添加好了 test 设备所使用的 PIN 配置信息。</p>
+<h2 id="GPIO-子系统"><a href="#GPIO-子系统" class="headerlink" title="GPIO 子系统" data-stellar-navigation=""></a>GPIO 子系统</h2><h3 id="GPIO-子系统简介"><a href="#GPIO-子系统简介" class="headerlink" title="GPIO 子系统简介" data-stellar-navigation=""></a>GPIO 子系统简介</h3><p>之前学习了 pinctrl 子系统，其特点是设置 PIN ,（有的SOC 叫做 PAD）的复用和电气属性，如果 pinctrl 子系统将一个 PIN 复用为 GPIO 的话，那么接下来就要用到 gpio 子系统了。gpio 子系统顾名思义，就是用于初始化 GPIO 并且提供相应的 API 函数，比如设置 GPIO 为输入输出，读取 GPIO 的值等等。我们在设备树中添加 GPIO 相关的信息，然后就可以在驱动程序中使用 gpio 子系统提供的 API 函数来操作 GPIO。</p>
+<h3 id="设备树中的-gpio-信息"><a href="#设备树中的-gpio-信息" class="headerlink" title="设备树中的 gpio 信息" data-stellar-navigation=""></a>设备树中的 gpio 信息</h3><p>I.MX 开发板上的 UART1_RTS_B 作为 SD 卡的引脚检测，首先是将 UART1_RTS_B 复用为 GPIO1_IO19，并且设置电气属性，也就是 pinctrl 节点。打开 imx6ull-hcw-emmc.dtsi，可以看到这个引脚的配置如下：</p>
+<pre><code>MX6UL_PAD_UART1_RTS_B__GPIO1_IO19       0x17059 /* SD1 CD */
+</code></pre><p>pinctrl 配置好以后就是设置 gpio 了，SD 卡驱动程序通过读取 GPIO_IO19 的值来判断 SD 卡有没有插入。在设备树 SD 卡节点下添加一个属性来描述 SD 卡的 CD 引脚就行了，SD 卡驱动直接读取这个属性值就可以知道 SD卡的 CD 引脚使用的是哪个 GPIO 了。SD 卡连接在 I.MX6ULL 的 usdhc1 接口上，可以在同文件中找到名为 usdhc1 的节点，这个节点就是 SD 卡设备节点，如下所示：</p>
+<pre><code>&amp;usdhc1 {
+    pinctrl-names = "default", "state_100mhz", "state_200mhz";
+    pinctrl-0 = &lt;&amp;pinctrl_usdhc1&gt;;
+    pinctrl-1 = &lt;&amp;pinctrl_usdhc1_100mhz&gt;;
+    pinctrl-2 = &lt;&amp;pinctrl_usdhc1_200mhz&gt;;
+    cd-gpios = &lt;&amp;gpio1 19 GPIO_ACTIVE_LOW&gt;;
+    keep-power-in-suspend;
+    wakeup-source;
+    vmmc-supply = &lt;&amp;reg_sd1_vmmc&gt;;
+    status = "okay";
+};
+</code></pre><p>可以看出，默认情况下，使用的是 pinctrl_usdhc1 这套引脚配置。属性 “cd-gpios” 描述了 SD 卡的 CD 引脚使用哪个 IO。属性值一共有三个，“&amp;gpio1”表示 CD 引脚所使用的 IO 属于 GPIO1 组，“19” 表示 GPIO1 组的第 19 号 IO。“GPIO_ACTIVE_LOW”表示低电平有效，如果改为“GPIO_ACTIVE_HIGH” 就表示高电平有效。</p>
+<h3 id="gpio-子系统的-API-函数"><a href="#gpio-子系统的-API-函数" class="headerlink" title="gpio 子系统的 API 函数" data-stellar-navigation=""></a>gpio 子系统的 API 函数</h3><p>对于我们来说，设置好设备树之后就可以使用 gpio 子系统提供的 API 函数来操作指定的 GPIO ，gpio 子系统向我们屏蔽了具体的读写寄存器过程，这就是驱动分离与分层，大家各司其职，做好自己的本职工作即可。gpio 子系统提供的常用 API 函数如下：<br><strong>1、gpio_request</strong><br>gpio_request 函数用于申请一个 GPIO 管脚，在使用一个 GPIO 之前一定要使用 gpio_request 进行申请，函数原型如下</p>
+<pre><code>int gpio_request(unsigned gpio,  const char *label)
+</code></pre><p>函数参数和返回值含义如下：<br><strong>gpio</strong>：要申请的 gpio 标号，使用 of_get_named_gpio 函数从设备树获取指定 GPIO 属性信息，此函数会返回这个 GPIO 的标号。<br><strong>label</strong>：给 gpio 设置个名字。<br><strong>返回值</strong>：0，申请成功；其他值，申请失败。</p>
+<p><strong>2、gpio_free</strong><br>如果不适用某个 GPIO 了，那么就可以调用 gpio_free 函数进行释放。函数原型如下：</p>
+<pre><code>void gpio_free(unsigned gpio)
+</code></pre><p>函数参数和返回值含义如下：<br><strong>gpio</strong>：要释放的 gpio 标号。<br><strong>返回值</strong>：无。</p>
+<p><strong>3、gpio_direction_input函数</strong><br>此函数用于设置某个 GPIO 为输入，函数原型如下所示：  </p>
+<pre><code>int gpio_direction_input(unsigned gpio)
+</code></pre><p>函数的参数和返回值含义如下<br><strong>gpio</strong>:要设置为输入的 GPIO 标号。<br><strong>返回值</strong>：0，设置成功；负值，设置失败。</p>
+<p><strong>4、gpio_direction_output函数</strong><br><strong>同上</strong></p>
+<p><strong>5、gpio_get_value函数</strong><br>此函数用于获取某个 GPIO 的值（0或1），这是个宏，定义为：</p>
+<pre><code>#define gpio_get_value  __gpio_get_value int __gpio_get_value(unsigned gpio)
+</code></pre><p>函数参数和返回值含义如下：<br><strong>gpio</strong>:要设置为输入的 GPIO 标号。<br><strong>返回值</strong>：非负值，得到的 GPIO 值；负值，获取失败。</p>
+<p><strong>6、gpio_set_value函数</strong><br>此函数用于设置某个 GPIO 的值，此函数是个宏，定义如下：</p>
+<pre><code>#define gpio_set_value  __gpio_set_value void __gpio_set_value(unsigned gpio, int value)
+</code></pre><p>函数参数和返回值含义如下：<br><strong>gpio：</strong>要设置的 GPIO 标号。<br><strong>value：</strong>要设置的值。<br><strong>返回值：</strong>无<br>关于 gpio 子系统常用的 API 函数就讲这些，这些是我们用的最多的。</p>
+<h3 id="在设备树中添加-gpio-节点模板"><a href="#在设备树中添加-gpio-节点模板" class="headerlink" title="在设备树中添加 gpio 节点模板" data-stellar-navigation=""></a>在设备树中添加 gpio 节点模板</h3><p>继续完成之前的 test 设备，在前面我们已经说了如何创建 test 设备的 pinctrl 节点，接下来我们来创建 test 设备的 GPIO 节点。</p>
+<p><strong>1、创建 test 设备节点</strong><br>在根节点 “/” 下创建 test 设备子节点，如下所示</p>
+<pre><code>test{
+
+};
+</code></pre><p><strong>2、添加 pinctrl 信息</strong><br>将我们之前创建的 pinctrl_test 节点加入其中。如下所示：</p>
+<pre><code>test{
+    pinctrl-names = "default";
+    pinctrl-0 = &lt;&amp;pinctrl_test&gt;;
+};
+</code></pre><p><strong>3、添加 GPIO 属性信息</strong><br>最后需要在 test 节点中添加 GPIO 属性信息，表明 test 所使用的 GPIO 是哪个引脚，添加完成以后如下所示：</p>
+<pre><code>test{
+    pinctrl-names = "default";
+    pinctrl-0 = &lt;&amp;pinctrl_test&gt;;
+    gpio = &lt;&amp;gpio1 0 GPIO_ACTIVE_LOW&gt;;
+};
+</code></pre><p>关于 pinctrl 子系统和 gpio 子系统就坐到这里，接下来就是使用这两个子系统区驱动开发板上的 LED 灯。</p>
+<h3 id="与-gpio-相关的-of-函数"><a href="#与-gpio-相关的-of-函数" class="headerlink" title="与 gpio 相关的 of 函数" data-stellar-navigation=""></a>与 gpio 相关的 of 函数</h3><p>在上面的代码中，我们定义了一个名为 gpio 的属性，gpio 属性描述了 test 这个设备所使用的 GPIO。在驱动程序中需要读取 gpio 属性内容，Linux 内核提供了几个关于 GPIO 有关的 OF 函数，常用的几个 OF 函数如下所示：</p>
+<p><strong>1、of_gpio_named_count 函数</strong></p>
+<p>of_gpio_named_count 函数用于获取设备树某个属性里面定义了几个 GPIO 信息，其函数的原型如下</p>
+<pre><code>int of_gpio_named_count(struct device_node *np, const char  *propname)
+</code></pre><p>函数参数和返回值含义如下：<br><strong>np：</strong>设备节点。<br><strong>propname：</strong>要统计的 GPIO 属性。<br><strong>返回值：</strong>正值，统计到的 GPIO 数量；负值，失败。</p>
+<p><strong>2、of_gpio_count 函数</strong><br>of_gpio_named_count 函数一样，但是不同的地方在于，此函数统计的是“gpios”这个属性的 GPIO 数量，而 of_gpio_named_count 函数可以统计任意属性的 GPIO 信息，函数原型如下所示：</p>
+<pre><code>int of_gpio_count(struct device_node *np)
+</code></pre><p>函数参数和返回值含义如下：<br><strong>np：</strong>设备节点。<br><strong>返回值：</strong>正值，统计到的 GPIO 数量；负值，失败。</p>
+<p><strong>3、of_get_named_gpio 函数</strong></p>
+<p>此函数获取 GPIO 编号，因为 Linux 内核中关于 GPIO 的 API 函数都要使用 GPIO 编号，此函数会将设备树中类似&lt;&amp;gpio5 7 GPIO_ACTIVE_LOW&gt;的属性信息转换为对应的 GPIO 编号，此函数在驱动中使用很频繁！函数原型如下：</p>
+<pre><code>int of_get_named_gpio(struct device_node const char int *np, *propname, index)
+</code></pre><p>函数参数和返回值含义如下：<br><strong>np：</strong>设备节点。<br><strong>propname：</strong>包含要获取 GPIO 信息的属性名。<br><strong>index：</strong>GPIO 索引，因为一个属性里面可能包含多个 GPIO，此参数指定要获取哪个 GPIO 的编号，如果只有一个 GPIO 信息的话此参数为 0。<br><strong>返回值：</strong>正值，获取到的 GPIO 编号；负值，失败。</p>
+<h2 id="实验程序编写"><a href="#实验程序编写" class="headerlink" title="实验程序编写" data-stellar-navigation=""></a>实验程序编写</h2><h3 id="修改设备树文件"><a href="#修改设备树文件" class="headerlink" title="修改设备树文件" data-stellar-navigation=""></a>修改设备树文件</h3><p><strong>1、添加 pinctrl 节点</strong><br>I.MX6U-ALPHA 开发板上的 LED 灯使用了 GPIO1_IO03 这个 PIN，打开 imx6ull-hcw-emmc.dtsi，在 iomuxc 节点的 imx6ul-evk 子节点下创建一个名为“pinctrl_led”的子节点，节点内容如下所示：</p>
+<pre><code>pinctrl_led: ledgrp{
+    fsl,pins = &lt;
+        MX6UL_PAD_GPIO1_IO03__GPIO1_IO03    0x10B0
+    &gt;;
+};
+</code></pre><p><strong>2、添加 LED 设备节点</strong><br>在根节点下创建 LED 灯节点，节点名为 gpioled，节点内容如下</p>
+<pre><code>gpioled{
+    #address-cells = &lt;1&gt;;
+    #size-cells = &lt;1&gt;;
+    compatible = "hcw-gpioled";
+    pinctrl-names = "default";
+    pinctrl-0 = &lt;&amp;pinctrl_led&gt;;
+    led-gpio = &lt;&amp;gpio1 3 GPIO_ACTIVE_LOW&gt;;
+    status = "okay";
+};
+</code></pre><p><strong>3、检查 PIN 是否被其他外设使用</strong><br><strong>这一点非常重要！</strong><br>PIN 有没有被其他外设使用包括两个方面：</p>
+<pre><code>①、检查 pinctrl 设置。
+②、如果这个 PIN 被配置为 GPIO 的话，检查这个 GPIO 有没有背别的外设所使用。
+</code></pre><p>在 imx6ull-hcw-emmc.dtsi 中找到如下内容：</p>
+<pre><code>pinctrl_tsc: tscgrp {
+    fsl,pins = &lt;
+        MX6UL_PAD_GPIO1_IO01__GPIO1_IO01  0xb0
+        MX6UL_PAD_GPIO1_IO02__GPIO1_IO02  0xb0
+        MX6UL_PAD_GPIO1_IO03__GPIO1_IO03  0xb0
+        MX6UL_PAD_GPIO1_IO04__GPIO1_IO04  0xb0
+    &gt;;
+};
+</code></pre><p>很明显，这里和上面的 PIN 配置冲突了，我们将这一段屏蔽。因为我们还把这个 PIN 配置为了 GPIO，所以还需要查找一下有没有别的外设使用了 GPIO_IO03，在此文件中搜索 gpio1 3，找到如下内容：</p>
+<pre><code>&amp;tsc {
+    pinctrl-names = "default";
+    pinctrl-0 = &lt;&amp;pinctrl_tsc&gt;;
+    xnur-gpio = &lt;&amp;gpio1 3 GPIO_ACTIVE_LOW&gt;;
+    measure-delay-time = &lt;0xffff&gt;;
+    pre-charge-time = &lt;0xfff&gt;;
+    status = "okay";
+};
+</code></pre><p>tsc 是 TSC 的外设节点，从 726 行可以看出，tsc 外设也使用了 GPIO1_IO03，同样我们需要将这一行屏蔽掉。然后在继续搜索“gpio1 3”，看看除了本章的 LED 灯以外还有没有其他的地方也使用了 GPIO1_IO03，找到一个屏蔽一个。<br>设备树编写完成后使用“make dtbs”命令重新编译设备树，然后重新启动 Linux 系统。进入 /proc/device-tree 文件夹，可以看到 gpioled 节点存在。</p>
+<div align="center"><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/img/linux驱动开发/14/成功创建节点.png" width="60%" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[187.8015,12.9413,14.5079,1]}" data-stellar-image-source="/img/linux驱动开发/14/成功创建节点.png"></div>
+<div style="text-align:center;">图 1 创建gpioled节点</div>
+
+<h3 id="LED-灯驱动程序编写"><a href="#LED-灯驱动程序编写" class="headerlink" title="LED 灯驱动程序编写" data-stellar-navigation=""></a>LED 灯驱动程序编写</h3><p>设备树准备好以后就可以编写驱动程序了，由此我们来回忆一下驱动程序的基本写法。（正在学习中，等待更新）</p>
+<pre><code>1 分配设备号
+2 初始化 cdev
+3 注册 cdev
+4 创建设备节点
+5 实现 file_operations
+6 卸载驱动释放资源
+</code></pre><p>新建文件，写上头文件，并且写好注册注销基本函数框架。创建如下结构体</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">gpioled_dev</span>{</span></span><br><span class="line">    <span class="type">dev_t</span> devid;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span> <span class="title">cdev</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="keyword">class</span> *<span class="keyword">class</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">device</span>;</span></span><br><span class="line">    <span class="type">int</span> major;</span><br><span class="line">    <span class="type">int</span> minor;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device_node</span> *<span class="title">nd</span>;</span></span><br><span class="line">    <span class="type">int</span> led_gpio;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">gpioled_dev</span> <span class="title">gpioled</span>;</span></span><br></pre></td></tr></tbody></table></figure>
+<p>这段代码将一个 LED 设备需要的所有信息，打包成一个设备对象。这里面每一个成员的作用如下。<br>1、dev_t devid 设备号，Linux 用它区分设备。<br>2、struct cdev cdev。字符设备对象，它负责把 file_operations 挂到设备号上。<br>3、struct class <em>class，设备类，作用是让系统自动生成 /sys/class/gpioled。<br>4、struct device </em>device，设备对象，创建以后系统会自动生成/dev/gpioled<br>5、major、minor 主设备号和次设备号。<br>6、struct device_node *nd，设备树节点，驱动需要去设备树找 LED 的 GPIO，设备树可能是：</p>
+<pre><code>led {
+    led-gpio = &lt;&amp;gpio1 3 GPIO_ACTIVE_LOW&gt;;
+};
+</code></pre><p>驱动就会</p>
+<pre><code>gpioled.nd = of_find_node_by_path("/led");
+</code></pre><p>7、int led_gpio，这个是真正控制 LED 的 GPIO 编号，比如 GPIO1_IO03，驱动会解析设备树并得到编号gpioled.led_gpio = of_get_named_gpio(gpioled.nd,”led-gpio”,0); 然后控制 LED：gpio_set_value(gpioled.led_gpio,1);</p>
+<p>接下来 我们写好四个基本函数的框架：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">led_open</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span></span><br><span class="line">{</span><br><span class="line">    filp-&gt;private_data = &amp;gpioled;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">led_read</span><span class="params">(<span class="keyword">struct</span> file *filp,<span class="type">char</span> __user *buf,<span class="type">size_t</span> cnt,<span class="type">loff_t</span> *offt)</span></span><br><span class="line">{</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">led_write</span><span class="params">(<span class="keyword">struct</span> file *filp, <span class="type">const</span> <span class="type">char</span> __user *buf, <span class="type">size_t</span> cnt, <span class="type">loff_t</span> *offt)</span></span><br><span class="line">{</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">led_release</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span></span><br><span class="line">{</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>现在，我们来完成各个函数的具体内容。</p>
+<p><strong>1、init 函数</strong><br>init 函数需要获取设备节点、获取设备树中的 gpio 属性，得到 LED 所使用的编号。然后时注册字符设备驱动，首先创建设备号，然后初始化 cdev（init 并 添加），然后创建类，最后创建一个设备。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">gpioled_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">/* 设置 LED 所使用的 GPIO */</span></span><br><span class="line">    <span class="comment">// 获取设备节点</span></span><br><span class="line">    gpioled.nd = of_find_node_by_path(<span class="string">"/gpioled"</span>);</span><br><span class="line">    <span class="keyword">if</span>(gpioled.nd == <span class="literal">NULL</span>)</span><br><span class="line">    {</span><br><span class="line">        printk(<span class="string">"gpionode can not found\r\n"</span>);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line">        printk(<span class="string">"gpioled node has been found!\r\n"</span>);</span><br><span class="line">    }</span><br><span class="line">    gpioled.led_gpio = of_get_named_gpio(gpioled.nd,<span class="string">"led-gpio"</span>,<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span>(gpioled.led_gpio &lt; <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">        printk(<span class="string">"can't get led-gpio"</span>);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    }</span><br><span class="line">    printk(<span class="string">"led-gpio num = %d\r\n"</span>, gpioled.led_gpio);</span><br><span class="line">    ret = gpio_direction_output(gpioled.led_gpio, <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">if</span>(ret &lt; <span class="number">0</span>) { printk(<span class="string">"can't set gpio!\r\n"</span>); }</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 注册字符设备驱动 */</span></span><br><span class="line">    <span class="comment">// 1、创建设备号</span></span><br><span class="line">    <span class="keyword">if</span>(gpioled.major)</span><br><span class="line">    {</span><br><span class="line">        gpioled.devid = MKDEV(gpioled.major,<span class="number">0</span>);</span><br><span class="line">        register_chrdev_region(gpioled.devid,GPIOLED_CNT,GPIOLED_NAME);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line">        alloc_chrdev_region(&amp;gpioled.devid,<span class="number">0</span>,GPIOLED_CNT,GPIOLED_NAME);</span><br><span class="line"></span><br><span class="line">        gpioled.major = MAJOR(gpioled.devid);</span><br><span class="line">        gpioled.minor = MINOR(gpioled.devid);</span><br><span class="line">    }</span><br><span class="line">    printk(<span class="string">"gpioled major=%d,minor=%d\r\n"</span>,gpioled.major, gpioled.minor);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2、初始化 cdev</span></span><br><span class="line">    gpioled.cdev.owner = THIS_MODULE;</span><br><span class="line">    cdev_init(&amp;gpioled.cdev,&amp;gpio_fops);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3、添加cdev</span></span><br><span class="line">    cdev_add(&amp;gpioled.cdev,gpioled.devid,GPIOLED_CNT);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4、创建类</span></span><br><span class="line">    gpioled.class = class_create(THIS_MODULE,GPIOLED_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(gpioled.class))</span><br><span class="line">    {</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(gpioled.class);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 5、创建设备</span></span><br><span class="line">    gpioled.device = device_create(gpioled.class, <span class="literal">NULL</span>,gpioled.devid, <span class="literal">NULL</span>,GPIOLED_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(gpioled.device))</span><br><span class="line">    {</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(gpioled.device);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>接下来是 exit 函数</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">gpioled_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">    cdev_del(&amp;gpioled.cdev);</span><br><span class="line">    unregister_chrdev_region(gpioled.devid,GPIOLED_CNT);</span><br><span class="line"></span><br><span class="line">    device_destroy(gpioled.class,gpioled.devid);</span><br><span class="line">    class_destroy(gpioled.class);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>最后是 write 函数</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">led_write</span><span class="params">(<span class="keyword">struct</span> file *filp, <span class="type">const</span> <span class="type">char</span> __user *buf, <span class="type">size_t</span> cnt, <span class="type">loff_t</span> *offt)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> retvalue;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> databuf[<span class="number">1</span>];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> ledstat;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">gpioled_dev</span> *<span class="title">dev</span> =</span> filp-&gt;private_data;</span><br><span class="line"></span><br><span class="line">    retvalue = copy_from_user(databuf,buf,cnt);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(retvalue &lt; <span class="number">0</span>) { </span><br><span class="line">        printk(<span class="string">"kernel write failed!\r\n"</span>); </span><br><span class="line">        <span class="keyword">return</span> -EFAULT;</span><br><span class="line">    }</span><br><span class="line">    ledstat = databuf[<span class="number">0</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ledstat == LEDON)</span><br><span class="line">    {</span><br><span class="line">        gpio_set_value(dev-&gt;led_gpio,<span class="number">0</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (ledstat == LEDOFF)</span><br><span class="line">    {</span><br><span class="line">        gpio_set_value(dev-&gt;led_gpio,<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>最终代码放在文章末尾。</p>
+<h2 id="编译装载运行"><a href="#编译装载运行" class="headerlink" title="编译装载运行" data-stellar-navigation=""></a>编译装载运行</h2><p>编译生成 ko 模块并装载到文件系统中。运行测试程序，成功点亮 LED 灯。</p>
+<h2 id="完整驱动代码"><a href="#完整驱动代码" class="headerlink" title="完整驱动代码" data-stellar-navigation=""></a>完整驱动代码</h2><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/delay.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/uaccess.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/cdev.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_address.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_gpio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GPIOLED_CNT     1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> GPIOLED_NAME    <span class="string">"gpioled"</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEDON         1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEDOFF        0</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">gpioled_dev</span>{</span></span><br><span class="line">    <span class="type">dev_t</span> devid;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span> <span class="title">cdev</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="keyword">class</span> *<span class="keyword">class</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">device</span>;</span></span><br><span class="line">    <span class="type">int</span> major;</span><br><span class="line">    <span class="type">int</span> minor;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device_node</span> *<span class="title">nd</span>;</span></span><br><span class="line">    <span class="type">int</span> led_gpio;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">gpioled_dev</span> <span class="title">gpioled</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">led_open</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span></span><br><span class="line">{</span><br><span class="line">    filp-&gt;private_data = &amp;gpioled;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">led_read</span><span class="params">(<span class="keyword">struct</span> file *filp,<span class="type">char</span> __user *buf,<span class="type">size_t</span> cnt,<span class="type">loff_t</span> *offt)</span></span><br><span class="line">{</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">led_write</span><span class="params">(<span class="keyword">struct</span> file *filp, <span class="type">const</span> <span class="type">char</span> __user *buf, <span class="type">size_t</span> cnt, <span class="type">loff_t</span> *offt)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> retvalue;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> databuf[<span class="number">1</span>];</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> ledstat;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">gpioled_dev</span> *<span class="title">dev</span> =</span> filp-&gt;private_data;</span><br><span class="line"></span><br><span class="line">    retvalue = copy_from_user(databuf,buf,cnt);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(retvalue &lt; <span class="number">0</span>) { </span><br><span class="line">        printk(<span class="string">"kernel write failed!\r\n"</span>); </span><br><span class="line">        <span class="keyword">return</span> -EFAULT;</span><br><span class="line">    }</span><br><span class="line">    ledstat = databuf[<span class="number">0</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(ledstat == LEDON)</span><br><span class="line">    {</span><br><span class="line">        gpio_set_value(dev-&gt;led_gpio,<span class="number">0</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (ledstat == LEDOFF)</span><br><span class="line">    {</span><br><span class="line">        gpio_set_value(dev-&gt;led_gpio,<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">led_release</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span></span><br><span class="line">{</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">gpio_fops</span> =</span> {</span><br><span class="line">    .owner = THIS_MODULE,</span><br><span class="line">    .open = led_open,</span><br><span class="line">    .read = led_read,</span><br><span class="line">    .write = led_write,</span><br><span class="line">    .release = led_release,</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">gpioled_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">/* 设置 LED 所使用的 GPIO */</span></span><br><span class="line">    <span class="comment">// 获取设备节点</span></span><br><span class="line">    gpioled.nd = of_find_node_by_path(<span class="string">"/gpioled"</span>);</span><br><span class="line">    <span class="keyword">if</span>(gpioled.nd == <span class="literal">NULL</span>)</span><br><span class="line">    {</span><br><span class="line">        printk(<span class="string">"gpionode can not found\r\n"</span>);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line">        printk(<span class="string">"gpioled node has been found!\r\n"</span>);</span><br><span class="line">    }</span><br><span class="line">    gpioled.led_gpio = of_get_named_gpio(gpioled.nd,<span class="string">"led-gpio"</span>,<span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span>(gpioled.led_gpio &lt; <span class="number">0</span>)</span><br><span class="line">    {</span><br><span class="line">        printk(<span class="string">"can't get led-gpio"</span>);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    }</span><br><span class="line">    printk(<span class="string">"led-gpio num = %d\r\n"</span>, gpioled.led_gpio);</span><br><span class="line">    ret = gpio_direction_output(gpioled.led_gpio, <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">if</span>(ret &lt; <span class="number">0</span>) { printk(<span class="string">"can't set gpio!\r\n"</span>); }</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 注册字符设备驱动 */</span></span><br><span class="line">    <span class="comment">// 1、创建设备号</span></span><br><span class="line">    <span class="keyword">if</span>(gpioled.major)</span><br><span class="line">    {</span><br><span class="line">        gpioled.devid = MKDEV(gpioled.major,<span class="number">0</span>);</span><br><span class="line">        register_chrdev_region(gpioled.devid,GPIOLED_CNT,GPIOLED_NAME);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line">        alloc_chrdev_region(&amp;gpioled.devid,<span class="number">0</span>,GPIOLED_CNT,GPIOLED_NAME);</span><br><span class="line"></span><br><span class="line">        gpioled.major = MAJOR(gpioled.devid);</span><br><span class="line">        gpioled.minor = MINOR(gpioled.devid);</span><br><span class="line">    }</span><br><span class="line">    printk(<span class="string">"gpioled major=%d,minor=%d\r\n"</span>,gpioled.major, gpioled.minor);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2、初始化 cdev</span></span><br><span class="line">    gpioled.cdev.owner = THIS_MODULE;</span><br><span class="line">    cdev_init(&amp;gpioled.cdev,&amp;gpio_fops);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3、添加cdev</span></span><br><span class="line">    cdev_add(&amp;gpioled.cdev,gpioled.devid,GPIOLED_CNT);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4、创建类</span></span><br><span class="line">    gpioled.class = class_create(THIS_MODULE,GPIOLED_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(gpioled.class))</span><br><span class="line">    {</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(gpioled.class);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 5、创建设备</span></span><br><span class="line">    gpioled.device = device_create(gpioled.class, <span class="literal">NULL</span>,gpioled.devid, <span class="literal">NULL</span>,GPIOLED_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(gpioled.device))</span><br><span class="line">    {</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(gpioled.device);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">gpioled_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">    cdev_del(&amp;gpioled.cdev);</span><br><span class="line">    unregister_chrdev_region(gpioled.devid,GPIOLED_CNT);</span><br><span class="line"></span><br><span class="line">    device_destroy(gpioled.class,gpioled.devid);</span><br><span class="line">    class_destroy(gpioled.class);</span><br><span class="line"></span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">module_init(gpioled_init);</span><br><span class="line">module_exit(gpioled_exit);</span><br><span class="line"></span><br><span class="line">MODULE_LICENSE(<span class="string">"GPL"</span>);</span><br><span class="line">MODULE_AUTHOR(<span class="string">"hcw"</span>);</span><br></pre></td></tr></tbody></table></figure>
+<figure class="highlight makefile"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">KERNELDIR := /home/hcw//learn/linux-6.1.161/</span><br><span class="line">CURRENT_PATH := <span class="variable">$(<span class="built_in">shell</span> pwd)</span></span><br><span class="line"></span><br><span class="line">obj-m := gpioled.o</span><br><span class="line"></span><br><span class="line"><span class="section">build: kernel_modules</span></span><br><span class="line"></span><br><span class="line"><span class="section">kernel_modules:</span></span><br><span class="line">    <span class="variable">$(MAKE)</span> -C <span class="variable">$(KERNELDIR)</span> M=<span class="variable">$(CURRENT_PATH)</span> modules</span><br><span class="line"></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    <span class="variable">$(MAKE)</span> -C <span class="variable">$(KERNELDIR)</span> M=<span class="variable">$(CURRENT_PATH)</span> clean</span><br></pre></td></tr></tbody></table></figure>
+</article>
+<div class="article-tags slide-up"><a class="tag" href="/tags/Linux/"><svg class="icon" viewBox="0 0 1 1" data-icon="default:hashtag" aria-hidden="true"></svg>Linux</a><a class="tag" href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/"><svg class="icon" viewBox="0 0 1 1" data-icon="default:hashtag" aria-hidden="true"></svg>驱动开发</a></div>
+
+
+  <div class="article-share slide-up" id="share">
+    <div class="body">
+      <div class="social-wrap dis-select"><a class="social share-item qrcode ui-interactive is-icon-only" onclick="util.toggle(&quot;share-qrcode&quot;)" aria-label="分享文章: QR Code" title="分享文章: QR Code"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M10.553 13.447c-.424-.424-.95-.596-1.535-.675c-.553-.074-1.25-.074-2.086-.074H5.827c-.58 0-1.065 0-1.459.037c-.411.04-.795.124-1.146.34c-.345.21-.634.5-.845.844c-.216.352-.3.735-.34 1.147C2 15.459 2 15.944 2 16.525v.068c0 .884 0 1.597.055 2.17c.056.592.175 1.108.459 1.571c.288.47.682.864 1.152 1.152c.463.284.979.403 1.57.46C5.81 22 6.524 22 7.407 22h.07c.58 0 1.064 0 1.458-.037c.412-.04.795-.124 1.147-.34c.344-.21.633-.5.844-.844c.216-.352.3-.736.34-1.147c.037-.394.037-.879.037-1.46v-1.104c0-.836 0-1.533-.074-2.086c-.079-.584-.251-1.111-.675-1.535m-1.62-11.41c.412.04.795.124 1.147.34c.344.21.633.5.844.845c.216.351.3.735.34 1.146c.037.394.037.879.037 1.46v1.104c0 .836 0 1.533-.074 2.086c-.079.584-.251 1.111-.675 1.535s-.95.596-1.535.675c-.553.074-1.25.074-2.086.074H5.827c-.58 0-1.065 0-1.459-.037c-.411-.04-.795-.124-1.146-.34a2.56 2.56 0 0 1-.845-.844c-.216-.352-.3-.735-.34-1.147C2 8.54 2 8.056 2 7.475v-.068c0-.884 0-1.597.055-2.17c.056-.592.175-1.108.459-1.571c.288-.47.682-.864 1.152-1.152c.463-.284.979-.403 1.57-.46C5.81 2 6.524 2 7.407 2h.07c.58 0 1.064 0 1.458.037M16.593 2h-.068c-.58 0-1.065 0-1.46.037c-.41.04-.794.124-1.146.34c-.344.21-.633.5-.844.845c-.216.351-.3.735-.34 1.146c-.037.394-.037.879-.037 1.46v1.104c0 .836 0 1.533.074 2.086c.079.584.251 1.111.675 1.535s.95.596 1.535.675c.553.074 1.25.074 2.086.074h1.105c.58 0 1.065 0 1.459-.037c.411-.04.795-.124 1.146-.34c.345-.21.634-.5.845-.844c.216-.352.3-.735.34-1.147C22 8.54 22 8.056 22 7.475v-.068c0-.884 0-1.597-.055-2.17c-.056-.592-.175-1.108-.459-1.571a3.5 3.5 0 0 0-1.152-1.152c-.463-.284-.979-.403-1.57-.46C18.19 2 17.477 2 16.594 2" opacity=".5"></path><path fill="currentColor" d="M14.093 21.302a.698.698 0 1 1-1.396 0v-2.79h1.396z" opacity=".4"></path><path fill="currentColor" d="M21.302 12.698a.7.7 0 0 0-.697.697v3.256H22v-3.256a.7.7 0 0 0-.698-.697" opacity=".5"></path><path fill="currentColor" d="M16.076 16.617c-.076.184-.076.417-.076.883s0 .699.076.883a1 1 0 0 0 .541.54c.184.077.417.077.883.077s.699 0 .883-.076a1 1 0 0 0 .54-.541c.077-.184.077-.417.077-.883s0-.699-.076-.883a1 1 0 0 0-.541-.54C18.199 16 17.966 16 17.5 16s-.699 0-.883.076a1 1 0 0 0-.54.541"></path><path fill="currentColor" d="M22 18.535v-.023h-1.396c0 .443 0 .74-.016.97c-.015.224-.043.333-.073.405a1.16 1.16 0 0 1-.629.63c-.072.029-.18.056-.405.072c-.23.015-.527.016-.97.016h-1.86V22h1.883c.414 0 .759 0 1.042-.02a2.6 2.6 0 0 0 .844-.175a2.56 2.56 0 0 0 1.384-1.384c.112-.27.156-.549.176-.844c.02-.283.02-.628.02-1.042" opacity=".7"></path><path fill="currentColor" d="M12.697 16.616v.035h1.396c0-.668 0-1.116.035-1.458c.034-.33.093-.482.16-.583a1.2 1.2 0 0 1 .321-.32c.101-.068.254-.128.584-.161c.342-.035.79-.036 1.458-.036h1.86v-1.395h-1.896c-.623 0-1.142 0-1.563.043c-.44.044-.85.142-1.218.388c-.28.187-.519.426-.706.706c-.246.368-.343.777-.388 1.217c-.043.421-.043.94-.043 1.564" opacity=".6"></path><path fill="currentColor" d="M5.508 18.69c.219.155.528.155 1.146.155c.619 0 .928 0 1.146-.155a.8.8 0 0 0 .2-.199c.154-.218.154-.527.154-1.146s0-.927-.155-1.146A.8.8 0 0 0 7.8 16c-.218-.155-.527-.155-1.146-.155s-.927 0-1.146.155a.8.8 0 0 0-.199.2c-.155.218-.155.527-.155 1.145c0 .619 0 .928.155 1.146a.8.8 0 0 0 .2.2M6.654 8.155c-.618 0-.927 0-1.146-.155a.8.8 0 0 1-.199-.2c-.155-.217-.155-.527-.155-1.145c0-.619 0-.928.155-1.146a.8.8 0 0 1 .2-.2c.218-.154.527-.154 1.145-.154c.619 0 .928 0 1.146.155a.8.8 0 0 1 .2.199c.154.218.154.527.154 1.146s0 .928-.155 1.146A.8.8 0 0 1 7.8 8c-.218.155-.527.155-1.146.155M16.2 8c.218.155.527.155 1.146.155s.927 0 1.146-.155a.8.8 0 0 0 .199-.199c.155-.218.155-.528.155-1.146c0-.619 0-.928-.155-1.146a.8.8 0 0 0-.2-.2c-.218-.154-.527-.154-1.145-.154c-.619 0-.928 0-1.146.155a.8.8 0 0 0-.2.199c-.154.218-.154.527-.154 1.146s0 .928.155 1.146A.8.8 0 0 0 16.2 8"></path></svg></span></a><a class="social share-item weibo ui-interactive is-icon-only" href="https://service.weibo.com/share/share.php?url=https%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-14%2F&amp;title=Linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A0%E6%97%A5%E8%AE%B0(14)%20pinctrl%20%E5%92%8C%20gpio%20%E5%AD%90%E7%B3%BB%E7%BB%9F%E5%AE%9E%E9%AA%8C%20-%20HCC's%20Blog&amp;summary=%E5%AD%A6%E4%B9%A0%20Linux%20%E7%8E%AF%E5%A2%83%E4%B8%8B%20pinctrl%20%E5%92%8C%20gpio%20%E5%AD%90%E7%B3%BB%E7%BB%9F" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Weibo" title="分享文章: Weibo"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.737 5.439l-.002.004zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.27-1.627c-.141.237-.449.353-.689.253-.236-.09-.313-.361-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.18.601l.014-.028zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149zm7.563-1.224c-.346-.105-.57-.18-.405-.615.375-.977.42-1.804 0-2.404-.781-1.112-2.915-1.053-5.364-.03 0 0-.766.331-.571-.271.376-1.217.315-2.224-.27-2.809-1.338-1.337-4.869.045-7.888 3.08C1.309 10.87 0 13.273 0 15.348c0 3.981 5.099 6.395 10.086 6.395 6.536 0 10.888-3.801 10.888-6.82 0-1.822-1.547-2.854-2.915-3.284v.01zm1.908-5.092c-.766-.856-1.908-1.187-2.96-.962-.436.09-.706.511-.616.932.09.42.511.691.932.602.511-.105 1.067.044 1.442.465.376.421.466.977.316 1.473-.136.406.089.856.51.992.405.119.857-.105.992-.512.33-1.021.12-2.178-.646-3.035l.03.045zm2.418-2.195c-1.576-1.757-3.905-2.419-6.054-1.968-.496.104-.812.587-.706 1.081.104.496.586.813 1.082.707 1.532-.331 3.185.15 4.296 1.383 1.112 1.246 1.429 2.943.947 4.416-.165.48.106 1.007.586 1.157.479.165.991-.104 1.157-.586.675-2.088.241-4.478-1.338-6.235l.03.045z"></path></svg></span></a><a class="social share-item x ui-interactive is-icon-only" href="https://x.com/intent/tweet?text=Linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A0%E6%97%A5%E8%AE%B0(14)%20pinctrl%20%E5%92%8C%20gpio%20%E5%AD%90%E7%B3%BB%E7%BB%9F%E5%AE%9E%E9%AA%8C%20-%20HCC's%20Blog&amp;url=https%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-14%2F" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: X" title="分享文章: X"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M14.234 10.162L22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299l-.929-1.329L3.076 1.56h3.182l5.965 8.532l.929 1.329l7.754 11.09h-3.182z"></path></svg></span></a><a class="social share-item telegram ui-interactive is-icon-only" href="https://t.me/share/url?url=https%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-14%2F&amp;text=Linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A0%E6%97%A5%E8%AE%B0(14)%20pinctrl%20%E5%92%8C%20gpio%20%E5%AD%90%E7%B3%BB%E7%BB%9F%E5%AE%9E%E9%AA%8C%20-%20HCC's%20Blog" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Telegram" title="分享文章: Telegram"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.5.5 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024q-.159.037-5.061 3.345q-.72.495-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789q.04-.324.893-.663q5.247-2.286 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635"></path></svg></span></a><a class="social share-item whatsapp ui-interactive is-icon-only" href="https://wa.me/?text=Linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A0%E6%97%A5%E8%AE%B0(14)%20pinctrl%20%E5%92%8C%20gpio%20%E5%AD%90%E7%B3%BB%E7%BB%9F%E5%AE%9E%E9%AA%8C%20-%20HCC's%20Blog%0Ahttps%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-14%2F" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: WhatsApp" title="分享文章: WhatsApp"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967c-.273-.099-.471-.148-.67.15c-.197.297-.767.966-.94 1.164c-.173.199-.347.223-.644.075c-.297-.15-1.255-.463-2.39-1.475c-.883-.788-1.48-1.761-1.653-2.059c-.173-.297-.018-.458.13-.606c.134-.133.298-.347.446-.52s.198-.298.298-.497c.099-.198.05-.371-.025-.52s-.669-1.612-.916-2.207c-.242-.579-.487-.5-.669-.51a13 13 0 0 0-.57-.01c-.198 0-.52.074-.792.372c-.272.297-1.04 1.016-1.04 2.479c0 1.462 1.065 2.875 1.213 3.074s2.096 3.2 5.077 4.487c.709.306 1.262.489 1.694.625c.712.227 1.36.195 1.871.118c.571-.085 1.758-.719 2.006-1.413s.248-1.289.173-1.413c-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214l-3.741.982l.998-3.648l-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884c2.64 0 5.122 1.03 6.988 2.898a9.82 9.82 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.82 11.82 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.9 11.9 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.82 11.82 0 0 0-3.48-8.413"></path></svg></span></a><a class="social share-item email ui-interactive is-icon-only" href="mailto:?subject=Linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A0%E6%97%A5%E8%AE%B0(14)%20pinctrl%20%E5%92%8C%20gpio%20%E5%AD%90%E7%B3%BB%E7%BB%9F%E5%AE%9E%E9%AA%8C%20-%20HCC's%20Blog&amp;body=https%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-14%2F" aria-label="分享文章: Email" title="分享文章: Email"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" fill-rule="evenodd" d="M3.172 5.172C2 6.343 2 8.229 2 12s0 5.657 1.172 6.828C4.343 20 6.229 20 10 20h4c3.771 0 5.657 0 6.828-1.172C22 17.657 22 15.771 22 12s0-5.657-1.172-6.828C19.657 4 17.771 4 14 4h-4C6.229 4 4.343 4 3.172 5.172m15.404 2.348a.75.75 0 0 1-.096 1.056l-2.196 1.83c-.887.739-1.605 1.338-2.24 1.746-.66.424-1.303.693-2.044.693s-1.384-.269-2.045-.693c-.634-.408-1.352-1.007-2.239-1.745L5.52 8.576a.75.75 0 1 1 .96-1.152l2.159 1.799c.933.777 1.58 1.315 2.128 1.667.529.34.888.455 1.233.455s.704-.115 1.233-.455c.547-.352 1.195-.89 2.128-1.667l2.159-1.8a.75.75 0 0 1 1.056.097" clip-rule="evenodd"></path></svg></span></a></div>
+      <div class="share-qrcode" id="share-qrcode" style="opacity:0;height:0"><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&amp;data=https%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-14%2F" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;"></div>
+    </div>
+  </div>
+
+<div class="article-footer slide-up">
+    <section id="license">
+      <div class="header"><span>许可协议</span></div>
+      <div class="body"><p>本文采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">署名-非商业性使用-相同方式共享 4.0 国际</a> 许可协议，转载请注明出处。</p>
+</div>
+    </section></div>
+
+<div class="related-wrap slide-up" id="read-next"><section class="body"><div class="item" id="prev"><div class="note"><svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-left" aria-hidden="true"></svg> 较新文章</div><a href="/posts/linux_driver/linux-driver-learn-15/" data-stellar-navigation="">Linux驱动学习日记(15) 驱动设计的思想，总线设备驱动模型</a></div><div class="item" id="next"><div class="note">较早文章 <svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-right" aria-hidden="true"></svg></div><a href="/posts/linux_driver/linux-driver-learn-13/" data-stellar-navigation="">Linux驱动学习日记(13) Linux 环境下点灯</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer slide-up footnote"><hr><div class="sitemap" style="column-count:3;"><div class="sitemap-group"><span class="fs15">浏览博客</span><a href="/">最近文章</a><a href="/archives/">内容归档</a></div><div class="sitemap-group"><span class="fs15">分类查找</span><a href="/categories/">分类</a><a href="/tags/">标签</a></div><div class="sitemap-group"><span class="fs15">关于</span><a href="/about/">关于我</a></div></div><div class="text"><p>本站由 <a href="/">HCC</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0">Stellar 2.0.0</a> 主题创建。<br>本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议，转载请注明出处。</p>
+</div></footer>
+</main>
+<aside data-stellar-runtime-region="" id="rightbar-region" class="site-region site-region--rightbar" data-region="rightbar" aria-label="Rightbar"><div class="site-region__surface ui-drawer-surface"><div class="site-region__viewport"><div class="widgets widget-stack widget-stack--rightbar widget-stack--rightbar"><div class="widget-instance widget-instance--toc" data-widget-id="rightbar:1:toc" data-presentation="rightbar">
+
+
+<widget class="widget-wrapper slide-up toc" id="data-toc" collapse="false">
+  
+    <div class="widget-header dis-select">
+      <span class="name">本文目录</span>
+      <button type="button" class="cap-action ui-interactive card-hover card-hover--spotlight" data-shell-action="toggle-toc" aria-label="Toggle table of contents" aria-pressed="false"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg></span></button>
+    </div>
+  
+  <div class="widget-body"><ol class="toc ui-collection-adapter"><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#pinctrl-%E5%AD%90%E7%B3%BB%E7%BB%9F" data-stellar-navigation=""><span class="toc-text">pinctrl 子系统</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E7%AE%80%E4%BB%8B" data-stellar-navigation=""><span class="toc-text">简介</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#I-MX6ULL-%E7%9A%84-pinctrl-%E5%AD%90%E7%B3%BB%E7%BB%9F%E9%A9%B1%E5%8A%A8" data-stellar-navigation=""><span class="toc-text">I.MX6ULL 的 pinctrl 子系统驱动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E5%9C%A8%E8%AE%BE%E5%A4%87%E6%A0%91%E4%B8%AD%E6%B7%BB%E5%8A%A0-pinctrl-%E8%8A%82%E7%82%B9%E6%A8%A1%E6%9D%BF" data-stellar-navigation=""><span class="toc-text">在设备树中添加 pinctrl 节点模板</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#GPIO-%E5%AD%90%E7%B3%BB%E7%BB%9F" data-stellar-navigation=""><span class="toc-text">GPIO 子系统</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#GPIO-%E5%AD%90%E7%B3%BB%E7%BB%9F%E7%AE%80%E4%BB%8B" data-stellar-navigation=""><span class="toc-text">GPIO 子系统简介</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E8%AE%BE%E5%A4%87%E6%A0%91%E4%B8%AD%E7%9A%84-gpio-%E4%BF%A1%E6%81%AF" data-stellar-navigation=""><span class="toc-text">设备树中的 gpio 信息</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#gpio-%E5%AD%90%E7%B3%BB%E7%BB%9F%E7%9A%84-API-%E5%87%BD%E6%95%B0" data-stellar-navigation=""><span class="toc-text">gpio 子系统的 API 函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E5%9C%A8%E8%AE%BE%E5%A4%87%E6%A0%91%E4%B8%AD%E6%B7%BB%E5%8A%A0-gpio-%E8%8A%82%E7%82%B9%E6%A8%A1%E6%9D%BF" data-stellar-navigation=""><span class="toc-text">在设备树中添加 gpio 节点模板</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E4%B8%8E-gpio-%E7%9B%B8%E5%85%B3%E7%9A%84-of-%E5%87%BD%E6%95%B0" data-stellar-navigation=""><span class="toc-text">与 gpio 相关的 of 函数</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E5%AE%9E%E9%AA%8C%E7%A8%8B%E5%BA%8F%E7%BC%96%E5%86%99" data-stellar-navigation=""><span class="toc-text">实验程序编写</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E4%BF%AE%E6%94%B9%E8%AE%BE%E5%A4%87%E6%A0%91%E6%96%87%E4%BB%B6" data-stellar-navigation=""><span class="toc-text">修改设备树文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#LED-%E7%81%AF%E9%A9%B1%E5%8A%A8%E7%A8%8B%E5%BA%8F%E7%BC%96%E5%86%99" data-stellar-navigation=""><span class="toc-text">LED 灯驱动程序编写</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E7%BC%96%E8%AF%91%E8%A3%85%E8%BD%BD%E8%BF%90%E8%A1%8C" data-stellar-navigation=""><span class="toc-text">编译装载运行</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E5%AE%8C%E6%95%B4%E9%A9%B1%E5%8A%A8%E4%BB%A3%E7%A0%81" data-stellar-navigation=""><span class="toc-text">完整驱动代码</span></a></li></ol></div>
+  <div class="widget-footer"><a class="top ui-interactive" onclick="util.scrollTop()"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M20.536 3.464C22 4.93 22 7.286 22 12s0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12s0-7.071 1.464-8.536C4.93 2 7.286 2 12 2s7.071 0 8.535 1.464" opacity=".5"></path><path fill="currentColor" d="M9.53 12.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 9.56z"></path><path fill="currentColor" d="M9.53 16.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 13.56z"></path></svg></span><span>回到顶部</span></a></div>
+</widget>
+
+
+</div></div></div></div></aside>
+</div><button type="button" class="site-scrim" data-shell-action="dismiss-drawer" aria-label="Close navigation" tabindex="-1"></button><div data-stellar-runtime-region="" class="site-dock" role="group" aria-label="Layout panels">
+  <button type="button" class="site-dock__button site-dock__button--rightbar ui-interactive" aria-label="Open rightbar" aria-controls="rightbar-region" aria-expanded="false" data-shell-action="toggle-rightbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
+  </button>
+  <button type="button" class="site-dock__button site-dock__button--leftbar ui-interactive" aria-label="Open leftbar" aria-controls="leftbar-region" aria-expanded="false" data-shell-action="toggle-leftbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"></path><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"></path></g></svg>
+  </button>
+</div>
+
+<dialog data-stellar-runtime-region="" class="search-dialog" id="site-search-dialog" aria-labelledby="site-search-title">
+  <div class="search-dialog__panel search-wrapper" id="site-search-wrapper" searching="false">
+    <div class="search-dialog__header">
+      <div class="search-form" role="search">
+        <span class="search-button" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+        <input type="search" class="search-input" id="site-search-input" aria-labelledby="site-search-title" placeholder="搜索">
+      </div>
+      <button type="button" class="search-dialog__close" data-shell-action="close-search" aria-label="关闭搜索">×</button>
+    </div>
+    
+      <div class="search-dialog__scope" role="radiogroup" aria-labelledby="site-search-title" hidden="">
+        <label class="search-dialog__scope-option" data-search-scope-option="all">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="all">
+          <span>全站</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="blog" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="blog">
+          <span>博客</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="current" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="current">
+          <span data-search-scope-current-label=""></span>
+        </label>
+      </div>
+    
+    <h2 class="search-dialog__title" id="site-search-title">站内搜索</h2>
+    <div class="search-result" id="site-search-result"></div>
+    <div class="search-no-result">没有找到内容！</div>
+  </div>
+</dialog>
+</div><div class="site-scripts">
+<script data-stellar-script="core" src="/js/stellar-icons.js?v=39c6ac17e854ffe2"></script>
+
+<script data-stellar-script="defines">
+  window.canonical = window.stellarClientData.canonical;
+  const ctx = window.stellarClientData.ctx;
+  window.canonical.param = {permalink: "https://www.hcc1203.top/posts/linux_driver/linux-driver-learn-14/", checklink: ctx.services.video.js};
+  ctx.date_suffix = {"just":"刚刚","min":"分钟前","hour":"小时前","day":"天前"};
+  if (ctx.search) Object.assign(ctx.search, {"more":"更多","no_more":"没有更多了"});
+  const def = window.stellarClientData.def;
+  window.ctx = ctx;
+  window.def = def;
+</script>
+
+
+<!-- core: 迁移期 DOM/资源兼容工具；Extension 注册与生命周期由 ESM runtime 所有 -->
+<script data-stellar-script="core" src="/js/utils.js?v=2.0.0"></script>
+<script data-stellar-script="core" src="/js/main.js?v=2.0.0" defer=""></script>
+<script data-stellar-script="core" defer="" src="/js/profile.js?v=2.0.0"></script>
+
+
+
+
+
+<script data-stellar-script="core" type="application/json" id="stellar-runtime-config">{"version":1,"root":"/","policy":{"cache":{"enabled":true,"defaultTtl":3600,"ttl":{"giscus":600,"waline":600,"artalk":600,"memos":600,"memos-user":86400,"sites":86400,"friends":86400,"friends_and_posts":86400,"siteinfo":86400},"maxEntries":200},"request":{"retries":2,"timeoutMs":5000,"idleTimeoutMs":3000,"maxCacheEntryBytes":204800},"features":{"codeCopyToastMs":2500},"providers":{"linkPrefetch":"flying_pages","lightbox":"fancybox","diagrams":"mermaid"}},"extensions":[{"id":"pin-slider","module":"/js/runtime/extensions/pin-slider.js","scope":"region","when":{"selector":".pin-slider"},"config":{}},{"id":"page-controls","module":"/js/runtime/extensions/page-controls.js","scope":"region","when":{"always":true},"config":{"highlight":"/js/search/highlight.js","tagtree":"/js/tagtree.js"}},{"id":"partial-navigation","module":"/js/runtime/extensions/partial-navigation.js","scope":"document","when":{"always":true},"config":{}},{"id":"color-scheme-switch","module":"/js/runtime/extensions/color-scheme-switch.js","scope":"document","when":{"always":true},"config":{"messages":{"light":"切换到浅色模式","dark":"切换到深色模式","auto":"切换到跟随系统配色"}}},{"id":"search","module":"/js/runtime/extensions/search.js","scope":"document","when":{"selector":".search-input"},"config":{"provider":"local","options":{"scope":"all","includeContent":true,"cacheTtlSeconds":86400},"assets":{"client":null,"provider":"/js/search/local-search.js","shortcut":"/js/search/shortcut.js"}}},{"id":"hero-parallax","module":"/js/runtime/extensions/hero-parallax.js","scope":"region","when":{"selector":".wiki-hero"},"config":{}},{"id":"hero-effect","module":"/js/runtime/extensions/hero-effect.js","scope":"region","when":{"selector":"canvas[data-hero-effect]"},"config":{}},{"id":"lazy-loading","module":"/js/runtime/extensions/lazy-loading.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js"}},{"id":"deferred-icons","module":"/js/runtime/extensions/deferred-icons.js","scope":"region","when":{"selector":"svg.icon[data-icon]"},"config":{}},{"id":"dropdown","module":"/js/runtime/extensions/dropdown.js","scope":"region","when":{"selector":"details.dropdown"},"config":{}},{"id":"services","module":"/js/runtime/extensions/services.js","scope":"region","when":{"selector":"#artalk_container, #twikoo_container, #waline_container, .data-service, [class*='ds-'], a[cardlink], a[data-md-link][data-siteinfo-api], .site-card [data-siteinfo-api], .voice\u003eaudio, .video\u003evideo, .chat-file"},"config":{"marked":"https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js"}},{"id":"settings","module":"/js/runtime/extensions/settings.js","scope":"region","when":{"selector":".settings-page"},"config":{}},{"id":"link-prefetch","module":"/js/runtime/extensions/link-prefetch.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"}},{"id":"lightbox","module":"/js/runtime/extensions/lightbox.js","scope":"region","when":{"selector":"[data-fancybox]:not(.error), .with-fancybox, .ds-memos, .timenode p\u003eimg"},"config":{"enabled":true,"selector":".timenode p\u003eimg","assets":{"localCss":"/css/plugins/fancybox.css","js":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js","css":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"}}},{"id":"reveal","module":"/js/runtime/extensions/reveal.js","scope":"region","when":{"selector":".slide-up"},"config":{"enabled":true,"duration":800,"interval":200,"distance":8,"blur":4}},{"id":"mathjax","module":"/js/runtime/extensions/mathjax.js","scope":"region","when":{"selector":".has-jax, script[type^='math/tex']"},"config":{"options":{},"asset":"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"}},{"id":"code-copy","module":"/js/runtime/extensions/code-copy.js","scope":"region","when":{"selector":".code"},"config":{"assets":{"js":"/js/plugins/copycode.js"},"messages":{"label":"复制","copied":"复制成功","denied":"未获得剪贴板权限","unsupported":"当前浏览器不支持剪贴板或页面不是 HTTPS"}}},{"id":"adaptive-text","module":"/js/runtime/extensions/adaptive-text.js","scope":"region","when":{"selector":"[data-text-adaptive]"},"config":{"assets":{"colorJs":"/js/color.js","js":"/js/plugins/adaptive-text.js"}}},{"id":"swiper","module":"/js/runtime/extensions/swiper.js","scope":"region","when":{"selector":"#swiper-api"},"config":{"assets":{"localCss":"/css/plugins/swiper.css","js":"https://unpkg.com/swiper@10.3/swiper-bundle.min.js","css":"https://unpkg.com/swiper@10.3/swiper-bundle.min.css"}}}]}</script>
+<script data-stellar-script="core" type="module" src="/js/runtime/index.js?v=2.0.0&amp;runtime=1"></script>
+
+
+<!-- inject -->
+
+
+<script data-stellar-script="core" defer="" src="/js/navigation-init.js?v=2.0.0"></script>
+</div>
+
+<script type="application/json" id="stellar-navigation-config">{"collection":"[\"post\",\"post\"]","url":"https://www.hcc1203.top/posts/linux_driver/linux-driver-learn-14/","signature":"e9d9686a8fc8c8bf95838222fccaadd1731837a8e38c80d9d294f9d2894d3a95"}</script></body></html>

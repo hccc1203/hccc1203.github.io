@@ -1,0 +1,627 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+  
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0" theme-name="Stellar" theme-version="2.0.0">
+  
+  
+  <meta name="generator" content="Hexo 8.1.2">
+  <meta http-equiv="x-dns-prefetch-control" content="on">
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  <title data-stellar-page-meta="">Linux驱动学习日记(19) Linux 的中断 - HCC's Blog</title>
+  <script data-stellar-script="core">
+    (function () {
+      var key = 'stellar:v2:leftbar-state';
+      var fallback = "expanded";
+      try {
+        var value = localStorage.getItem(key);
+        document.documentElement.dataset.leftbarState = value === 'collapsed' || value === 'expanded' ? value : fallback;
+      } catch (error) {
+        document.documentElement.dataset.leftbarState = fallback;
+      }
+    })();
+  </script>
+
+  <meta name="description" content="学习 Linux 中的中断机制、如何创建中断。" data-stellar-page-meta="">
+<meta property="og:type" content="article" data-stellar-page-meta="">
+<meta property="og:title" content="Linux驱动学习日记(19) Linux 的中断" data-stellar-page-meta="">
+<meta property="og:url" content="https://www.hcc1203.top/posts/linux_driver/linux-driver-learn-19/" data-stellar-page-meta="">
+<meta property="og:site_name" content="HCC's Blog" data-stellar-page-meta="">
+<meta property="og:description" content="学习 Linux 中的中断机制、如何创建中断。" data-stellar-page-meta="">
+<meta property="og:locale" content="zh_CN" data-stellar-page-meta="">
+<meta property="og:image" content="https://www.hcc1203.top/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/19/GIC%E6%A1%86%E5%9B%BE.png" data-stellar-page-meta="">
+<meta property="article:author" content="HCC" data-stellar-page-meta="">
+<meta property="article:published_time" content="2026-03-10T02:31:45.000Z" data-stellar-page-meta="">
+<meta property="article:modified_time" content="2026-11-21T08:47:58.000Z" data-stellar-page-meta="">
+<meta property="article:tag" content="Linux" data-stellar-page-meta="">
+<meta property="article:tag" content="驱动开发" data-stellar-page-meta="">
+<meta name="twitter:card" content="summary" data-stellar-page-meta="">
+<meta name="twitter:image" content="https://www.hcc1203.top/img/linux%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/19/GIC%E6%A1%86%E5%9B%BE.png" data-stellar-page-meta=""><meta name="twitter:title" content="Linux驱动学习日记(19) Linux 的中断" data-stellar-page-meta="">
+  
+  
+  <meta name="keywords" content="Linux,驱动开发" data-stellar-page-meta="">
+
+  <!-- feed -->
+  
+
+  <link rel="preload" href="/css/main.css?v=2.0.0" as="style">
+  <link rel="stylesheet" href="/css/main.css?v=2.0.0">
+  <style>:root{--text-loading:"正在加载";--text-loading-error:"加载失败，请稍后重试。"}</style>
+
+
+  
+
+  
+
+  <script type="application/ld+json" data-stellar-page-meta="">{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"HCC","sameAs":[]},"dateCreated":"2026-03-10T10:31:45+08:00","dateModified":"2026-11-21T16:47:58+08:00","datePublished":"2026-03-10T10:31:45+08:00","description":"学习 Linux 中的中断机制、如何创建中断。","headline":"Linux驱动学习日记(19) Linux 的中断","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.hcc1203.top/posts/linux_driver/linux-driver-learn-19/"},"publisher":{"@type":"Organization","name":"HCC","sameAs":[]},"url":"https://www.hcc1203.top/posts/linux_driver/linux-driver-learn-19/","image":["/img/linux驱动开发/19/GIC框图.png"],"keywords":"Linux, 驱动开发","thumbnailUrl":"/img/linux驱动开发/19/GIC框图.png"}</script>
+  <style>
+  @media (min-width: 1181px) {
+    body[data-page-type="index"] .site-shell:not([data-regions~="rightbar"]) .site-main {
+      max-width: var(--width-main-wiki-list);
+    }
+  }
+
+  .post-list.post .post-card .post-title {
+    text-wrap: balance;
+  }
+</style>
+
+
+  <link rel="stylesheet" href="/css/stellar-icons.css?v=7c185ad1a9a79674">
+  <link rel="preload" as="script" href="/js/stellar-icons.js?v=39c6ac17e854ffe2">
+  
+  
+</head>
+<body data-page-type="content" data-page-layout="post" data-article-style="story" data-text-indent=""><div data-stellar-runtime-region="" id="site-cover" class="site-cover"></div><div class="site-shell" id="start" data-regions="leftbar rightbar"><div class="site-workspace">
+<aside data-stellar-runtime-region="" id="leftbar-region" class="site-region site-region--leftbar" data-region="leftbar" aria-label="Leftbar"><div class="site-region__surface ui-surface"><div class="site-region__decoration" aria-hidden="true"></div><div class="site-region__viewport"><header class="site-region__header site-region__zone site-region__zone--top">
+    <div class="widget-instance widget-instance--brand" data-widget-id="leftbar:fixed:brand" data-presentation="leftbar" data-leftbar-rail="">
+<header class="brand-header brand-header--regular brand-header--site"><div class="brand-wrap"><a class="brand-title" href="/"><div class="brand-name">HCC's Blog</div><div class="brand-tagline cap">技术笔记</div></a></div><div class="brand-search">
+
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<button class="ui-collection__item ui-interactive card-hover card-hover--spotlight search-trigger has-hover-surface" type="button" title="搜索" aria-label="搜索" data-shell-action="open-search" data-search-instance="leftbar-brand-search" data-search-domain="blog" data-search-domain-label="博客" data-search-domain-blog="true">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">搜索</span>
+      
+      
+    </span>
+  
+  <kbd class="search-shortcut" aria-hidden="true">⌘K</kbd>
+
+  
+</button>
+
+  
+</div>
+
+
+</div></header>
+</div>
+  </header>
+  <div class="site-region__body site-region__zone site-region__zone--body">
+    <div class="widget-instance widget-instance--menu" data-widget-id="leftbar:fixed:menu" data-presentation="leftbar" data-leftbar-rail="">
+
+
+<nav class="menu dis-select">
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight is-active" href="/" title="文章" aria-current="page">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M5.879 2.879C5 3.757 5 5.172 5 8v8c0 2.828 0 4.243.879 5.121C6.757 22 8.172 22 11 22h2c2.828 0 4.243 0 5.121-.879C19 20.243 19 18.828 19 16V8c0-2.828 0-4.243-.879-5.121C17.243 2 15.828 2 13 2h-2c-2.828 0-4.243 0-5.121.879M8.25 17a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75M9 12.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zM8.25 9A.75.75 0 0 1 9 8.25h6a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 9" clip-rule="evenodd"></path><path fill="currentColor" d="M5.235 4.058C5 4.941 5 6.177 5 8v8c0 1.823 0 3.058.235 3.942L5 19.924c-.975-.096-1.631-.313-2.121-.803C2 18.243 2 16.828 2 14v-4c0-2.829 0-4.243.879-5.121c.49-.49 1.146-.707 2.121-.803zm13.53 15.884C19 19.058 19 17.822 19 16V8c0-1.823 0-3.059-.235-3.942l.235.018c.975.096 1.631.313 2.121.803C22 5.757 22 7.17 22 9.999v4c0 2.83 0 4.243-.879 5.122c-.49.49-1.146.707-2.121.803z" opacity=".5"></path></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">文章</span>
+      
+      
+    </span>
+  
+  
+  <span class="ui-collection__indicator"></span>
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/about/" title="关于">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20" opacity=".5"></path><path d="M12 6a3 3 0 1 0 0 6a3 3 0 0 0 0-6m0 7.5c-3.04 0-5.5 1.57-5.5 3.5c0 .65.28 1.26.77 1.77A7.96 7.96 0 0 0 12 20.5a7.96 7.96 0 0 0 4.73-1.73c.49-.51.77-1.12.77-1.77c0-1.93-2.46-3.5-5.5-3.5"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">关于</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+</div>
+
+</nav>
+
+</div>
+    <div class="widgets widget-stack widget-stack--leftbar widget-stack--body"></div>
+  </div>
+  <footer class="site-region__footer">
+    
+    <div class="site-region__system ui-collection" data-layout="inline" data-variant="nav" data-density="compact">
+      <div class="site-region__settings"><div class="widget-instance widget-instance--settings" data-widget-id="leftbar:fixed:settings" data-presentation="leftbar" data-leftbar-rail="">
+<a class="settings-widget ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/settings/" data-profile-provider="" data-profile-identity-enabled="false" data-profile-fallback-avatar="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg" data-settings-placement="leftbar" data-settings-label="设置" aria-label="设置" title="设置">
+  <span class="settings-widget__avatar" aria-hidden="true">
+    <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><path fill-rule="evenodd" d="M12.4277 2C11.3139 2 10.2995 2.6007 8.27081 3.80211L7.58466 4.20846C5.55594 5.40987 4.54158 6.01057 3.98466 7C3.42773 7.98943 3.42773 9.19084 3.42773 11.5937V12.4063C3.42773 14.8092 3.42773 16.0106 3.98466 17C4.54158 17.9894 5.55594 18.5901 7.58466 19.7915L8.27081 20.1979C10.2995 21.3993 11.3139 22 12.4277 22C13.5416 22 14.5559 21.3993 16.5847 20.1979L17.2708 19.7915C19.2995 18.5901 20.3139 17.9894 20.8708 17C21.4277 16.0106 21.4277 14.8092 21.4277 12.4063V11.5937C21.4277 9.19084 21.4277 7.98943 20.8708 7C20.3139 6.01057 19.2995 5.40987 17.2708 4.20846L16.5847 3.80211C14.5559 2.6007 13.5416 2 12.4277 2Z" clip-rule="evenodd" opacity=".5"></path><path d="M12.4277 8.25C10.3567 8.25 8.67773 9.92893 8.67773 12C8.67773 14.0711 10.3567 15.75 12.4277 15.75C14.4988 15.75 16.1777 14.0711 16.1777 12C16.1777 9.92893 14.4988 8.25 12.4277 8.25Z"></path></g></svg></span>
+  </span>
+  <span class="settings-widget__name ui-collection__title">设置</span>
+</a>
+</div></div>
+      <button type="button" class="leftbar-state-toggle ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only" aria-label="Collapse leftbar" aria-expanded="true" data-shell-action="toggle-leftbar"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M3.172 4.172C2 5.343 2 7.229 2 11v2c0 3.771 0 5.657 1.172 6.828S6.229 21 10 21h5V3h-5C6.229 3 4.343 3 3.172 4.172" clip-rule="evenodd" opacity=".5"></path><path fill="currentColor" d="M5.5 9.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zm1 4a.75.75 0 0 0 0 1.5h4a.75.75 0 0 0 0-1.5zM22 13v-2c0-3.771 0-5.657-1.172-6.828c-.974-.975-3.192-1.139-5.828-1.166v17.988c2.636-.027 4.854-.191 5.828-1.166C22 18.657 22 16.771 22 13"></path></svg></span></button>
+    </div>
+  </footer></div></div></aside>
+<main data-stellar-runtime-region="" class="site-main" id="main">
+
+
+<div class="article-banner-wrap slide-up"><div class="article banner top">
+  <div class="content">
+    
+    <div class="top bread-nav footnote"><div class="top-row"><div class="left" id="breadcrumb"><a class="cap breadcrumb" href="/">主页</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">文章</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/">学习日志</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/%E5%AD%A6%E4%B9%A0%E6%97%A5%E5%BF%97/Linux%E9%A9%B1%E5%8A%A8/">Linux驱动</a>
+</div><div class="right"><span class="cap reading">8420 字 · 预计阅读 29 分钟</span></div></div><div class="meta-row">
+<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2026-03-10T02:31:45.000Z">2026-03-10</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2026-11-21T08:47:58.000Z">2026-11-21</time></span></div>
+</div></div>
+    
+    <div class="bottom only-title">
+      
+      <div class="text-area">
+        <h1 class="text title"><span>Linux驱动学习日记(19) Linux 的中断</span></h1>
+        
+      </div>
+    </div>
+    
+  </div>
+  </div></div>
+<article class="md-text content slide-up"><h2 id="Linux-中断简介"><a href="#Linux-中断简介" class="headerlink" title="Linux 中断简介" data-stellar-navigation=""></a>Linux 中断简介</h2><h3 id="I-MX-中断机制"><a href="#I-MX-中断机制" class="headerlink" title="I.MX 中断机制" data-stellar-navigation=""></a>I.MX 中断机制</h3><p><strong>1、中断向量表</strong><br>中断向量表中存放着中断向量。中断服务程序的入口地址或存放中断服务程序（函数）在中断向量表中的位置是由半导体厂商定好的，当某个终端被触发以后就会自动跳转到中断向量表中对应的中断服务程序（函数）入口地址处。中断向量表在整个程序的最前面。Cortex-A7 内核有 8 个异常中断，这8个异常中断向量如下所示：</p>
+<div class="table-container">
+<div class="md-table-scroll"><table>
+<thead>
+<tr>
+<th>向量地址</th>
+<th>中断类型</th>
+<th>中断模式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0x00</td>
+<td>复位中断 (Reset)</td>
+<td>特权模式 (SVC)</td>
+</tr>
+<tr>
+<td>0x04</td>
+<td>未定义指令中断 (Undefined Instruction)</td>
+<td>未定义指令中断模式 (Undef)</td>
+</tr>
+<tr>
+<td>0x08</td>
+<td>软件中断 (Software Interrupt, SWI)</td>
+<td>特权模式 (SVC)</td>
+</tr>
+<tr>
+<td>0x0C</td>
+<td>指令预取中止中断 (Prefetch Abort)</td>
+<td>中止模式</td>
+</tr>
+<tr>
+<td>0x10</td>
+<td>数据访问中止中断 (Data Abort)</td>
+<td>中止模式</td>
+</tr>
+<tr>
+<td>0x14</td>
+<td>未使用 (Not Used)</td>
+<td>未使用</td>
+</tr>
+<tr>
+<td>0x18</td>
+<td>IRQ 中断 (IRQ Interrupt)</td>
+<td>外部中断模式 (IRQ)</td>
+</tr>
+<tr>
+<td>0x1C</td>
+<td>FIQ 中断 (FIQ Interrupt)</td>
+<td>快速中断模式 (FIQ)</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p>中断向量表里面都是终端服务函数的入口地址，因此一款芯片中有什么中断都是可以从中断向量表中看出来的。在上面七个中断中，我们最常用的就是复位中断和 IRQ 中断。</p>
+<p><strong>2、GIC 控制器</strong></p>
+<p>当 GPIC 接收到外部中断信号以后就会报给 ARM 内核，但是 ARM 内核只提供了四个信号给 GIC 来汇报，这四个信号的含义如下：</p>
+<pre><code>VFIQ:虚拟快速 FIQ。
+VIRQ:虚拟外部 IRQ。
+FIQ:快速中断 IRQ。
+IRQ:外部中断 IRQ。
+</code></pre><p>VFIQ 和 VIRQ 都是针对虚拟化的，我们不学习虚拟化，剩下的就是 FIQ 和 IRQ。GICV2 的总体框图如下</p>
+<div align="center"><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/img/linux驱动开发/19/GIC框图.png" width="60%" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[47.9315,4.0254,94.7634,1]}" data-stellar-image-source="/img/linux驱动开发/19/GIC框图.png"></div>
+<div style="text-align:center;">图 1 GIC 框架</div>
+
+<p>如图所示，左侧部分就是中断源，中该那部分是 GIC 控制器，最右侧就是中断控制器向处理器内核发送中断信息。在中间部分，GIC 将众多的中断源分为三类：<br>①、SPI，共享中断，顾名思义，所有 Core 共享的中断，这个是最常见的，外部中断都属于 SPI 中断（并非 SPI 通讯协议）。比如按键中断、串口中断等等非，这些中断所有的 Core 都可以处理，不限定特定的 Core。<br>②、PPI，私有中断，GIC 是支持多核的，每个核肯定有自己独有的中断，这些独有的终端肯定是要指定的核心处理，因此这些中断就叫做私有中断。<br>③、SGI，软件中断，由软件触发引起的中断，通过向寄存器 GICD_SGIR 写入数据来触发，系统会使用 SGI 中断来完成多核之间的通讯。</p>
+<p>中断源有很多，为了区分这些不同的中断源肯定要给他们分配一个唯一 ID，这些 ID 就是中断 ID。每一个 CPU 最多支持 1020 个中断 ID，中断 ID 号为 ID0-ID1019。这 1020 个 ID 包含了 PPI、SPI和 SGI。ID0-15，这16个 ID 分配给 SGI，ID16-31 分配给 PPI，ID32-1019 分配给 SPI。</p>
+<p>GIC 的架构分为了两个逻辑块：Distributor 和 CPU Interface，也就是分发器端和 CPU 接口端。这两个逻辑块的含义如下：<br><strong>Distributor（分发器端）</strong>：从上图可以看出，此逻辑块负责处理各个中断事件的分发问题，也就是中断事件应该发送到哪个 CPU Interface 上。分发器收集所有的中断源，可以控制每个中断的优先级。分发器端主要做的工作如下：</p>
+<pre><code>1、全局中断使能控制
+2、控制每一个中断的使能或关闭
+3、设置每一个中断的优先级
+4、设置每个中断的目标处理器列表
+5、设置每个外部中断的触发模式：电平触发或边沿触发
+6、设置每个中断属于组 0 还是组 1
+</code></pre><p><strong>CPU Interface(CPU 接口端)</strong>：CPU 接口端是与 CPU Core 相连接的，因此在图中每个 CPU Core都可以在 GIC 中找到一个与之对应的 CPU Interface。CPU 接口端就是分发器和 CPU Core 之间的桥梁，其主要工作如下：</p>
+<pre><code>1、使能或关闭发送的 CPU Core 的中断请求信号
+2、应答中断
+3、通知中断处理完成
+4、设置优先级掩码
+5、定义抢占策略
+6、当多个中断来时，选择优先级最高的中断通知给 CPU Core
+</code></pre><p><strong>3、中断使能</strong></p>
+<p>中断使能包括两部分，一个是 IRQ 或 FIQ 总中断使能，另一个就是 ID0-1019 这 1020 个中断源的使能。<br><strong>IRQ 和 FIQ 总中断使能</strong>：寄存器 CPSR 的 I=1 禁止 IRQ，当 I=0 使能 IRQ；F=1 禁止 FIQ，F=0 使能 FIQ。<br><strong>ID0-1019 中断使能和禁止</strong>：GIC 寄存器 GICD_ISENABLERn】 和 GICD_ICENABLERn 用来完成外部终端的使能和禁止，对于 Cortex-A7 内核来说中断 ID 只使用了 512 个。一个 bit 控制一个中断的使能，那么就需要 512/32=16 个 GICD_ISENABLER 寄存器来完成中断的使能。同理，也需要 16 个 GICD_ICENABLER 寄存器来完成中断的禁止。其中 GICD_ISENABLER0 的 bit[15:0]对应 ID15~0 的 SGI 中断，GICD_ISENABLER0 的 bit[31:16]对应 ID31~16 的 PPI 中断。剩下的 GICD_ISENABLER1~GICD_ISENABLER15 就是控制 SPI 中断的。</p>
+<p><strong>4、中断优先级</strong><br>Cortex-A7 的中断优先级分为抢占优先级和子优先级。抢占优先级决定的是是否允许打断正在运行的中断处理程序，如果一个新的中断到来，它的抢占优先级比当前正在执行的中断更高，那么 CPU 会立刻暂停当前中断处理，转去处理新的中断。处理完再回来继续。子优先级则完全不同，它<strong>不能</strong>打断正在执行的中断，只用于解决多个中断同时 pending 时谁先处理。</p>
+<p>GIC 控制器最多可以支持 256 个优先级，数字越小，优先级越高。Cortex-A7 选择了 32 个优先级，在使用终端的时候需要初始化 GICC_PMR 寄存器，此寄存器来决定使用几级优先级，其寄存器只有低八位有效，表格如下，I.MX6U 是 Cortex-A7 内核，所以支持 32 个优先级，因此 GICC_PMR 要设置为 0b11111000。</p>
+<div class="table-container">
+<div class="md-table-scroll"><table>
+<thead>
+<tr>
+<th>bit7:0</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>11111111</td>
+<td>256 个优先级</td>
+</tr>
+<tr>
+<td>11111110</td>
+<td>128 个优先级</td>
+</tr>
+<tr>
+<td>11111100</td>
+<td>64 个优先级</td>
+</tr>
+<tr>
+<td>11111000</td>
+<td>32 个优先级</td>
+</tr>
+<tr>
+<td>11110000</td>
+<td>16 个优先级</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p>抢占优先级和子优先级各占多少位是由寄存器 GICC_BPR 来决定的，GICC_BPR 寄存器只有低三位有效，其值不同，抢占优先级和子优先级占用的位数也不同，配置如下表所示：</p>
+<div class="table-container">
+<div class="md-table-scroll"><table>
+<thead>
+<tr>
+<th>Binary Point</th>
+<th>抢占优先级域</th>
+<th>子优先级域</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>[7:1]</td>
+<td>[0]</td>
+<td>7级抢占优先级，1级子优先级</td>
+</tr>
+<tr>
+<td>1</td>
+<td>[7:2]</td>
+<td>[1:0]</td>
+<td>6级抢占优先级，2级子优先级</td>
+</tr>
+<tr>
+<td>2</td>
+<td>[7:3]</td>
+<td>[2:0]</td>
+<td>5级抢占优先级，3级子优先级</td>
+</tr>
+<tr>
+<td>3</td>
+<td>[7:4]</td>
+<td>[3:0]</td>
+<td>4级抢占优先级，4级子优先级</td>
+</tr>
+<tr>
+<td>4</td>
+<td>[7:5]</td>
+<td>[4:0]</td>
+<td>3级抢占优先级，5级子优先级</td>
+</tr>
+<tr>
+<td>5</td>
+<td>[7:6]</td>
+<td>[5:0]</td>
+<td>2级抢占优先级，6级子优先级</td>
+</tr>
+<tr>
+<td>6</td>
+<td>[7:7]</td>
+<td>[6:0]</td>
+<td>1级抢占优先级，7级子优先级</td>
+</tr>
+<tr>
+<td>7</td>
+<td>无</td>
+<td>[7:0]</td>
+<td>0级抢占优先级，8级子优先级</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p>前面已经说过了 I.MX6U 一共有 32 个抢占优先级，数字越小优先级越高。具体要用某个中断的时候就可以设置其优先级为 0 - 31。某个中断 ID 的中断优先级设置由寄存器 D_IPRIORITYR 来完成，前面说了 Cortex-A7 用了 512 个中断 ID ，每个中断 ID 配有一个优先级寄存器所以一共有 512 个 D_IPRIORITYR 寄存器。如果优先级个数为 32 的话，使用寄存器 D_IPRIORITYR 的 bit7:4 来设置优先级，也就是说实际的优先级要左移 3 位。比如要设置 ID40 中断的优先级为 5，示例代码如下：</p>
+<pre><code>GICD_IPRIORITYR[40] = 5 &lt;&lt; 3;
+</code></pre><h3 id="Linux-中断-API-函数"><a href="#Linux-中断-API-函数" class="headerlink" title="Linux 中断 API 函数" data-stellar-navigation=""></a>Linux 中断 API 函数</h3><p>我们先回顾一下裸机中中断的处理方法：<br>①、使能中断，初始化相应的寄存器。<br>②、注册中断服务函数，也就是向 irqTable 数组的指定标号处写入中断服务函数<br>③、中断发生以后进入 IRQ 中断服务函数，在 IRQ 终端服务函数在数组 irqTable 里面查找具体的中断处理函数，找到以后执行相应的中断处理函数。<br>在 Linux 内核中提供了大量的中断相关的 API 函数，如下：</p>
+<p><strong>1、request_irq 函数</strong><br>在 Linux 内核中想要使用某个中断是需要申请的，这个函数用于申请中断。值得注意的是，request_irq 函数<strong>可能会导致睡眠，因此不能在中断上下文或其他禁止睡眠的代码段中使用此函数。</strong>request_irq 会使能中断，不需要再次手动激活，此函数原型如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">request_irq(<span class="type">unsigned</span> <span class="type">int</span> irq, </span><br><span class="line">        <span class="type">irq_handler_t</span> handler, </span><br><span class="line">        <span class="type">unsigned</span> <span class="type">long</span> flags,</span><br><span class="line">        <span class="type">const</span> <span class="type">char</span> *name, </span><br><span class="line">        <span class="type">void</span> *dev)</span><br></pre></td></tr></tbody></table></figure>
+<p>函数的参数和返回值含义如下：<br><strong>irq：</strong>表示要申请中断的中断号。<br><strong>handler：</strong>中断处理函数，当中断发生以后就会执行此中断处理函数。<br><strong>flags：</strong>中断标志，可以在文件 include/linux/interrupt.h 里查看所有的中断标志，这里我们说几个常用的，如下表所示：</p>
+<div class="table-container">
+<div class="md-table-scroll"><table>
+<thead>
+<tr>
+<th>标志</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IRQF_SHARED</td>
+<td>多个设备共享一个中断线，共享的所有中断都必须指定此标志。如果使用共享中断的话，<code>request_irq</code> 函数的 <code>dev</code> 参数就是唯一标识分配的标志。</td>
+</tr>
+<tr>
+<td>IRQF_ONESHOT</td>
+<td>单次中断，中断执行一次就结束。</td>
+</tr>
+<tr>
+<td>IRQF_TRIGGER_NONE</td>
+<td>无触发。</td>
+</tr>
+<tr>
+<td>IRQF_TRIGGER_RISING</td>
+<td>上升沿触发。</td>
+</tr>
+<tr>
+<td>IRQF_TRIGGER_FALLING</td>
+<td>下降沿触发。</td>
+</tr>
+<tr>
+<td>IRQF_TRIGGER_HIGH</td>
+<td>高电平触发。</td>
+</tr>
+<tr>
+<td>IRQF_TRIGGER_LOW</td>
+<td>低电平触发。</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<p>比如我们的开发板上的 KEY0 使用的是 GPIO1_IO18，按下 KEY0 以后为低电平，因此我们可以设置为下降沿触发，也就是将 flags 设置为 IRQF_TRIGGER_FALLING。多种标志可以通过 “|” 实现组合。<br><strong>name：</strong>中断名，设置以后可以在 /proc/interrupts 文件中看到对应的中断名。<br><strong>dev：</strong>如果将 flags 设置为 IRQF_SHARED 的话，dev 用来区分不同的中断，一般情况下将 dev 设置为设备结构体，dev 会传递给中断处理函数 irq_handlr_t 的第二个参数。<br><strong>返回值：</strong>0中断申请成功，其他负值申请失败，如果返回 -EBUSY 表示中断已被申请。</p>
+<p><strong>2、free_irq 函数</strong><br>使用中断的时候使用 request_irq 函数进行申请，使用完成后就需要通过 free_irq 函数释放相应的中断。如果中断不是共享的，那么 free_irq 会删除中断处理函数并禁止中断。free_irq 函数原型如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> *<span class="title function_">free_irq</span><span class="params">(<span class="type">unsigned</span> <span class="type">int</span>, <span class="type">void</span> *)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<p>函数的参数和返回值含义如下<br><strong>irq：</strong>要释放的中断。<br><strong>dev：</strong>如果中断设置为共享的话，此函数用来区分具体的中断。共享中断只有在释放掉最后的中断处理函数后才会被禁止。</p>
+<p><strong>3、中断处理函数</strong><br>使用 request_irq 函数申请中断时需要设置中断处理函数，其格式如下：</p>
+<pre><code>irqreturn_t (*irq_handler_t) (int, void *)
+</code></pre><p>第一个参数是要中断处理函数要相应的中断号，第二杆参数是一个指向 void 的指针，也就是一个通用指针，需要与 request_irq 函数的 dev 参数保持一致，用于区分共享中断的不同设备，dev 也可以指向设备数据结构。中断处理函数的返回值为 irqreturn_t 类型，其定义如下</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">irqreturn</span> {</span></span><br><span class="line">    IRQ_NONE    = (<span class="number">0</span> &lt;&lt; <span class="number">0</span>),</span><br><span class="line">    IRQ_HANDLED    = (<span class="number">1</span> &lt;&lt; <span class="number">0</span>),</span><br><span class="line">    IRQ_WAKE_THREAD    = (<span class="number">1</span> &lt;&lt; <span class="number">1</span>),</span><br><span class="line">};</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">enum</span> <span class="title">irqreturn</span> <span class="title">irqreturn_t</span>;</span></span><br></pre></td></tr></tbody></table></figure>
+<p>可以看出 irqreturn_t 是个枚举类型，一共有三种返回值。一般中断服务函数返回值使用如下形式：</p>
+<pre><code>return IRQ_RETVAL(IRQ_HANDLED)
+</code></pre><p><strong>4、中断使能与禁止函数</strong><br>常用的中断使用和禁止函数如下所示：</p>
+<pre><code>void enable_irq(unsigned int irq)
+void disable_irq(unsigned int irq)
+</code></pre><p>enable_irq 和 disable_irq 用于使能和禁止指定的中断，irq 就是要禁止的中断号。disable_irq 函数要等到当前执行的中断处理函数执行完才返回，因此使用者需要<strong>保证不会产生新的中断</strong>，并且确保所有已经开始执行的中断处理函数程序已经全部退出，在这种情况下可以使用另一个中断禁止函数：</p>
+<pre><code>void disable_irq_nosync(unsigned int irq)
+</code></pre><p>disable_irq_nosync 函数调用以后立即返回，不会等待当前中断处理程序执行完毕。这三个函数都是使能或禁止某一个中断，当我们需要开启或关闭整个中断系统的时候可以使用下面这两个函数</p>
+<pre><code>local_irq_enable()
+local_irq_disable()
+</code></pre><p>local_irq_enable 用于使能当前处理器中断系统，local_irq_disable 用于禁止当前处理器中断系统。还有两个函数，可以在关闭中断使保存中断状态，开启中断后恢复中断状态，这样就要用到下面两个函数：</p>
+<pre><code>local_irq_save(flags)
+local_irq_restor(flags)
+</code></pre><p>这两个函数是一对，local_irq_save用于禁止中断，并将中断状态保存在 flags 中，local_irq_restore 用于恢复中断，将中断恢复到 flags 状态。</p>
+<h3 id="上半部与下半部"><a href="#上半部与下半部" class="headerlink" title="上半部与下半部" data-stellar-navigation=""></a>上半部与下半部</h3><p>我们在使用 request_irq 申请中断时注册的中断服务函数属于中断处理的上半部，只要中断触发，那么中断处理函数就会执行。我们都知道中断处理函数一定要快点执行完毕，越短越好，但是现实往往不能做到，有些中断处理过程费时间，我们必须要对其进行处理，缩小中断处理函数的执行时间。比如电容触摸屏通过中断通知 SOC 有触摸事件发生，SOC 响应中断后通过 IIC 读取数据。但是 IIC 通讯协议较慢，此时我们可以将通过 IIC 读取数据的操作暂后执行，中断处理函数仅仅响应中断然后清除标志位即可。这时中断处理过程分为两部分：<br><strong>上半部：</strong>上半部是中断处理函数，那些处理过程比较快，不会占用很长时间的处理就可以在上半部完成。<br><strong>下半部：</strong>如果中断处理比较耗时，那么就将比较耗时间的代码提取出来，交给下半部执行，这样中断处理函数就会快进快出。<br>因此，Linux 内核将中断分为上半部和下半部的主要目的就是实现中断处理函数的快进快出，比如在上半部中将数据宝贝到内存中，关于数据的解算就可以放到下半部执行。以下有一些可以借鉴的参考点：<br>①、如果要处理的内容不希望被其他终端打断，就可以放到上半部。<br>②、如果要处理的任务对时间敏感，可以放到上半部。<br>③、如果要处理的任务和硬件有关，可以放到上半部。<br>④、除了上述三点以外的任务，有限考虑放到下半部。<br>上半部处理很简单，下半部该怎么做呢？Linux 内核提供了多种下半部机制。一开始 Linux 内核提供了 “bottom half” 机制来实现下半部，简称”BH”，后面引入了软中断和 tasklet 来代替 BH ，从2.5版本后的 Linux 内核中 BH 已经被抛弃了。</p>
+<p><strong>1、软中断</strong><br>Linux 内核使用结构体 softirq_action 表示软中断，其定义在文件 include/linux/interrupt.h 中，内容如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">softirq_action</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">    <span class="type">void</span> (*action)(<span class="keyword">struct</span> softirq_action *);</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>在 kernel/softirq.c 文件中一共定义了 10 个软中断，如下所示  </p>
+<pre><code>static struct softirq_action softirq_vec[NR_SOFTIRQS];
+</code></pre><p>NR_SOFTIRQS 是枚举类型，定义在文件 include/linux/interrupt.h 中，定义如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">enum</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">    HI_SOFTIRQ=<span class="number">0</span>, <span class="comment">// 高优先级软中断</span></span><br><span class="line">    TIMER_SOFTIRQ, <span class="comment">// 定时器软中断</span></span><br><span class="line">    NET_TX_SOFTIRQ, <span class="comment">// 网络数据发送软中断</span></span><br><span class="line">    NET_RX_SOFTIRQ,</span><br><span class="line">    BLOCK_SOFTIRQ,</span><br><span class="line">    IRQ_POLL_SOFTIRQ,</span><br><span class="line">    TASKLET_SOFTIRQ, <span class="comment">// tasklet 软中断</span></span><br><span class="line">    SCHED_SOFTIRQ, <span class="comment">// 调度软中断</span></span><br><span class="line">    HRTIMER_SOFTIRQ, <span class="comment">// 高精度定时器软中断</span></span><br><span class="line">    RCU_SOFTIRQ,    <span class="comment">/* RCU 软中断 */</span></span><br><span class="line">    NR_SOFTIRQS</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>可以看出一共有 10 个软中断，因此 NR_SOFTIRQS 为 10，因此数组 softirq_vec 有 10 个元素。softirq_vec 结构体中的 action 成员变量就是软中断的服务函数，数组 softirq_vec 是个全局数组，因此所有的 CPU 都可以访问到，每个 CPU 都有自己的触发和控制机制，并且只执行自己所触发的软中断，但是各个 CPU 所执行的软中断服务函数是相同的，都是数组 softirq_vec 中定义的 action 函数。要使用软中断，必须先使用 open_softirq 函数注册对应的软中断处理函数，其原型如下：</p>
+<pre><code>void open_softirq(int nr,  void (*action)(struct softirq_action *))
+</code></pre><p>函数参数和返回值含义如下：<br><strong>nr:</strong>要开启的软中断，在 softirq_vec 中选择一个。<br><strong>action:</strong>软中断对应的处理函数。<br>注册好软中断后需要使用 raise_softirq 函数触发，raise_softirq 函数原型如下:</p>
+<pre><code>void raise_softirq(unsigned int nr)
+</code></pre><p>nr 表示要触发的软中断，可以在 softirq_vec 中选择一个。软中断必须在编译的时候静态注册！Linux 内核使用 softirq_init 函数初始化软中断，softirq_init 函数定义在 kernel/softirq.c 文件中，内容如下</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> __init <span class="title function_">softirq_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> cpu;</span><br><span class="line"></span><br><span class="line">    for_each_possible_cpu(cpu) {</span><br><span class="line">        per_cpu(tasklet_vec, cpu).tail =</span><br><span class="line">            &amp;per_cpu(tasklet_vec, cpu).head;</span><br><span class="line">        per_cpu(tasklet_hi_vec, cpu).tail =</span><br><span class="line">            &amp;per_cpu(tasklet_hi_vec, cpu).head;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    open_softirq(TASKLET_SOFTIRQ, tasklet_action);</span><br><span class="line">    open_softirq(HI_SOFTIRQ, tasklet_hi_action);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>从代码中可以看出，softirq_init 会默认打开 TASKLET_SOFTIRQ 和 HI_SOFTIRQ</p>
+<p><strong>2、tasklet</strong><br>tasklet 是利用软中断来实现的另外一种下半部机制，在软中断和 tasklet 之间，建议使用 tasklet。Linux 内核使用 tasklet_struct 结构体来表示  tasklet</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">tasklet_struct</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">tasklet_struct</span> *<span class="title">next</span>;</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> state;</span><br><span class="line">    <span class="type">atomic_t</span> count;</span><br><span class="line">    <span class="type">bool</span> use_callback;</span><br><span class="line">    <span class="class"><span class="keyword">union</span> {</span></span><br><span class="line">        <span class="type">void</span> (*func)(<span class="type">unsigned</span> <span class="type">long</span> data);</span><br><span class="line">        <span class="type">void</span> (*callback)(<span class="keyword">struct</span> tasklet_struct *t);</span><br><span class="line">    };</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> data;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>其中，func 函数就是 tasklet 要执行的处理函数，用户自定义函数内容，相当于中断处理函数。如果要使用 tasklet，必须先定义，然后使用 tasklet_init 函数初始化，这个函数原型如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">tasklet_init</span><span class="params">(<span class="keyword">struct</span> tasklet_struct *t,</span></span><br><span class="line"><span class="params">                <span class="type">void</span> (*func)(<span class="type">unsigned</span> <span class="type">long</span>), </span></span><br><span class="line"><span class="params">                <span class="type">unsigned</span> <span class="type">long</span> data)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<p>函数参数含义如下：<br><strong>t：</strong>要初始化的 tasklet<br><strong>func：</strong>tasklet 的处理函数<br><strong>data：</strong>要传递给 func 函数的参数。<br>也可以使用宏 DECLARE_TASKLET 来一次性完成 tasklet 的定义和初始化，这个宏定义在 include/linux/interrupt.h 文件中，定义如下</p>
+<pre><code>DECLARE_TASKLET(name, func, data)
+</code></pre><p>其中 name 为要定义的那个 tasklet 名字，这个名字就是一个 tasklet_struct 类型的变量，func 就是 tasklet 的处理函数 data 是传递给 func 函数的参数。</p>
+<p>在上半部，也就是中断处理函数中调用 tasklet_schedule 函数就可以让 tasklet 在合适的时间运行，此函数原型如下：</p>
+<pre><code>void tasklet_schedule(struct tasklet_struct *t)
+</code></pre><p>t 表示要调度的 tasklet，也就是 DECLARE_TASKLET 宏里面的 name。</p>
+<p><strong>3、工作队列</strong><br>工作队列是另一种下半部执行方式，工作队列在进程上下文执行，工作队列将要推后的工作交给另一个内核线程去执行，因为工作队列工作都在进程上下文，因此工作队列允许睡眠或重新调度。因此如果要推后的工作可以睡眠就可以选择工作队列，否则就只能选择软中断或 tasklet。</p>
+<p>Linux 内核使用 work_struct 结构体表示一个工作，内容如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">work_struct</span> {</span></span><br><span class="line">    <span class="type">atomic_long_t</span> data;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">entry</span>;</span></span><br><span class="line">    <span class="type">work_func_t</span> func;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_LOCKDEP</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">lockdep_map</span> <span class="title">lockdep_map</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>在实际的驱动开发中，我们只需要定义工作(work_struct)即可，关于工作队列和工作者线程我们基本不用去管。简单创建工作很简单，直接定义一个 work_struct 结构体变量即可，然后使用 INIT_WORK 宏来初始化工作，这个宏定义如下：</p>
+<pre><code>#define INIT_WORK(_work, _func)
+</code></pre><p>_work 表示要初始化的工作，_func 是工作对应的处理函数。也可以使用 DECLARE_WORK 宏一次性完成工作的创建和初始化，其定义如下：</p>
+<pre><code>#define DECLARE_WORK(n,f)
+</code></pre><p>n 表示定义的工作，f表示工作对应的处理函数。和 tasklet 一样，工作也需要调度才能运行，其调度函数为 schedule_work，函数原型如下所示</p>
+<pre><code>bool schedule_work(struct work_struct *work)
+</code></pre><p>函数参数和返回值含义如下：<br><strong>work：</strong>要调度的工作。<br><strong>返回值：</strong>0 成功，其他值失败。</p>
+<h3 id="设备树中断信息节点"><a href="#设备树中断信息节点" class="headerlink" title="设备树中断信息节点" data-stellar-navigation=""></a>设备树中断信息节点</h3><p>如果我们使用设备树的话就需要在设备书中设置好属性信息，Linux 内核通过读取设备树中的中断属性信息来配置中断，对于终端控制器而言，设备树绑定信息参考文档为 Documentation/devicetree/bindings/arm/gic.txt。打开 imx6ull.dtsi 文件，其中的 intc 节点就是 IMX6ULL 的中断控制器节点，内容如下：</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">intc: interrupt-controller@a01000 {</span><br><span class="line">    compatible = "arm,gic-400", "arm,cortex-a7-gic";</span><br><span class="line">    interrupts = &lt;GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(1) | IRQ_TYPE_LEVEL_HIGH)&gt;;</span><br><span class="line">    #interrupt-cells = &lt;3&gt;;</span><br><span class="line">    interrupt-controller;</span><br><span class="line">    interrupt-parent = &lt;&amp;intc&gt;;</span><br><span class="line">    reg = &lt;0x00a01000 0x1000&gt;,</span><br><span class="line">            &lt;0x00a02000 0x2000&gt;,</span><br><span class="line">            &lt;0x00a04000 0x2000&gt;,</span><br><span class="line">            &lt;0x00a06000 0x2000&gt;;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>其中，compatible 属性值为 “arm,cortex-a7-gic”，可以在 Linux 内核源码中找到 GIC 中断控制器驱动文件。#interrupt-cells 和 #address-cells、#size-cells 一样，表示此中断控制器下设备的 cells 大小，对于设备而言，会使用 interrupts 属性描述中断信息，#interrupt-cells 描述了 interrupts 属性的 cells 大小，也就是一条信息有几个 cells。每个 cells 都是 32 位整型值，对于 ARM 处理的 GIC 来说，一共有 3 个 cells，其含义如下：<br>第一个：中断类型，0 表示 SPI，1 表示 PPI。<br>第二个：中断号，对于 SPI 来说中断号范围是 0-987，对于 PPI 来说中断号范围是 0-15。<br>第三个：标志，bit[3:0]表示中断触发类型，为1时上升沿触发，为2时下降沿触发，为4时高电平触发，为8时低电平触发。bit[15:8] 为 PPI 中断的 CPU 掩码。</p>
+<p>对于 GPIO 来说，gpio 节点也可以作为中断控制器，比如同文件的 gpio5 节点内容如下所示</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">gpio5: gpio@20ac000 {</span><br><span class="line">    compatible = "fsl,imx6ul-gpio", "fsl,imx35-gpio";</span><br><span class="line">    reg = &lt;0x020ac000 0x4000&gt;;</span><br><span class="line">    interrupts = &lt;GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH&gt;,</span><br><span class="line">                &lt;GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH&gt;;</span><br><span class="line">    clocks = &lt;&amp;clks IMX6UL_CLK_GPIO5&gt;;</span><br><span class="line">    gpio-controller;</span><br><span class="line">    #gpio-cells = &lt;2&gt;;</span><br><span class="line">    interrupt-controller;</span><br><span class="line">    #interrupt-cells = &lt;2&gt;;</span><br><span class="line">    gpio-ranges = &lt;&amp;iomuxc 0 7 10&gt;, &lt;&amp;iomuxc 10 5 2&gt;;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>其中，interrupts 描述中断源信息，对于 gpio5 来说一共有两条信息，中断类型都是 SPI，触发电平都是 IRQ_TYPE_LEVEL_HIGH。不同之处在于中断源，一个是 74，一个是 75。从数据手册中可以看到，GPIO5 一共用了两个中断号，一个是 74，一个是 75.其中 74 对应 GPIO5_IO00 - GPIO5_IO15 这低 16 个 IO，75 对应 GPIO5_IO16 - GPIO5_IO31 这低 16 个 IO。interrupt-controller 表明了 gpio5 节点也是个中断控制器，用于控制 gpio5 所有 IO 的中断。</p>
+<p>这时我们注意到，为什么 GIC 控制器和 GPIO 控制器中都有 interrupt-controller 呢？两个 #interrupt-cells 还不一样，为什么呢？在现代 SOC 中，中断系统其实是分层结构，像一颗树，GIC 在树根，GPIO 在中间层。两者都能控制终端，只是层级不同。当 GPIO 检测到信号变化时，产生一个中断事件给 GIC。这里的 interrupt-controller 表示 GPIO 也可以给其他设备提供中断。同时，Linux 需要知道如果设备使用 GPIO 产生中断的话，需要提供哪些参数，所以 GPIO 声明 #interrupt-cells = &lt;2&gt; 表示 一个 GPIO 中断描述需要两个参数。查阅文档得知其含义为 GPIO编号 和 触发方式。</p>
+<p>如下代码</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">etnphy0: ethernet-phy@0 {</span><br><span class="line">    compatible = "ethernet-phy-ieee802.3-c22";</span><br><span class="line">    reg = &lt;0&gt;;</span><br><span class="line">    pinctrl-names = "default";</span><br><span class="line">    pinctrl-0 = &lt;&amp;pinctrl_etnphy0_int&gt;;</span><br><span class="line">    interrupt-parent = &lt;&amp;gpio5&gt;;</span><br><span class="line">    interrupts = &lt;5 IRQ_TYPE_EDGE_FALLING&gt;;</span><br><span class="line">    status = "okay";</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>这里 etnphy0 是一个网卡设备，其中有一个中断引脚连接到了 GPIO5_IO04，下降沿触发中断。</p>
+<h3 id="获取中断号"><a href="#获取中断号" class="headerlink" title="获取中断号" data-stellar-navigation=""></a>获取中断号</h3><p>编写驱动时需要用到中断号，我们用到中断号，中断信息已经写到了设备树里面，因此可以通过 irq_of_parse_and_map 函数从 interupts 属性中提取到对应的设备号，函数原型如下</p>
+<pre><code>unsigned int irq_of_parse_and_map(struct device_node *dev, int index)
+</code></pre><p>其中，dev 表示设备节点，index 表示索引号，返回值为中断号。如果使用 GPIO 的话，可以通过 gpio_to_irq 函数来获取对应的中断号，函数原型如下</p>
+<pre><code>int gpio_to_irq(unsigned int gpio)
+</code></pre><p>其中，gpio表示要获取的 GPIO 编号，返回值为 GPIO 对应的中断号。</p>
+<h2 id="实验程序编写"><a href="#实验程序编写" class="headerlink" title="实验程序编写" data-stellar-navigation=""></a>实验程序编写</h2><h3 id="设备树修改"><a href="#设备树修改" class="headerlink" title="设备树修改" data-stellar-navigation=""></a>设备树修改</h3><p>本章实验将 KEY0 设置成中断模式。IMX开发板上的 KEY 使用了 UART1_CTS_B 这个 PIN，打开 imx6ull-hcw-emmc.dtsi，在 iomuxc 节点下创建一个名为 pinctrl_key 子节点，内容如下所示：</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">pinctrl_camera_clock: cameraclockgrp {</span><br><span class="line">    fsl,pins = &lt;</span><br><span class="line">        MX6UL_PAD_UART1_CTS_B__GPIO1_IO18 0xf080</span><br><span class="line">    &gt;;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>在根节点下添加 key 设备，如下所示</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">key{</span><br><span class="line">    #address-cells = &lt;1&gt;;</span><br><span class="line">    #size-cells = &lt;1&gt;;</span><br><span class="line">    compatible = "atkalpha-key";</span><br><span class="line">    pinctrl-names = "default";</span><br><span class="line">    pinctrl-0 = &lt;pinctrl_key&gt;;</span><br><span class="line">    key-gpio = &lt;&amp;gpio1 18 GPIO_ACTIVE_LOW&gt;;</span><br><span class="line">    interrupt-parent = &lt;&amp;gpio1&gt;;</span><br><span class="line">    interrupts = &lt;18 IRQ_TYPE_EDGE_BOTH&gt;;</span><br><span class="line">    status = "okay";</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>使用新编译的 dtb 文件启动 kernel，在设备树文件中看到 key 被成功创建。</p>
+<div align="center"><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/img/linux驱动开发/19/key创建成功.png" width="60%" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[189.1722,12.2653,14.2157,1]}" data-stellar-image-source="/img/linux驱动开发/19/key创建成功.png"></div>
+<div style="text-align:center;">图 2 key 创建成功</div>
+
+<h3 id="程序编写"><a href="#程序编写" class="headerlink" title="程序编写" data-stellar-navigation=""></a>程序编写</h3><p>新建文件夹，创建c文件，写入以下代码。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br><span class="line">285</span><br><span class="line">286</span><br><span class="line">287</span><br><span class="line">288</span><br><span class="line">289</span><br><span class="line">290</span><br><span class="line">291</span><br><span class="line">292</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * @Author: 胡城玮</span></span><br><span class="line"><span class="comment"> * @FilePath: imx6uirq.c</span></span><br><span class="line"><span class="comment"> * @Date: 2026-03-09</span></span><br><span class="line"><span class="comment"> * @Description: </span></span><br><span class="line"><span class="comment"> * @Version: 0.1</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/delay.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/gpio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/cdev.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/device.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/irq.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/irqnr.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/timer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_irq.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/interrupt.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/of_gpio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     IMX6UIRQ_CNT    1           <span class="comment">// 设备号个数</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     IMX6UIRQ_NAME   <span class="string">"imx6uirq"</span>  <span class="comment">// 名字</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     KEY0VALUE       0x01        <span class="comment">// KEY0 按键值</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     INVAKEY         0xFF        <span class="comment">// 无效的按键值</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span>     KEY_NUM         1           <span class="comment">// 按键数量</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* 中断 IO 描述结构体 */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">irq_keydesc</span> {</span></span><br><span class="line">    <span class="type">int</span> gpio;                   <span class="comment">// gpio</span></span><br><span class="line">    <span class="type">int</span> irqnum;                 <span class="comment">// 中断号</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> value;        <span class="comment">// 按键对应的值</span></span><br><span class="line">    <span class="type">char</span> name[<span class="number">10</span>];              <span class="comment">// 名字</span></span><br><span class="line">    <span class="type">irqreturn_t</span> (*handler)(<span class="type">int</span>, <span class="type">void</span>*);  <span class="comment">// 中断服务函数</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">imx6uirq_dev</span>{</span></span><br><span class="line">    <span class="type">dev_t</span> devid;            <span class="comment">// 设备号</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span> <span class="title">cdev</span>;</span>       <span class="comment">// cedv</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="keyword">class</span> *<span class="keyword">class</span>;</span>    <span class="comment">// 类</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">device</span>;</span>  <span class="comment">// 设备</span></span><br><span class="line">    <span class="type">int</span> major;              <span class="comment">// 主设备号</span></span><br><span class="line">    <span class="type">int</span> minor;              <span class="comment">// 次设备号</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">device_node</span> *<span class="title">nd</span>;</span> <span class="comment">// 设备节点</span></span><br><span class="line">    <span class="type">atomic_t</span> keyvalue;      <span class="comment">// 有效的按键键值</span></span><br><span class="line">    <span class="type">atomic_t</span> releasekey;    <span class="comment">// 标记是否完成依次的按键</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">timer_list</span> <span class="title">timer</span>;</span>                <span class="comment">// 定义一个定时器</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">irq_keydesc</span> <span class="title">irqkeydesc</span>[<span class="title">KEY_NUM</span>];</span> <span class="comment">// 按键描述数组</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> curkeynum;                <span class="comment">// 当前的按键号</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">imx6uirq_dev</span> <span class="title">imx6uirq</span>;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 按键中断回调函数</span></span><br><span class="line"><span class="comment"> * @param {int} irq 中断号</span></span><br><span class="line"><span class="comment"> * @param {void} *dev_id 设备结构</span></span><br><span class="line"><span class="comment"> * @return {*} 中断执行结果</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">irqreturn_t</span> <span class="title function_">key0_handler</span><span class="params">(<span class="type">int</span> irq, <span class="type">void</span> *dev_id)</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">imx6uirq_dev</span> *<span class="title">dev</span> =</span> (<span class="keyword">struct</span> imx6uirq_dev *)dev_id;</span><br><span class="line">    <span class="comment">/* 记录当前按键是编号 0 的按键 */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 在中断上下文中尽量少做工作，我们使用定时器</span></span><br><span class="line"><span class="comment">       延迟 10ms 进一步处理按键（去抖动、读取值等） */</span></span><br><span class="line">    mod_timer(&amp;dev-&gt;timer, jiffies + msecs_to_jiffies(<span class="number">10</span>));</span><br><span class="line">    <span class="keyword">return</span> IRQ_RETVAL(IRQ_HANDLED); <span class="comment">// 告诉内核中断已经被处理</span></span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 定时器服务函数，用于按键消抖，定时器到了以后再次读取按键值，如果按键还是处于按下状态就表示按键有效</span></span><br><span class="line"><span class="comment"> * @param {unsigned long} arg 设备结构变量</span></span><br><span class="line"><span class="comment"> * @return {*} 无</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">timer_function</span><span class="params">(<span class="keyword">struct</span> timer_list *t)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> value;    <span class="comment">// 保存当前按键 GPIO 电平值</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> num;      <span class="comment">// 当前按键号</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">irq_keydesc</span> *<span class="title">keydesc</span>;</span>    <span class="comment">// 指向按键描述结构体</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">imx6uirq_dev</span> *<span class="title">dev</span> =</span> from_timer(dev, t, timer);</span><br><span class="line">    <span class="comment">// 将传入的参数转换为设备结构体指针。</span></span><br><span class="line"></span><br><span class="line">    num = dev-&gt;curkeynum;               <span class="comment">// 获取当前按键的触发中断的按键信号</span></span><br><span class="line">    keydesc = &amp;dev-&gt;irqkeydesc[num];    <span class="comment">// 获取相应按键的描述结构体</span></span><br><span class="line"></span><br><span class="line">    value = gpio_get_value(keydesc-&gt;gpio); <span class="comment">// 重新读取按键的 GPIO 值</span></span><br><span class="line">    <span class="keyword">if</span>(value == <span class="number">0</span>)  <span class="comment">// 如果读取到低电平，说明按键仍然按下。</span></span><br><span class="line">    {</span><br><span class="line">        <span class="comment">// 设置按键值为按下状态</span></span><br><span class="line">        atomic_set(&amp;dev-&gt;keyvalue ,keydesc-&gt;value);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span> <span class="comment">// 读取到高电平，说梦按键已经松开   </span></span><br><span class="line">    {</span><br><span class="line">        <span class="comment">// 按键释放，最高位 0x80用于标记释放状态</span></span><br><span class="line">        atomic_set(&amp;dev-&gt;keyvalue, <span class="number">0x80</span> | keydesc-&gt;value);</span><br><span class="line">        <span class="comment">// 设置按键释放标志</span></span><br><span class="line">        atomic_set(&amp;dev-&gt;releasekey, <span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 按键 IO 初始化</span></span><br><span class="line"><span class="comment"> * @return {*}</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">keyio_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> i = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    imx6uirq.nd = of_find_node_by_path(<span class="string">"/key"</span>); <span class="comment">// 在设备树中获取设备节点</span></span><br><span class="line">    <span class="keyword">if</span>(imx6uirq.nd == <span class="literal">NULL</span>){</span><br><span class="line">        printk(<span class="string">"key node not find\r\n"</span>);</span><br><span class="line">        <span class="keyword">return</span> -EINVAL;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 获取 GPIO 信息 */</span></span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; KEY_NUM;i++)</span><br><span class="line">    {</span><br><span class="line">        imx6uirq.irqkeydesc[i].gpio = of_get_named_gpio(imx6uirq.nd,<span class="string">"key-gpio"</span>,i);</span><br><span class="line">        <span class="keyword">if</span> (imx6uirq.irqkeydesc[i].gpio &lt; <span class="number">0</span>){</span><br><span class="line">            printk(<span class="string">"cant get key %d\r\n"</span>,i);</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 初始化 key 所使用的 IO，并设置为为中断模式 */</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; KEY_NUM; i++)</span><br><span class="line">    {</span><br><span class="line">        <span class="built_in">memset</span>(imx6uirq.irqkeydesc[i].name,<span class="number">0</span>,<span class="keyword">sizeof</span>(imx6uirq.irqkeydesc[i].name));</span><br><span class="line">        <span class="built_in">sprintf</span>(imx6uirq.irqkeydesc[i].name,<span class="string">"KEY%d"</span>,i);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 申请 GPIO</span></span><br><span class="line">        gpio_request(imx6uirq.irqkeydesc[i].gpio,</span><br><span class="line">                    imx6uirq.irqkeydesc[i].name);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// GPIO 设置为 输入</span></span><br><span class="line">        gpio_direction_input(imx6uirq.irqkeydesc[i].gpio);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 获取中断号</span></span><br><span class="line">        imx6uirq.irqkeydesc[i].irqnum = irq_of_parse_and_map(imx6uirq.nd,i);</span><br><span class="line">        </span><br><span class="line">        printk(<span class="string">"key%d:gpio = %d, irqnum = %d"</span>,i,</span><br><span class="line">                                        imx6uirq.irqkeydesc[i].gpio,</span><br><span class="line">                                        imx6uirq.irqkeydesc[i].irqnum);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 申请中断 */</span></span><br><span class="line">    imx6uirq.irqkeydesc[<span class="number">0</span>].handler = key0_handler;</span><br><span class="line">    imx6uirq.irqkeydesc[<span class="number">0</span>].value = KEY0VALUE;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; KEY_NUM; i ++){</span><br><span class="line">        ret = request_irq(imx6uirq.irqkeydesc[i].irqnum,</span><br><span class="line">                        imx6uirq.irqkeydesc[i].handler,</span><br><span class="line">                        IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING,</span><br><span class="line">                        imx6uirq.irqkeydesc[i].name,</span><br><span class="line">                        &amp;imx6uirq);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (ret &lt; <span class="number">0</span>)</span><br><span class="line">        {</span><br><span class="line">            printk(<span class="string">"irq %d request failed"</span>,imx6uirq.irqkeydesc[i].irqnum);</span><br><span class="line">            <span class="keyword">return</span> -EFAULT;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 创建定时器 */</span></span><br><span class="line">    timer_setup(&amp;imx6uirq.timer, timer_function, <span class="number">0</span>);  </span><br><span class="line">    imx6uirq.timer.function = timer_function;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 打开设备</span></span><br><span class="line"><span class="comment"> * @param {inode} *inode 传递给驱动的 inode</span></span><br><span class="line"><span class="comment"> * @param {file} *filp 设备文件，file 结构体有个叫做 private_data 的成员变量，</span></span><br><span class="line"><span class="comment"> *                      一般在 open 的时候将 private_data 指向设备结构体</span></span><br><span class="line"><span class="comment"> * @return {*} 0 成功 其他失败</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">imx6uirq_open</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *filp)</span></span><br><span class="line">{</span><br><span class="line">    filp-&gt;private_data = &amp;imx6uirq; <span class="comment">// 设置私有数据</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @description: 从设备读取数据</span></span><br><span class="line"><span class="comment"> * @param {file} *filp 要打开的设备文件</span></span><br><span class="line"><span class="comment"> * @param {char __user} *buf 返回给用户空间的数据缓冲区</span></span><br><span class="line"><span class="comment"> * @param {size_t} cnt 要读取的字符长度</span></span><br><span class="line"><span class="comment"> * @param {loff_t} *offt 相对于文件首地址的偏移</span></span><br><span class="line"><span class="comment"> * @return {*} 读取的字节数，若为负值表示失败。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">imx6uirq_read</span><span class="params">(<span class="keyword">struct</span> file *filp, <span class="type">char</span> __user *buf, <span class="type">size_t</span> cnt, <span class="type">loff_t</span> *offt)</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> keyvalue = <span class="number">0</span>;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">char</span> releasekey = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">imx6uirq_dev</span> *<span class="title">dev</span> =</span> (<span class="keyword">struct</span> imx6uirq_dev *)filp-&gt;private_data;</span><br><span class="line"></span><br><span class="line">    keyvalue = atomic_read(&amp;dev-&gt;keyvalue);</span><br><span class="line">    releasekey = atomic_read(&amp;dev-&gt;releasekey);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(releasekey){</span><br><span class="line">        <span class="keyword">if</span>(keyvalue &amp; <span class="number">0x80</span>)</span><br><span class="line">        {</span><br><span class="line">            keyvalue &amp;= ~<span class="number">0x80</span>;</span><br><span class="line">            ret = copy_to_user(buf,&amp;keyvalue,<span class="keyword">sizeof</span>(keyvalue));</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span>{</span><br><span class="line">            <span class="keyword">goto</span> data_error;</span><br><span class="line">        }</span><br><span class="line">        atomic_set(&amp;dev-&gt;releasekey, <span class="number">0</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span>{</span><br><span class="line">        <span class="keyword">goto</span> data_error;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">sizeof</span>(keyvalue);</span><br><span class="line"></span><br><span class="line">data_error:</span><br><span class="line">    <span class="keyword">return</span> -EINVAL;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">imx6uirq_fos</span> =</span> {</span><br><span class="line">    .owner = THIS_MODULE,</span><br><span class="line">    .open = imx6uirq_open,</span><br><span class="line">    .read = imx6uirq_read,</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">imx6uirq_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">    <span class="comment">/* 获取设备号 */</span></span><br><span class="line">    <span class="keyword">if</span>(imx6uirq.major){</span><br><span class="line">        imx6uirq.devid = MKDEV(imx6uirq.major,<span class="number">0</span>);</span><br><span class="line">        register_chrdev_region(imx6uirq.devid,IMX6UIRQ_CNT,IMX6UIRQ_NAME);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    {</span><br><span class="line">        alloc_chrdev_region(&amp;imx6uirq.devid, <span class="number">0</span> ,IMX6UIRQ_CNT,IMX6UIRQ_NAME);</span><br><span class="line">        imx6uirq.major = MAJOR(imx6uirq.devid);</span><br><span class="line">        imx6uirq.minor = MINOR(imx6uirq.devid);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 注册字符设备 */</span></span><br><span class="line">    cdev_init(&amp;imx6uirq.cdev, &amp;imx6uirq_fos);</span><br><span class="line">    cdev_add(&amp;imx6uirq.cdev,imx6uirq.devid,IMX6UIRQ_CNT);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 创建类 */</span></span><br><span class="line">    imx6uirq.class = class_create(THIS_MODULE, IMX6UIRQ_NAME);</span><br><span class="line">    <span class="keyword">if</span> (IS_ERR(imx6uirq.class))</span><br><span class="line">    {</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(imx6uirq.class);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 创建设备 */</span></span><br><span class="line">    imx6uirq.device = device_create(imx6uirq.class,<span class="literal">NULL</span>,imx6uirq.devid,<span class="literal">NULL</span>,IMX6UIRQ_NAME);</span><br><span class="line">    <span class="keyword">if</span>(IS_ERR(imx6uirq.device)){</span><br><span class="line">        <span class="keyword">return</span> PTR_ERR(imx6uirq.device);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 初始化按键 */</span></span><br><span class="line">    atomic_set(&amp;imx6uirq.keyvalue, INVAKEY);</span><br><span class="line">    atomic_set(&amp;imx6uirq.releasekey, <span class="number">0</span>);</span><br><span class="line">    keyio_init();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">imx6uirq_exit</span><span class="params">(<span class="type">void</span>)</span>{</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">/* 删除定时器 */</span></span><br><span class="line">    del_timer_sync(&amp;imx6uirq.timer);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 释放中断 */</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>;i &lt; KEY_NUM;i++)</span><br><span class="line">    {</span><br><span class="line">        free_irq(imx6uirq.irqkeydesc[i].irqnum,&amp;imx6uirq);</span><br><span class="line">        gpio_free(imx6uirq.irqkeydesc[i].gpio);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    cdev_del(&amp;imx6uirq.cdev);</span><br><span class="line">    unregister_chrdev_region(imx6uirq.devid, IMX6UIRQ_CNT);</span><br><span class="line">    device_destroy(imx6uirq.class,imx6uirq.devid);</span><br><span class="line">    class_destroy(imx6uirq.class);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">module_init(imx6uirq_init);</span><br><span class="line">module_exit(imx6uirq_exit);</span><br><span class="line">MODULE_LICENSE(<span class="string">"GPL"</span>);</span><br><span class="line">MODULE_AUTHOR(<span class="string">"hcw"</span>);</span><br></pre></td></tr></tbody></table></figure>
+<p>编译出 ko 文件，并加载到根文件系统中。启动并装载 ko 文件。</p>
+<div align="center"><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="/img/linux驱动开发/19/成功.png" width="60%" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[285.1429,0.0696,14.9112,1]}" data-stellar-image-source="/img/linux驱动开发/19/成功.png"></div>
+<div style="text-align:center;">图 3 成功</div>
+</article>
+<div class="article-tags slide-up"><a class="tag" href="/tags/Linux/"><svg class="icon" viewBox="0 0 1 1" data-icon="default:hashtag" aria-hidden="true"></svg>Linux</a><a class="tag" href="/tags/%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91/"><svg class="icon" viewBox="0 0 1 1" data-icon="default:hashtag" aria-hidden="true"></svg>驱动开发</a></div>
+
+
+  <div class="article-share slide-up" id="share">
+    <div class="body">
+      <div class="social-wrap dis-select"><a class="social share-item qrcode ui-interactive is-icon-only" onclick="util.toggle(&quot;share-qrcode&quot;)" aria-label="分享文章: QR Code" title="分享文章: QR Code"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M10.553 13.447c-.424-.424-.95-.596-1.535-.675c-.553-.074-1.25-.074-2.086-.074H5.827c-.58 0-1.065 0-1.459.037c-.411.04-.795.124-1.146.34c-.345.21-.634.5-.845.844c-.216.352-.3.735-.34 1.147C2 15.459 2 15.944 2 16.525v.068c0 .884 0 1.597.055 2.17c.056.592.175 1.108.459 1.571c.288.47.682.864 1.152 1.152c.463.284.979.403 1.57.46C5.81 22 6.524 22 7.407 22h.07c.58 0 1.064 0 1.458-.037c.412-.04.795-.124 1.147-.34c.344-.21.633-.5.844-.844c.216-.352.3-.736.34-1.147c.037-.394.037-.879.037-1.46v-1.104c0-.836 0-1.533-.074-2.086c-.079-.584-.251-1.111-.675-1.535m-1.62-11.41c.412.04.795.124 1.147.34c.344.21.633.5.844.845c.216.351.3.735.34 1.146c.037.394.037.879.037 1.46v1.104c0 .836 0 1.533-.074 2.086c-.079.584-.251 1.111-.675 1.535s-.95.596-1.535.675c-.553.074-1.25.074-2.086.074H5.827c-.58 0-1.065 0-1.459-.037c-.411-.04-.795-.124-1.146-.34a2.56 2.56 0 0 1-.845-.844c-.216-.352-.3-.735-.34-1.147C2 8.54 2 8.056 2 7.475v-.068c0-.884 0-1.597.055-2.17c.056-.592.175-1.108.459-1.571c.288-.47.682-.864 1.152-1.152c.463-.284.979-.403 1.57-.46C5.81 2 6.524 2 7.407 2h.07c.58 0 1.064 0 1.458.037M16.593 2h-.068c-.58 0-1.065 0-1.46.037c-.41.04-.794.124-1.146.34c-.344.21-.633.5-.844.845c-.216.351-.3.735-.34 1.146c-.037.394-.037.879-.037 1.46v1.104c0 .836 0 1.533.074 2.086c.079.584.251 1.111.675 1.535s.95.596 1.535.675c.553.074 1.25.074 2.086.074h1.105c.58 0 1.065 0 1.459-.037c.411-.04.795-.124 1.146-.34c.345-.21.634-.5.845-.844c.216-.352.3-.735.34-1.147C22 8.54 22 8.056 22 7.475v-.068c0-.884 0-1.597-.055-2.17c-.056-.592-.175-1.108-.459-1.571a3.5 3.5 0 0 0-1.152-1.152c-.463-.284-.979-.403-1.57-.46C18.19 2 17.477 2 16.594 2" opacity=".5"></path><path fill="currentColor" d="M14.093 21.302a.698.698 0 1 1-1.396 0v-2.79h1.396z" opacity=".4"></path><path fill="currentColor" d="M21.302 12.698a.7.7 0 0 0-.697.697v3.256H22v-3.256a.7.7 0 0 0-.698-.697" opacity=".5"></path><path fill="currentColor" d="M16.076 16.617c-.076.184-.076.417-.076.883s0 .699.076.883a1 1 0 0 0 .541.54c.184.077.417.077.883.077s.699 0 .883-.076a1 1 0 0 0 .54-.541c.077-.184.077-.417.077-.883s0-.699-.076-.883a1 1 0 0 0-.541-.54C18.199 16 17.966 16 17.5 16s-.699 0-.883.076a1 1 0 0 0-.54.541"></path><path fill="currentColor" d="M22 18.535v-.023h-1.396c0 .443 0 .74-.016.97c-.015.224-.043.333-.073.405a1.16 1.16 0 0 1-.629.63c-.072.029-.18.056-.405.072c-.23.015-.527.016-.97.016h-1.86V22h1.883c.414 0 .759 0 1.042-.02a2.6 2.6 0 0 0 .844-.175a2.56 2.56 0 0 0 1.384-1.384c.112-.27.156-.549.176-.844c.02-.283.02-.628.02-1.042" opacity=".7"></path><path fill="currentColor" d="M12.697 16.616v.035h1.396c0-.668 0-1.116.035-1.458c.034-.33.093-.482.16-.583a1.2 1.2 0 0 1 .321-.32c.101-.068.254-.128.584-.161c.342-.035.79-.036 1.458-.036h1.86v-1.395h-1.896c-.623 0-1.142 0-1.563.043c-.44.044-.85.142-1.218.388c-.28.187-.519.426-.706.706c-.246.368-.343.777-.388 1.217c-.043.421-.043.94-.043 1.564" opacity=".6"></path><path fill="currentColor" d="M5.508 18.69c.219.155.528.155 1.146.155c.619 0 .928 0 1.146-.155a.8.8 0 0 0 .2-.199c.154-.218.154-.527.154-1.146s0-.927-.155-1.146A.8.8 0 0 0 7.8 16c-.218-.155-.527-.155-1.146-.155s-.927 0-1.146.155a.8.8 0 0 0-.199.2c-.155.218-.155.527-.155 1.145c0 .619 0 .928.155 1.146a.8.8 0 0 0 .2.2M6.654 8.155c-.618 0-.927 0-1.146-.155a.8.8 0 0 1-.199-.2c-.155-.217-.155-.527-.155-1.145c0-.619 0-.928.155-1.146a.8.8 0 0 1 .2-.2c.218-.154.527-.154 1.145-.154c.619 0 .928 0 1.146.155a.8.8 0 0 1 .2.199c.154.218.154.527.154 1.146s0 .928-.155 1.146A.8.8 0 0 1 7.8 8c-.218.155-.527.155-1.146.155M16.2 8c.218.155.527.155 1.146.155s.927 0 1.146-.155a.8.8 0 0 0 .199-.199c.155-.218.155-.528.155-1.146c0-.619 0-.928-.155-1.146a.8.8 0 0 0-.2-.2c-.218-.154-.527-.154-1.145-.154c-.619 0-.928 0-1.146.155a.8.8 0 0 0-.2.199c-.154.218-.154.527-.154 1.146s0 .928.155 1.146A.8.8 0 0 0 16.2 8"></path></svg></span></a><a class="social share-item weibo ui-interactive is-icon-only" href="https://service.weibo.com/share/share.php?url=https%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-19%2F&amp;title=Linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A0%E6%97%A5%E8%AE%B0(19)%20Linux%20%E7%9A%84%E4%B8%AD%E6%96%AD%20-%20HCC's%20Blog&amp;summary=%E5%AD%A6%E4%B9%A0%20Linux%20%E4%B8%AD%E7%9A%84%E4%B8%AD%E6%96%AD%E6%9C%BA%E5%88%B6%E3%80%81%E5%A6%82%E4%BD%95%E5%88%9B%E5%BB%BA%E4%B8%AD%E6%96%AD%E3%80%82" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Weibo" title="分享文章: Weibo"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.737 5.439l-.002.004zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.27-1.627c-.141.237-.449.353-.689.253-.236-.09-.313-.361-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.18.601l.014-.028zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149zm7.563-1.224c-.346-.105-.57-.18-.405-.615.375-.977.42-1.804 0-2.404-.781-1.112-2.915-1.053-5.364-.03 0 0-.766.331-.571-.271.376-1.217.315-2.224-.27-2.809-1.338-1.337-4.869.045-7.888 3.08C1.309 10.87 0 13.273 0 15.348c0 3.981 5.099 6.395 10.086 6.395 6.536 0 10.888-3.801 10.888-6.82 0-1.822-1.547-2.854-2.915-3.284v.01zm1.908-5.092c-.766-.856-1.908-1.187-2.96-.962-.436.09-.706.511-.616.932.09.42.511.691.932.602.511-.105 1.067.044 1.442.465.376.421.466.977.316 1.473-.136.406.089.856.51.992.405.119.857-.105.992-.512.33-1.021.12-2.178-.646-3.035l.03.045zm2.418-2.195c-1.576-1.757-3.905-2.419-6.054-1.968-.496.104-.812.587-.706 1.081.104.496.586.813 1.082.707 1.532-.331 3.185.15 4.296 1.383 1.112 1.246 1.429 2.943.947 4.416-.165.48.106 1.007.586 1.157.479.165.991-.104 1.157-.586.675-2.088.241-4.478-1.338-6.235l.03.045z"></path></svg></span></a><a class="social share-item x ui-interactive is-icon-only" href="https://x.com/intent/tweet?text=Linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A0%E6%97%A5%E8%AE%B0(19)%20Linux%20%E7%9A%84%E4%B8%AD%E6%96%AD%20-%20HCC's%20Blog&amp;url=https%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-19%2F" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: X" title="分享文章: X"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M14.234 10.162L22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299l-.929-1.329L3.076 1.56h3.182l5.965 8.532l.929 1.329l7.754 11.09h-3.182z"></path></svg></span></a><a class="social share-item telegram ui-interactive is-icon-only" href="https://t.me/share/url?url=https%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-19%2F&amp;text=Linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A0%E6%97%A5%E8%AE%B0(19)%20Linux%20%E7%9A%84%E4%B8%AD%E6%96%AD%20-%20HCC's%20Blog" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Telegram" title="分享文章: Telegram"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.5.5 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024q-.159.037-5.061 3.345q-.72.495-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789q.04-.324.893-.663q5.247-2.286 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635"></path></svg></span></a><a class="social share-item whatsapp ui-interactive is-icon-only" href="https://wa.me/?text=Linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A0%E6%97%A5%E8%AE%B0(19)%20Linux%20%E7%9A%84%E4%B8%AD%E6%96%AD%20-%20HCC's%20Blog%0Ahttps%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-19%2F" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: WhatsApp" title="分享文章: WhatsApp"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967c-.273-.099-.471-.148-.67.15c-.197.297-.767.966-.94 1.164c-.173.199-.347.223-.644.075c-.297-.15-1.255-.463-2.39-1.475c-.883-.788-1.48-1.761-1.653-2.059c-.173-.297-.018-.458.13-.606c.134-.133.298-.347.446-.52s.198-.298.298-.497c.099-.198.05-.371-.025-.52s-.669-1.612-.916-2.207c-.242-.579-.487-.5-.669-.51a13 13 0 0 0-.57-.01c-.198 0-.52.074-.792.372c-.272.297-1.04 1.016-1.04 2.479c0 1.462 1.065 2.875 1.213 3.074s2.096 3.2 5.077 4.487c.709.306 1.262.489 1.694.625c.712.227 1.36.195 1.871.118c.571-.085 1.758-.719 2.006-1.413s.248-1.289.173-1.413c-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214l-3.741.982l.998-3.648l-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884c2.64 0 5.122 1.03 6.988 2.898a9.82 9.82 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.82 11.82 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.9 11.9 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.82 11.82 0 0 0-3.48-8.413"></path></svg></span></a><a class="social share-item email ui-interactive is-icon-only" href="mailto:?subject=Linux%E9%A9%B1%E5%8A%A8%E5%AD%A6%E4%B9%A0%E6%97%A5%E8%AE%B0(19)%20Linux%20%E7%9A%84%E4%B8%AD%E6%96%AD%20-%20HCC's%20Blog&amp;body=https%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-19%2F" aria-label="分享文章: Email" title="分享文章: Email"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" fill-rule="evenodd" d="M3.172 5.172C2 6.343 2 8.229 2 12s0 5.657 1.172 6.828C4.343 20 6.229 20 10 20h4c3.771 0 5.657 0 6.828-1.172C22 17.657 22 15.771 22 12s0-5.657-1.172-6.828C19.657 4 17.771 4 14 4h-4C6.229 4 4.343 4 3.172 5.172m15.404 2.348a.75.75 0 0 1-.096 1.056l-2.196 1.83c-.887.739-1.605 1.338-2.24 1.746-.66.424-1.303.693-2.044.693s-1.384-.269-2.045-.693c-.634-.408-1.352-1.007-2.239-1.745L5.52 8.576a.75.75 0 1 1 .96-1.152l2.159 1.799c.933.777 1.58 1.315 2.128 1.667.529.34.888.455 1.233.455s.704-.115 1.233-.455c.547-.352 1.195-.89 2.128-1.667l2.159-1.8a.75.75 0 0 1 1.056.097" clip-rule="evenodd"></path></svg></span></a></div>
+      <div class="share-qrcode" id="share-qrcode" style="opacity:0;height:0"><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&amp;data=https%3A%2F%2Fwww.hcc1203.top%2Fposts%2Flinux_driver%2Flinux-driver-learn-19%2F" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;"></div>
+    </div>
+  </div>
+
+<div class="article-footer slide-up">
+    <section id="license">
+      <div class="header"><span>许可协议</span></div>
+      <div class="body"><p>本文采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">署名-非商业性使用-相同方式共享 4.0 国际</a> 许可协议，转载请注明出处。</p>
+</div>
+    </section></div>
+
+<div class="related-wrap slide-up" id="read-next"><section class="body"><div class="item" id="prev"><div class="note"><svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-left" aria-hidden="true"></svg> 较新文章</div><a href="/posts/linux_driver/linux-driver-learn-20/" data-stellar-navigation="">Linux驱动学习日记(20) Linux 阻塞和非阻塞 IO</a></div><div class="item" id="next"><div class="note">较早文章 <svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-right" aria-hidden="true"></svg></div><a href="/posts/linux_driver/linux-driver-learn-18/" data-stellar-navigation="">Linux驱动学习日记(18) Linux 并发与竞争学习</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer slide-up footnote"><hr><div class="sitemap" style="column-count:3;"><div class="sitemap-group"><span class="fs15">浏览博客</span><a href="/">最近文章</a><a href="/archives/">内容归档</a></div><div class="sitemap-group"><span class="fs15">分类查找</span><a href="/categories/">分类</a><a href="/tags/">标签</a></div><div class="sitemap-group"><span class="fs15">关于</span><a href="/about/">关于我</a></div></div><div class="text"><p>本站由 <a href="/">HCC</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0">Stellar 2.0.0</a> 主题创建。<br>本博客所有文章除特别声明外，均采用 <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议，转载请注明出处。</p>
+</div></footer>
+</main>
+<aside data-stellar-runtime-region="" id="rightbar-region" class="site-region site-region--rightbar" data-region="rightbar" aria-label="Rightbar"><div class="site-region__surface ui-drawer-surface"><div class="site-region__viewport"><div class="widgets widget-stack widget-stack--rightbar widget-stack--rightbar"><div class="widget-instance widget-instance--toc" data-widget-id="rightbar:1:toc" data-presentation="rightbar">
+
+
+<widget class="widget-wrapper slide-up toc" id="data-toc" collapse="false">
+  
+    <div class="widget-header dis-select">
+      <span class="name">本文目录</span>
+      <button type="button" class="cap-action ui-interactive card-hover card-hover--spotlight" data-shell-action="toggle-toc" aria-label="Toggle table of contents" aria-pressed="false"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg></span></button>
+    </div>
+  
+  <div class="widget-body"><ol class="toc ui-collection-adapter"><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#Linux-%E4%B8%AD%E6%96%AD%E7%AE%80%E4%BB%8B" data-stellar-navigation=""><span class="toc-text">Linux 中断简介</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#I-MX-%E4%B8%AD%E6%96%AD%E6%9C%BA%E5%88%B6" data-stellar-navigation=""><span class="toc-text">I.MX 中断机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#Linux-%E4%B8%AD%E6%96%AD-API-%E5%87%BD%E6%95%B0" data-stellar-navigation=""><span class="toc-text">Linux 中断 API 函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E4%B8%8A%E5%8D%8A%E9%83%A8%E4%B8%8E%E4%B8%8B%E5%8D%8A%E9%83%A8" data-stellar-navigation=""><span class="toc-text">上半部与下半部</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E8%AE%BE%E5%A4%87%E6%A0%91%E4%B8%AD%E6%96%AD%E4%BF%A1%E6%81%AF%E8%8A%82%E7%82%B9" data-stellar-navigation=""><span class="toc-text">设备树中断信息节点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E8%8E%B7%E5%8F%96%E4%B8%AD%E6%96%AD%E5%8F%B7" data-stellar-navigation=""><span class="toc-text">获取中断号</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E5%AE%9E%E9%AA%8C%E7%A8%8B%E5%BA%8F%E7%BC%96%E5%86%99" data-stellar-navigation=""><span class="toc-text">实验程序编写</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E8%AE%BE%E5%A4%87%E6%A0%91%E4%BF%AE%E6%94%B9" data-stellar-navigation=""><span class="toc-text">设备树修改</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E7%A8%8B%E5%BA%8F%E7%BC%96%E5%86%99" data-stellar-navigation=""><span class="toc-text">程序编写</span></a></li></ol></li></ol></div>
+  <div class="widget-footer"><a class="top ui-interactive" onclick="util.scrollTop()"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M20.536 3.464C22 4.93 22 7.286 22 12s0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12s0-7.071 1.464-8.536C4.93 2 7.286 2 12 2s7.071 0 8.535 1.464" opacity=".5"></path><path fill="currentColor" d="M9.53 12.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 9.56z"></path><path fill="currentColor" d="M9.53 16.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 13.56z"></path></svg></span><span>回到顶部</span></a></div>
+</widget>
+
+
+</div></div></div></div></aside>
+</div><button type="button" class="site-scrim" data-shell-action="dismiss-drawer" aria-label="Close navigation" tabindex="-1"></button><div data-stellar-runtime-region="" class="site-dock" role="group" aria-label="Layout panels">
+  <button type="button" class="site-dock__button site-dock__button--rightbar ui-interactive" aria-label="Open rightbar" aria-controls="rightbar-region" aria-expanded="false" data-shell-action="toggle-rightbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
+  </button>
+  <button type="button" class="site-dock__button site-dock__button--leftbar ui-interactive" aria-label="Open leftbar" aria-controls="leftbar-region" aria-expanded="false" data-shell-action="toggle-leftbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"></path><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"></path></g></svg>
+  </button>
+</div>
+
+<dialog data-stellar-runtime-region="" class="search-dialog" id="site-search-dialog" aria-labelledby="site-search-title">
+  <div class="search-dialog__panel search-wrapper" id="site-search-wrapper" searching="false">
+    <div class="search-dialog__header">
+      <div class="search-form" role="search">
+        <span class="search-button" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+        <input type="search" class="search-input" id="site-search-input" aria-labelledby="site-search-title" placeholder="搜索">
+      </div>
+      <button type="button" class="search-dialog__close" data-shell-action="close-search" aria-label="关闭搜索">×</button>
+    </div>
+    
+      <div class="search-dialog__scope" role="radiogroup" aria-labelledby="site-search-title" hidden="">
+        <label class="search-dialog__scope-option" data-search-scope-option="all">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="all">
+          <span>全站</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="blog" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="blog">
+          <span>博客</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="current" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="current">
+          <span data-search-scope-current-label=""></span>
+        </label>
+      </div>
+    
+    <h2 class="search-dialog__title" id="site-search-title">站内搜索</h2>
+    <div class="search-result" id="site-search-result"></div>
+    <div class="search-no-result">没有找到内容！</div>
+  </div>
+</dialog>
+</div><div class="site-scripts">
+<script data-stellar-script="core" src="/js/stellar-icons.js?v=39c6ac17e854ffe2"></script>
+
+<script data-stellar-script="defines">
+  window.canonical = window.stellarClientData.canonical;
+  const ctx = window.stellarClientData.ctx;
+  window.canonical.param = {permalink: "https://www.hcc1203.top/posts/linux_driver/linux-driver-learn-19/", checklink: ctx.services.video.js};
+  ctx.date_suffix = {"just":"刚刚","min":"分钟前","hour":"小时前","day":"天前"};
+  if (ctx.search) Object.assign(ctx.search, {"more":"更多","no_more":"没有更多了"});
+  const def = window.stellarClientData.def;
+  window.ctx = ctx;
+  window.def = def;
+</script>
+
+
+<!-- core: 迁移期 DOM/资源兼容工具；Extension 注册与生命周期由 ESM runtime 所有 -->
+<script data-stellar-script="core" src="/js/utils.js?v=2.0.0"></script>
+<script data-stellar-script="core" src="/js/main.js?v=2.0.0" defer=""></script>
+<script data-stellar-script="core" defer="" src="/js/profile.js?v=2.0.0"></script>
+
+
+
+
+
+<script data-stellar-script="core" type="application/json" id="stellar-runtime-config">{"version":1,"root":"/","policy":{"cache":{"enabled":true,"defaultTtl":3600,"ttl":{"giscus":600,"waline":600,"artalk":600,"memos":600,"memos-user":86400,"sites":86400,"friends":86400,"friends_and_posts":86400,"siteinfo":86400},"maxEntries":200},"request":{"retries":2,"timeoutMs":5000,"idleTimeoutMs":3000,"maxCacheEntryBytes":204800},"features":{"codeCopyToastMs":2500},"providers":{"linkPrefetch":"flying_pages","lightbox":"fancybox","diagrams":"mermaid"}},"extensions":[{"id":"pin-slider","module":"/js/runtime/extensions/pin-slider.js","scope":"region","when":{"selector":".pin-slider"},"config":{}},{"id":"page-controls","module":"/js/runtime/extensions/page-controls.js","scope":"region","when":{"always":true},"config":{"highlight":"/js/search/highlight.js","tagtree":"/js/tagtree.js"}},{"id":"partial-navigation","module":"/js/runtime/extensions/partial-navigation.js","scope":"document","when":{"always":true},"config":{}},{"id":"color-scheme-switch","module":"/js/runtime/extensions/color-scheme-switch.js","scope":"document","when":{"always":true},"config":{"messages":{"light":"切换到浅色模式","dark":"切换到深色模式","auto":"切换到跟随系统配色"}}},{"id":"search","module":"/js/runtime/extensions/search.js","scope":"document","when":{"selector":".search-input"},"config":{"provider":"local","options":{"scope":"all","includeContent":true,"cacheTtlSeconds":86400},"assets":{"client":null,"provider":"/js/search/local-search.js","shortcut":"/js/search/shortcut.js"}}},{"id":"hero-parallax","module":"/js/runtime/extensions/hero-parallax.js","scope":"region","when":{"selector":".wiki-hero"},"config":{}},{"id":"hero-effect","module":"/js/runtime/extensions/hero-effect.js","scope":"region","when":{"selector":"canvas[data-hero-effect]"},"config":{}},{"id":"lazy-loading","module":"/js/runtime/extensions/lazy-loading.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js"}},{"id":"deferred-icons","module":"/js/runtime/extensions/deferred-icons.js","scope":"region","when":{"selector":"svg.icon[data-icon]"},"config":{}},{"id":"dropdown","module":"/js/runtime/extensions/dropdown.js","scope":"region","when":{"selector":"details.dropdown"},"config":{}},{"id":"services","module":"/js/runtime/extensions/services.js","scope":"region","when":{"selector":"#artalk_container, #twikoo_container, #waline_container, .data-service, [class*='ds-'], a[cardlink], a[data-md-link][data-siteinfo-api], .site-card [data-siteinfo-api], .voice\u003eaudio, .video\u003evideo, .chat-file"},"config":{"marked":"https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js"}},{"id":"settings","module":"/js/runtime/extensions/settings.js","scope":"region","when":{"selector":".settings-page"},"config":{}},{"id":"link-prefetch","module":"/js/runtime/extensions/link-prefetch.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"}},{"id":"lightbox","module":"/js/runtime/extensions/lightbox.js","scope":"region","when":{"selector":"[data-fancybox]:not(.error), .with-fancybox, .ds-memos, .timenode p\u003eimg"},"config":{"enabled":true,"selector":".timenode p\u003eimg","assets":{"localCss":"/css/plugins/fancybox.css","js":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js","css":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"}}},{"id":"reveal","module":"/js/runtime/extensions/reveal.js","scope":"region","when":{"selector":".slide-up"},"config":{"enabled":true,"duration":800,"interval":200,"distance":8,"blur":4}},{"id":"mathjax","module":"/js/runtime/extensions/mathjax.js","scope":"region","when":{"selector":".has-jax, script[type^='math/tex']"},"config":{"options":{},"asset":"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"}},{"id":"code-copy","module":"/js/runtime/extensions/code-copy.js","scope":"region","when":{"selector":".code"},"config":{"assets":{"js":"/js/plugins/copycode.js"},"messages":{"label":"复制","copied":"复制成功","denied":"未获得剪贴板权限","unsupported":"当前浏览器不支持剪贴板或页面不是 HTTPS"}}},{"id":"adaptive-text","module":"/js/runtime/extensions/adaptive-text.js","scope":"region","when":{"selector":"[data-text-adaptive]"},"config":{"assets":{"colorJs":"/js/color.js","js":"/js/plugins/adaptive-text.js"}}},{"id":"swiper","module":"/js/runtime/extensions/swiper.js","scope":"region","when":{"selector":"#swiper-api"},"config":{"assets":{"localCss":"/css/plugins/swiper.css","js":"https://unpkg.com/swiper@10.3/swiper-bundle.min.js","css":"https://unpkg.com/swiper@10.3/swiper-bundle.min.css"}}}]}</script>
+<script data-stellar-script="core" type="module" src="/js/runtime/index.js?v=2.0.0&amp;runtime=1"></script>
+
+
+<!-- inject -->
+
+
+<script data-stellar-script="core" defer="" src="/js/navigation-init.js?v=2.0.0"></script>
+</div>
+
+<script type="application/json" id="stellar-navigation-config">{"collection":"[\"post\",\"post\"]","url":"https://www.hcc1203.top/posts/linux_driver/linux-driver-learn-19/","signature":"e9d9686a8fc8c8bf95838222fccaadd1731837a8e38c80d9d294f9d2894d3a95"}</script></body></html>
